@@ -346,6 +346,19 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .field input[readonly]{background:rgba(45,212,191,.06);border-style:dashed;color:var(--electric);font-weight:700;cursor:default}
 .field .hint{font-size:11px;color:var(--txt-faint);margin-top:5px}
 
+/* As opções abertas de um <select> são desenhadas pelo sistema, não herdam o tema —
+   no modo escuro a lista saía com fundo claro e texto claro (ilegível). Aqui damos
+   cor explícita a elas, e avisamos o navegador que a interface é escura. */
+select{color-scheme:dark}
+[data-theme="light"] select{color-scheme:light}
+select option{background:var(--panel-solid);color:var(--txt)}
+[data-theme="light"] select option{background:#ffffff;color:#16202e}
+@media (max-width:640px){
+  /* no mobile o app usa a paleta clara forçada — as opções acompanham */
+  select{color-scheme:light}
+  select option{background:#ffffff;color:#0f2039}
+}
+
 /* KPI cards */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
 #finKpis{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
@@ -4213,9 +4226,11 @@ function savePSheet(){
 function ensureAbastMonth(k){ if(!state.abastecimentos.months[k])state.abastecimentos.months[k]=[]; return state.abastecimentos.months[k]; }
 function abastMonthLabel(key){ const{y,m}=monthKeyParts(key||state.abastecimentos.current); return `${MESES[m-1]} de ${y}`; }
 function abKmEntryTotal(r){
+  // O KM inicial pode legitimamente ser 0 (ex.: trip zerado no abastecimento anterior).
+  // Antes o código exigia inicial > 0 e por isso não somava nada nesses casos.
   let t=0;
-  if(r.kmIniComb!=null && r.kmFimComb!=null && r.kmFimComb>r.kmIniComb)t+=(r.kmFimComb-r.kmIniComb);
-  if(r.kmIniEl!=null && r.kmFimEl!=null && r.kmFimEl>r.kmIniEl)t+=(r.kmFimEl-r.kmIniEl);
+  if(r.kmFimComb!=null && r.kmFimComb>(r.kmIniComb||0))t+=(r.kmFimComb-(r.kmIniComb||0));
+  if(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))t+=(r.kmFimEl-(r.kmIniEl||0));
   return t;
 }
 function monthTotalsAbast(rows){
@@ -4295,8 +4310,8 @@ function abRenderLista(){
     const icon=r.tipo==='el'?'⚡':'⛽';
     const un=r.tipo==='el'?'kWh':'L';
     const parts=[];
-    if(r.kmIniComb!=null && r.kmFimComb!=null)parts.push(`⛽ ${fmtN(r.kmIniComb,0)}→${fmtN(r.kmFimComb,0)}`);
-    if(r.kmIniEl!=null && r.kmFimEl!=null)parts.push(`⚡ ${fmtN(r.kmIniEl,0)}→${fmtN(r.kmFimEl,0)}`);
+    if(r.kmFimComb!=null && r.kmFimComb>(r.kmIniComb||0))parts.push(`⛽ ${fmtN(r.kmFimComb-(r.kmIniComb||0),0)}km`);
+    if(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))parts.push(`⚡ ${fmtN(r.kmFimEl-(r.kmIniEl||0),0)}km`);
     const kmTot=abKmEntryTotal(r);
     const kmTxt=parts.length?` · ${parts.join(' · ')}${kmTot>0?` (${fmtN(kmTot,0)}km)`:''}`:'';
     return `<div class="lanc-row lanc-clickable" onclick="openAbastModal(${i})">
@@ -4324,11 +4339,18 @@ function abUpdateKmRodado(){
   const box=document.getElementById('abKmRodadoBox'); if(!box)return;
   const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
   const iniC=g('abKmIniComb'), fimC=g('abKmFimComb'), iniE=g('abKmIniEl'), fimE=g('abKmFimEl');
-  let tot=0, has=false;
-  if(fimC>0 && iniC>0 && fimC>iniC){ tot+=(fimC-iniC); has=true; }
-  if(fimE>0 && iniE>0 && fimE>iniE){ tot+=(fimE-iniE); has=true; }
-  if(has){ box.style.display=''; document.getElementById('abKmRodado').value=fmtN(tot,1)+' km'; }
-  else { box.style.display='none'; }
+  // o KM inicial pode ser 0 — o que importa é o final ser maior que o inicial
+  const kmC = fimC>iniC ? (fimC-iniC) : 0;
+  const kmE = fimE>iniE ? (fimE-iniE) : 0;
+  const tot = kmC+kmE;
+  if(tot>0){
+    box.style.display='';
+    const partes=[];
+    if(kmC>0)partes.push(`⛽ ${fmtN(kmC,1)}`);
+    if(kmE>0)partes.push(`⚡ ${fmtN(kmE,1)}`);
+    const detalhe = partes.length>1 ? ` (${partes.join(' + ')})` : '';
+    document.getElementById('abKmRodado').value=fmtN(tot,1)+' km'+detalhe;
+  } else { box.style.display='none'; }
 }
 function openAbastModal(i){
   _abastEditIdx=(i==null?null:i);
@@ -4346,15 +4368,14 @@ function openAbastModal(i){
         <button type="button" id="abTipoEl" class="btn" style="flex:1;justify-content:center" onclick="abSetTipo('el')">⚡ Elétrico</button>
       </div>
     </div>
-    <div class="modal-section-title">⛽ KM combustível</div>
+    <div class="modal-section-title">🛣️ KM Combustível / Elétrico</div>
     <div class="field-row" style="margin-top:6px">
-      <div class="field"><label>KM inicial</label><input inputmode="decimal" id="abKmIniComb" value="${r.kmIniComb??''}" oninput="abUpdateKmRodado()"></div>
-      <div class="field"><label>KM final</label><input inputmode="decimal" id="abKmFimComb" value="${r.kmFimComb??''}" oninput="abUpdateKmRodado()"></div>
+      <div class="field"><label>⛽ KM inicial</label><input inputmode="decimal" id="abKmIniComb" value="${r.kmIniComb??''}" oninput="abUpdateKmRodado()"></div>
+      <div class="field"><label>⛽ KM final</label><input inputmode="decimal" id="abKmFimComb" value="${r.kmFimComb??''}" oninput="abUpdateKmRodado()"></div>
     </div>
-    <div class="modal-section-title">⚡ KM elétrico</div>
-    <div class="field-row" style="margin-top:6px">
-      <div class="field"><label>KM inicial</label><input inputmode="decimal" id="abKmIniEl" value="${r.kmIniEl??''}" oninput="abUpdateKmRodado()"></div>
-      <div class="field"><label>KM final</label><input inputmode="decimal" id="abKmFimEl" value="${r.kmFimEl??''}" oninput="abUpdateKmRodado()"></div>
+    <div class="field-row">
+      <div class="field"><label>⚡ KM inicial</label><input inputmode="decimal" id="abKmIniEl" value="${r.kmIniEl??''}" oninput="abUpdateKmRodado()"></div>
+      <div class="field"><label>⚡ KM final</label><input inputmode="decimal" id="abKmFimEl" value="${r.kmFimEl??''}" oninput="abUpdateKmRodado()"></div>
     </div>
     <div class="field" id="abKmRodadoBox" style="display:none"><label>Total percorrido (automático)</label><input id="abKmRodado" readonly tabindex="-1" value="" style="opacity:.8;font-weight:700;color:var(--electric)"></div>
     <div class="field-row">
@@ -4372,14 +4393,16 @@ function closeAbastModal(){ document.getElementById('abastModal').classList.remo
 function saveAbastEntry(){
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
-  const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
+  // guarda o campo se ele foi PREENCHIDO (mesmo que com 0) — antes o "0" era descartado
+  // como se estivesse vazio, e por isso o total de km nunca era calculado.
+  const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
   const entry={ data, tipo:_abastTipo, qtda:parseNum(document.getElementById('abQtda').value),
     valor:parseNum(document.getElementById('abValor').value), forma:document.getElementById('abForma').value };
   const kmIniComb=g('abKmIniComb'), kmFimComb=g('abKmFimComb'), kmIniEl=g('abKmIniEl'), kmFimEl=g('abKmFimEl');
-  if(kmIniComb>0)entry.kmIniComb=kmIniComb;
-  if(kmFimComb>0)entry.kmFimComb=kmFimComb;
-  if(kmIniEl>0)entry.kmIniEl=kmIniEl;
-  if(kmFimEl>0)entry.kmFimEl=kmFimEl;
+  if(kmIniComb!=null)entry.kmIniComb=kmIniComb;
+  if(kmFimComb!=null)entry.kmFimComb=kmFimComb;
+  if(kmIniEl!=null)entry.kmIniEl=kmIniEl;
+  if(kmFimEl!=null)entry.kmFimEl=kmFimEl;
   if(entry.valor<=0){ alert('Informe o valor do abastecimento.'); return; }
   const oldKey=state.abastecimentos.current;
   if(_abastEditIdx!=null){ ensureAbastMonth(oldKey).splice(_abastEditIdx,1); }
