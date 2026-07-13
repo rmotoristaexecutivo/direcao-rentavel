@@ -1188,6 +1188,9 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <!-- ===== GANHOS SEMANAIS ===== -->
     <div id="opWeekly"></div>
 
+    <!-- ===== MÉDIAS DO MÊS (Corp) ===== -->
+    <div id="opStats"></div>
+
     <!-- ===== CARDS ESTILO CPMA ===== -->
     <div class="kpis cpma-grid">
       <div class="kpi"><div class="k-label">Total de viagens</div><div class="k-val" id="cTrips">0</div></div>
@@ -1279,6 +1282,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <p class="sub" style="margin-top:6px">💡 No modo ⚡ elétrico, informe o <b>% de bateria gasto</b> no trecho — o app calcula os kWh a partir da capacidade da bateria. No modo ⛽ combustível, informe o <b>km/l</b>. A coluna <b>Qtda</b> também é editável se quiser ajustar à mão.</p>
 
     <div class="kpis" id="pessoalKpis"></div>
+    <div id="pessoalStats"></div>
 
     <div class="panel uber-wide" style="padding:18px">
       <div class="tbl-scroll uber-scroll">
@@ -2436,7 +2440,7 @@ function renderUber(){
       <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
       <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">🛣️ Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
       <div class="kpi clickable expense" onclick="openGastoTotalModal()"><div class="k-label">💰 Gasto total <span style="font-size:11px;opacity:.7">▸ ver detalhe</span></div><div class="k-val">${fmt(tot.gastoTrabalho)}</div><div class="k-sub">no mês · ${fmtN(tot.kmIda+tot.kmVolta,0)} km · ${rows.length} dia(s)</div></div>`;
-    const _us=document.getElementById('uberStats'); if(_us)_us.innerHTML=uStatsPanelHtml(rows);
+    const _us=document.getElementById('uberStats'); if(_us)_us.innerHTML=uStatsPanelHtml(rows,'uber');
   }
 
   renderOperacao(rows,tot);
@@ -2506,21 +2510,22 @@ function uRenderMeses(){
   }
   document.getElementById('uNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div>`;
 }
-/* Médias/estatísticas do mês na guia Trabalho.
+/* Médias/estatísticas do mês — serve as guias Trabalho e Pessoal (mesma estrutura ida/volta).
    Só conta trechos realmente preenchidos — um dia sem volta não puxa a média da volta pra baixo. */
-function uberStatsMes(rows){
+function uberStatsMes(rows,mod){
+  const isP = mod==='pessoal';
   const st={kmTotal:0,valor:0,litros:0,kwh:0,
     kmIdaSoma:0,kmIdaN:0,kmVoltaSoma:0,kmVoltaN:0,
     valorCombSoma:0,valorCombN:0,valorKwhSoma:0,valorKwhN:0};
   (rows||[]).forEach(r=>{
-    const c=rowCalc(r);
+    const c=isP?rowCalcP(r):rowCalc(r);
     st.kmTotal+=(r.kmIda||0)+(r.kmVolta||0);
-    st.valor+=c.gastoTrabalho;
-    st.litros+=c.trabLitros;
-    st.kwh+=c.trabKwh;
+    st.valor+=isP?c.gastoDia:c.gastoTrabalho;
+    st.litros+=isP?c.litros:c.trabLitros;
+    st.kwh+=isP?c.kwh:c.trabKwh;
     if((r.kmIda||0)>0){ st.kmIdaSoma+=r.kmIda; st.kmIdaN++; }
     if((r.kmVolta||0)>0){ st.kmVoltaSoma+=r.kmVolta; st.kmVoltaN++; }
-    // preço médio pago por litro / por kWh (média dos trechos, ponderada pela qtda)
+    // preço médio pago por litro / por kWh (ponderado pela quantidade de cada trecho)
     [['tipoIda','qtdaIda','valorIda'],['tipoVolta','qtdaVolta','valorVolta']].forEach(([tk,qk,vk])=>{
       const q=r[qk]||0, v=r[vk]||0;
       if(q>0 && v>0){
@@ -2529,7 +2534,7 @@ function uberStatsMes(rows){
       }
     });
   });
-  st.kmPorLitro = st.litros>0 ? st.kmTotal/st.litros : 0;   // considera só o rodado a combustível na prática
+  st.kmPorLitro = st.litros>0 ? st.kmTotal/st.litros : 0;
   st.mediaKmIda = st.kmIdaN>0 ? st.kmIdaSoma/st.kmIdaN : 0;
   st.mediaKmVolta = st.kmVoltaN>0 ? st.kmVoltaSoma/st.kmVoltaN : 0;
   st.precoMedioComb = st.valorCombN>0 ? st.valorCombSoma/st.valorCombN : 0;
@@ -2537,8 +2542,8 @@ function uberStatsMes(rows){
   st.custoPorKm = st.kmTotal>0 ? st.valor/st.kmTotal : 0;
   return st;
 }
-function uStatsPanelHtml(rows){
-  const st=uberStatsMes(rows);
+function uStatsPanelHtml(rows,mod){
+  const st=uberStatsMes(rows,mod);
   if(!rows.length)return '';
   const item=(lbl,val,sub)=>`<div class="ustat"><div class="ustat-lbl">${lbl}</div><div class="ustat-val">${val}</div>${sub?`<div class="ustat-sub">${sub}</div>`:''}</div>`;
   return `<div class="panel" style="padding:14px 16px;margin-bottom:12px">
@@ -2569,7 +2574,7 @@ function uRenderDias(){
   const cardsHtml=rows.length
     ? `<div id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber')).join('')}</div>`
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('uNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows)+cardsHtml;
+  document.getElementById('uNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'uber')+cardsHtml;
 }
 /* card de dia genérico (ida/volta) usado por Trabalho e Pessoal */
 function mobileDayCard(r,i,mod){
@@ -2793,6 +2798,7 @@ function renderOperacao(rows,tot){
 
   renderOpReportCard(rows,tot);
   renderOpWeekly(rows,tot);
+  renderOpStats(rows,tot);
 
   // ---- GRÁFICOS Semanal / Mensal / Últimos 3 meses / Anual / Pizzas ----
   const oc=document.getElementById('opCharts');
@@ -2926,6 +2932,37 @@ function weekRangeLabel(mondayStr){
   const dd=x=>pad(x.getDate()), mm=x=>MESES[x.getMonth()].slice(0,3);
   return start.getMonth()===end.getMonth() ? `${dd(start)} a ${dd(end)} de ${mm(end)}` : `${dd(start)} ${mm(start)} a ${dd(end)} ${mm(end)}`;
 }
+/* ============================================================
+   MÉDIAS DO MÊS — guia Corp (operação com ganhos).
+   Diferente de Trabalho/Pessoal: aqui interessa também o rendimento
+   por corrida/hora/km e o custo real de energia por km rodado.
+   ============================================================ */
+function renderOpStats(rows,tot){
+  const el=document.getElementById('opStats'); if(!el)return;
+  if(!rows.length){ el.innerHTML=''; return; }
+  const diasTrab=rows.filter(r=>{ const c=rowCalc(r); return (r.corridas||0)>0 || c.ganho>0; }).length;
+  const per=(v,b)=>b>0?v/b:0;
+  const litros=tot.qtdaComb||0, kwh=tot.qtdaKwh||0;
+  const km=tot.kmTotal||0, horas=tot.horas||0, viagens=tot.corridas||0;
+  const saldo=tot.ganho-tot.gastoUber;
+  const item=(lbl,val,sub)=>`<div class="ustat"><div class="ustat-lbl">${lbl}</div><div class="ustat-val">${val}</div>${sub?`<div class="ustat-sub">${sub}</div>`:''}</div>`;
+  el.innerHTML=`<div class="panel" style="padding:14px 16px;margin-top:14px">
+    <h2 style="margin:0 0 10px;font-size:14.5px">📊 Médias do mês</h2>
+    <div class="ustat-grid">
+      ${item('🛣️ KM total',fmtN(km,0)+' km','no mês')}
+      ${item('💰 Faturamento',fmt(tot.ganho),fmt(saldo)+' de saldo')}
+      ${litros>0?item('⛽ Média km/l',fmtN(per(km,litros),1),fmtN(litros,1)+' L no mês'):''}
+      ${kwh>0?item('⚡ Média km/kWh',fmtN(per(km,kwh),1),fmtN(kwh,1)+' kWh no mês'):''}
+      ${diasTrab>0?item('📅 Média KM/dia',fmtN(per(km,diasTrab),1)+' km',diasTrab+' dia(s) trabalhado(s)'):''}
+      ${viagens>0?item('🚕 Média KM/viagem',fmtN(per(km,viagens),1)+' km',fmtN(viagens,0)+' viagem(ns)'):''}
+      ${horas>0?item('⏱️ Média KM/hora',fmtN(per(km,horas),1)+' km','em '+fmtN(horas,1)+'h'):''}
+      ${km>0?item('💸 Custo por km',fmt(per(tot.gastoUber,km)),'energia + despesas'):''}
+      ${viagens>0?item('💵 Ganho por viagem',fmt(per(tot.ganho,viagens)),'média'):''}
+      ${horas>0?item('⏳ Ganho por hora',fmt(per(tot.ganho,horas)),'média'):''}
+    </div>
+  </div>`;
+}
+
 function renderOpWeekly(rows,tot){
   const el=document.getElementById('opWeekly'); if(!el)return;
   if(!rows.length){
@@ -4073,6 +4110,7 @@ function renderPessoal(){
       <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.combVal)}</div><div class="k-sub">${fmtN(tot.litros,1)} L</div></div>
       <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">🛣️ Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
       <div class="kpi expense"><div class="k-label">💰 Gasto total</div><div class="k-val">${fmt(tot.gastoDia)}</div><div class="k-sub">no mês · ${fmtN(tot.kmIda+tot.kmVolta,0)} km · ${rows.length} dia(s)</div></div>`;
+    const _ps=document.getElementById('pessoalStats'); if(_ps)_ps.innerHTML=uStatsPanelHtml(rows,'pessoal');
   }
   syncPessoalHbar();
   renderPessoalMobile();
@@ -4156,7 +4194,7 @@ function pRenderDias(){
   const cardsHtml=rows.length
     ? `<div id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal')).join('')}</div>`
     : `<div class="m-empty-state">Nenhum lançamento em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('pNavBody').innerHTML=kpisHtml+cardsHtml;
+  document.getElementById('pNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'pessoal')+cardsHtml;
 }
 
 /* navegação de mês mobile (mantida para compatibilidade — não usada pela navbar de 3 níveis) */
