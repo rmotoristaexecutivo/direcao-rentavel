@@ -908,7 +908,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       </div>
     </div>
     <div class="actions">
-      <span id="syncBadge" class="sync-badge off" title="Status da sincronização com a nuvem"></span>
+      <span id="syncBadge" class="sync-badge off" style="cursor:pointer" onclick="forceSyncNow()" title="Status da sincronização — toque para sincronizar agora"></span>
       <button class="btn" id="themeBtn" onclick="toggleTheme()">🌙 Escuro</button>
       <button class="btn" onclick="exportJSON()">⬇ Exportar JSON</button>
       <button class="btn" onclick="document.getElementById('imp').click()">⬆ Importar JSON</button>
@@ -4989,6 +4989,8 @@ function jsHash(str){
 function setSyncBadge(status){
   // status: 'synced' | 'pending' | 'error' | 'off'
   const el=document.getElementById('syncBadge'); if(!el)return;
+  // o selo nunca mente: se ainda existe pendência gravada no aparelho, não mostra "Sincronizado"
+  if(status==='synced' && localDirty()) status='pending';
   const map={
     synced:{txt:'☁️ Sincronizado',cls:'sync-badge synced'},
     pending:{txt:'☁️ Salvando…',cls:'sync-badge pending'},
@@ -4997,7 +4999,69 @@ function setSyncBadge(status){
   };
   const m=map[status]||map.off;
   el.textContent=m.txt; el.className=m.cls;
+  if(status==='error')el.title='Há dados que ainda não subiram para a nuvem. Toque para tentar enviar agora.';
+  else if(status==='pending')el.title='Enviando para a nuvem… Toque para forçar o envio.';
+  else el.title='Tudo salvo na nuvem. Toque para verificar agora.';
 }
+/* toque no selo: força o envio do que estiver pendente (ou confere a nuvem, se não houver nada) */
+function forceSyncNow(){
+  if(!_syncKey){ toast('Sem conexão com a nuvem ainda'); return; }
+  if(_dirty||localDirty()){
+    toast('Enviando para a nuvem…');
+    flushToCloud(false).then(()=>{ if(!localDirty())toast('✅ Tudo sincronizado'); else toast('⚠️ Ainda não foi possível enviar — verifique a conexão'); });
+  } else {
+    toast('Verificando a nuvem…');
+    reconcileWithCloud().then(()=>toast('✅ Tudo sincronizado'));
+  }
+}
+/* ===== MARCA DE "NÃO ENVIADO" QUE SOBREVIVE AO FECHAR O APP =====
+   Antes, se um envio falhava (sem sinal, app fechado rápido), o dado ficava só no
+   aparelho — e na abertura seguinte o app puxava a nuvem e SOBRESCREVIA esse dado,
+   apagando o que você tinha lançado. Agora a pendência fica gravada no próprio
+   aparelho: mesmo fechando o app, ele lembra que tem coisa pra enviar e NUNCA
+   deixa a nuvem sobrescrever trabalho local não enviado. */
+const DIRTY_KEY='cv_dirty', LOCAL_AT_KEY='cv_local_updated', BACKUP_KEY='cv_conflict_backup';
+function localDirty(){ try{ return localStorage.getItem(DIRTY_KEY)==='1'; }catch(e){ return false; } }
+function localUpdatedAt(){ try{ return localStorage.getItem(LOCAL_AT_KEY)||null; }catch(e){ return null; } }
+function markLocalDirty(){
+  try{ localStorage.setItem(DIRTY_KEY,'1'); localStorage.setItem(LOCAL_AT_KEY,new Date().toISOString()); }catch(e){}
+}
+function markLocalClean(iso){
+  try{ localStorage.setItem(DIRTY_KEY,'0'); if(iso)localStorage.setItem(LOCAL_AT_KEY,iso); }catch(e){}
+}
+/* guarda uma cópia do estado local antes de qualquer sobrescrita arriscada */
+function backupLocalState(reason){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(!raw)return;
+    localStorage.setItem(BACKUP_KEY,JSON.stringify({at:new Date().toISOString(),reason,data:JSON.parse(raw)}));
+  }catch(e){}
+}
+function restoreConflictBackup(){
+  try{
+    const raw=localStorage.getItem(BACKUP_KEY); if(!raw){ alert('Não há cópia local guardada.'); return; }
+    const bk=JSON.parse(raw); if(!bk||!bk.data){ alert('Não há cópia local guardada.'); return; }
+    if(!confirm('Restaurar a cópia local guardada? Isso substitui os dados atuais deste aparelho e envia para a nuvem.'))return;
+    state=hydrate(bk.data)||bk.data;
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(typeof _reRenderAll==='function')_reRenderAll();
+    _dirty=true; markLocalDirty();
+    flushToCloud(false);
+    toast('Cópia local restaurada');
+  }catch(e){ alert('Não foi possível restaurar a cópia.'); }
+}
+/* aplica o estado vindo da nuvem sobre o local (só deve ser chamado quando é seguro) */
+function applyRemoteState(remoteData,remoteAt){
+  _applyingRemote=true;
+  state=hydrate(remoteData)||remoteData;
+  localStorage.setItem(KEY,JSON.stringify(state));
+  _lastSyncedAt=remoteAt;
+  _dirty=false; markLocalClean(remoteAt);
+  if(typeof _reRenderAll==='function') _reRenderAll();
+  setSyncBadge('synced');
+  _applyingRemote=false;
+}
+
 /* Envia o estado atual pro Supabase via REST direto (não depende do SDK), com keepalive:true —
    isso garante que a requisição sobrevive ao fechamento da aba/navegador, resolvendo o caso em
    que uma edição feita pouco antes de fechar o app não chegava a sincronizar. */
@@ -5019,19 +5083,56 @@ async function flushToCloud(useKeepalive){
       body:JSON.stringify(payload)
     });
     if(!res.ok) throw new Error('sync http '+res.status);
-    _dirty=false; _syncing=false; _lastSyncedAt=nowIso; setSyncBadge('synced');
+    _dirty=false; _syncing=false; _lastSyncedAt=nowIso;
+    markLocalClean(nowIso);            // só limpa a pendência DEPOIS de confirmar que subiu
+    setSyncBadge('synced');
   }catch(e){
     _syncing=false; setSyncBadge('error');
-    // não limpa _dirty — tenta de novo na próxima alteração ou no próximo flush
+    // mantém _dirty e a marca persistida: tenta de novo depois, e a nuvem não vai sobrescrever
   }
 }
 function scheduleCloudSync(){
+  if(_applyingRemote)return;   // não marca como "sujo" o que acabou de vir da nuvem
   _dirty=true;
+  markLocalDirty();            // grava a pendência no aparelho (sobrevive a fechar o app)
   if(!_syncKey)return;
-  if(_applyingRemote)return; // não re-empurra o que acabou de vir da nuvem
   setSyncBadge('pending');
   clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>flushToCloud(false),800);
+}
+
+/* RECONCILIAÇÃO NA ABERTURA — decide com segurança entre local e nuvem.
+   Regra de ouro: dado local não enviado NUNCA é descartado silenciosamente. */
+async function reconcileWithCloud(){
+  if(!_syncKey)return;
+  const sb=getSb(); if(!sb){ setSyncBadge('error'); return; }
+  try{
+    const {data,error}=await sb.from('app_state').select('data,updated_at').eq('id',_syncKey).maybeSingle();
+    if(error) throw error;
+    const hasRemote=!!(data && data.data);
+    const remoteAt=(data && data.updated_at)?data.updated_at:null;
+    const dirty=localDirty();
+    const locAt=localUpdatedAt();
+
+    if(!hasRemote){                       // nuvem vazia -> sobe o que temos aqui
+      _dirty=true; await flushToCloud(false); return;
+    }
+    if(dirty){                            // há trabalho local que nunca subiu
+      if(!remoteAt || !locAt || locAt>=remoteAt){
+        _dirty=true; await flushToCloud(false);
+        toast('☁️ Enviamos alterações que estavam pendentes neste aparelho');
+        return;
+      }
+      // conflito real: a nuvem está mais nova E há pendência local -> guarda cópia antes
+      backupLocalState('remoto-mais-novo');
+      applyRemoteState(data.data,remoteAt);
+      toast('⚠️ Havia alterações locais não enviadas — guardamos uma cópia','↺ Restaurar',restoreConflictBackup);
+      return;
+    }
+    // local limpo -> pode aplicar a nuvem tranquilamente
+    if(!_lastSyncedAt || (remoteAt && remoteAt!==_lastSyncedAt)) applyRemoteState(data.data,remoteAt);
+    else setSyncBadge('synced');
+  }catch(e){ setSyncBadge('error'); }
 }
 
 /* PULL: busca o estado da nuvem e aplica SE for mais recente que o nosso e não houver
@@ -5041,8 +5142,10 @@ let _reRenderAll=null; // setado no initApp
 async function pullFromCloud(force){
   if(!_syncKey) return;
   if(_syncing) return;
-  // se há edição local ainda não enviada, prioriza enviar (evita perder digitação); só puxa se não estiver dirty
-  if(_dirty && !force){ return; }
+  // REGRA DE SEGURANÇA: se há qualquer alteração local ainda não enviada, o certo é
+  // ENVIAR — nunca puxar por cima. Antes, o "force" furava essa proteção e apagava
+  // lançamentos que ainda não tinham subido. Agora não fura mais.
+  if(_dirty || localDirty()){ flushToCloud(false); return; }
   try{
     const sb=getSb(); if(!sb) return;
     const {data,error}=await sb.from('app_state').select('data,updated_at').eq('id',_syncKey).maybeSingle();
@@ -5051,16 +5154,7 @@ async function pullFromCloud(force){
     // aplica se: ainda não temos carimbo, ou o remoto é estritamente mais novo que o nosso
     const isNewer = !_lastSyncedAt || (remoteAt && remoteAt>_lastSyncedAt);
     if(!isNewer) return;
-    // não sobrescreve se o usuário tem alteração local pendente (a menos de force)
-    if(_dirty && !force) return;
-    _applyingRemote=true;
-    state=hydrate(data.data)||data.data;
-    localStorage.setItem(KEY,JSON.stringify(state));
-    _lastSyncedAt=remoteAt;
-    _dirty=false;
-    if(typeof _reRenderAll==='function') _reRenderAll();
-    setSyncBadge('synced');
-    _applyingRemote=false;
+    applyRemoteState(data.data,remoteAt);
     toast('🔄 Atualizado a partir dos seus outros aparelhos');
   }catch(e){ /* silencioso — tenta de novo no próximo ciclo */ }
 }
@@ -5071,8 +5165,8 @@ function startCloudPull(){
   // e sempre que o app voltar ao foco (trocar de aba/abrir o app)
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pullFromCloud(false); });
   window.addEventListener('focus',()=>pullFromCloud(false));
-  // primeiro pull logo após logar
-  setTimeout(()=>pullFromCloud(true),1500);
+  // primeira sincronização após logar: reconcilia com segurança (nunca descarta local pendente)
+  setTimeout(()=>reconcileWithCloud(),1500);
 }
 // flush imediato (sem esperar o debounce) sempre que a aba for escondida/fechada/minimizada —
 // é o que resolve dados digitados e a aba fechada em seguida sem dar tempo do debounce disparar
@@ -5095,17 +5189,21 @@ async function doLogin(){
     const{data,error}=await sb.from('app_state').select('data,updated_at').eq('id',syncId).maybeSingle();
     if(error) throw error;
     if(data && data.data){
-      // já existe um registro na nuvem com essa chave -> usa ele (mais recente que o local)
-      // normaliza (hydrate) pois o registro pode ser de uma versão anterior sem alguns buckets/campos
+      // já existe um registro na nuvem com essa chave -> usa ele.
+      // Antes de sobrescrever, guarda uma cópia do estado local — se havia algo aqui que
+      // ainda não tinha subido, ele não se perde e pode ser restaurado.
+      backupLocalState('troca-de-codigo');
       state=hydrate(data.data)||data.data;
       localStorage.setItem(KEY,JSON.stringify(state));
       _lastSyncedAt=data.updated_at||new Date().toISOString();
+      markLocalClean(_lastSyncedAt);
       msg.textContent='Bem-vindo de volta! Dados sincronizados.'; msg.className='login-msg ok';
     } else {
       // chave nova -> sobe o estado atual (local) como ponto de partida
       const nowIso=new Date().toISOString();
       await sb.from('app_state').upsert({id:syncId,data:state,updated_at:nowIso});
       _lastSyncedAt=nowIso;
+      markLocalClean(nowIso);
       msg.textContent='Acesso criado! Use essa mesma chave nos outros aparelhos.'; msg.className='login-msg ok';
     }
     _syncKey=syncId;
@@ -5129,8 +5227,8 @@ async function doLogin(){
     document.getElementById('mainWrap').style.display='block';
     initApp();
     startCloudPull();
-    // quando a conexão voltar, empurra o que estiver pendente e puxa novidades
-    window.addEventListener('online',()=>{ if(_dirty)flushToCloud(false); pullFromCloud(true); }, {once:true});
+    // quando a conexão voltar, empurra o que estiver pendente (ou puxa, se nada pendente)
+    window.addEventListener('online',()=>{ if(_dirty||localDirty())flushToCloud(false); else reconcileWithCloud(); }, {once:true});
   }
 }
 function logout(){
@@ -5196,25 +5294,15 @@ function genDeviceKey(){
     (async()=>{
       try{
         _syncKey=await hashKey(key);
-        const sb=getSb();
-        if(sb){
-          const {data}=await sb.from('app_state').select('data,updated_at').eq('id',_syncKey).maybeSingle();
-          if(data && data.data){
-            state=hydrate(data.data)||data.data;
-            localStorage.setItem(KEY,JSON.stringify(state));
-            _lastSyncedAt=data.updated_at||new Date().toISOString();
-            if(typeof _reRenderAll==='function')_reRenderAll();
-          }else{
-            // chave nova na nuvem: sobe o estado atual como ponto de partida
-            const nowIso=new Date().toISOString();
-            await sb.from('app_state').upsert({id:_syncKey,data:state,updated_at:nowIso});
-            _lastSyncedAt=nowIso;
-          }
-          _dirty=false; setSyncBadge('synced');
-        }
+        // AQUI ficava o bug que apagava lançamentos: o app puxava a nuvem e sobrescrevia
+        // o estado local sem checar se havia algo local ainda não enviado. Agora quem decide
+        // é o reconcileWithCloud(), que só aplica a nuvem quando é seguro — e, se houver
+        // pendência local, envia o local em vez de descartá-lo.
+        _dirty=localDirty();
+        await reconcileWithCloud();
       }catch(e){ setSyncBadge('error'); }
       startCloudPull();
-      window.addEventListener('online',()=>{ if(_dirty)flushToCloud(false); pullFromCloud(true); });
+      window.addEventListener('online',()=>{ if(_dirty||localDirty())flushToCloud(false); else pullFromCloud(false); });
     })();
   }
   setTimeout(connect,30);
