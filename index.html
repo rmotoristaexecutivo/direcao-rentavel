@@ -938,6 +938,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button class="btn" onclick="exportJSON()">⬇ Exportar JSON</button>
       <button class="btn" onclick="document.getElementById('imp').click()">⬆ Importar JSON</button>
       <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
+      <button class="btn" onclick="openHistoryModal()">🕘 Histórico</button>
       <button class="btn" onclick="openSyncKeyModal()">🔑 Código de sincronização</button>
       <button class="btn danger" onclick="resetAll()">↺ Zerar</button>
       <!-- botão de menu compacto (só mobile) -->
@@ -952,6 +953,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button onclick="toggleTheme()">🌙 <span id="hdrThemeLbl">Tema escuro/claro</span></button>
       <button onclick="exportJSON();closeHdrMenu()">⬇ Exportar backup (JSON)</button>
       <button onclick="document.getElementById('imp').click();closeHdrMenu()">⬆ Importar backup (JSON)</button>
+      <button onclick="openHistoryModal();closeHdrMenu()">🕘 Histórico de versões (recuperar dados)</button>
       <button onclick="openSyncKeyModal();closeHdrMenu()">🔑 Código de sincronização</button>
       <button class="danger" onclick="resetAll()">↺ Zerar tudo</button>
       <button class="cancel" onclick="closeHdrMenu()">Fechar</button>
@@ -1466,6 +1468,20 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <div class="modal-foot">
         <button class="btn" onclick="closeAddDateModal()">Cancelar</button>
         <button class="btn primary" onclick="confirmAddDate()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: HISTÓRICO DE VERSÕES (recuperar dados perdidos) ===== -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-head">
+        <h3>🕘 Histórico de versões</h3>
+        <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <div class="modal-body" id="historyBody"></div>
+      <div class="modal-foot">
+        <button class="btn" onclick="closeHistoryModal()">Fechar</button>
       </div>
     </div>
   </div>
@@ -4545,12 +4561,13 @@ function exportJSON(){
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const rd=new FileReader();
-  rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s.finance&&s.uber){if(!s.compare)s.compare=JSON.parse(JSON.stringify(defaultState.compare));if(!s.daily)s.daily=JSON.parse(JSON.stringify(defaultState.daily));if(!s.despesas)s.despesas={};if(!s.pessoal)s.pessoal=JSON.parse(JSON.stringify(defaultState.pessoal));if(!s.abastecimentos)s.abastecimentos=JSON.parse(JSON.stringify(defaultState.abastecimentos));state=s;save();renderFinanceInputs();renderFinance();renderUber();renderPessoal();renderAbastecimento();renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();renderResumo();toast('Dados importados');}else alert('Arquivo inválido.');}catch(err){alert('Erro ao ler o arquivo.');}};
+  rd.onload=()=>{try{const s=JSON.parse(rd.result);if(s.finance&&s.uber){if(!s.compare)s.compare=JSON.parse(JSON.stringify(defaultState.compare));if(!s.daily)s.daily=JSON.parse(JSON.stringify(defaultState.daily));if(!s.despesas)s.despesas={};if(!s.pessoal)s.pessoal=JSON.parse(JSON.stringify(defaultState.pessoal));if(!s.abastecimentos)s.abastecimentos=JSON.parse(JSON.stringify(defaultState.abastecimentos));state=s;_forcePush=true;save();renderFinanceInputs();renderFinance();renderUber();renderPessoal();renderAbastecimento();renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();renderResumo();toast('Dados importados');}else alert('Arquivo inválido.');}catch(err){alert('Erro ao ler o arquivo.');}};
   rd.readAsText(file);e.target.value='';
 }
 function resetAll(){
   if(!confirm('Isso apaga TODOS os dados e volta aos valores iniciais. Continuar?'))return;
-  state=JSON.parse(JSON.stringify(defaultState));save();
+  pushSnapshot('antes-de-zerar');
+  state=JSON.parse(JSON.stringify(defaultState));_forcePush=true;save();
   renderFinanceInputs();renderFinance();renderUber();renderPessoal();renderAbastecimento();renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();renderResumo();toast('Dados reiniciados');
 }
 
@@ -5058,6 +5075,7 @@ applyTheme(localStorage.getItem('cv_theme')||'dark');
 
 function initApp(){
   syncHeaderHeight();
+  pushSnapshot('abertura');   // fotografa o estado ANTES de qualquer sincronização
   // usado pelo pull automático pra repintar tudo quando chegam dados novos da nuvem
   _reRenderAll=function(){
     renderFinanceInputs();renderFinance();renderUberCfg();renderUber();
@@ -5178,13 +5196,108 @@ function restoreConflictBackup(){
     state=hydrate(bk.data)||bk.data;
     localStorage.setItem(KEY,JSON.stringify(state));
     if(typeof _reRenderAll==='function')_reRenderAll();
-    _dirty=true; markLocalDirty();
+    _dirty=true; markLocalDirty(); _forcePush=true;
     flushToCloud(false);
     toast('Cópia local restaurada');
   }catch(e){ alert('Não foi possível restaurar a cópia.'); }
 }
 /* aplica o estado vindo da nuvem sobre o local (só deve ser chamado quando é seguro) */
+/* ===== CONTAGEM DE LANÇAMENTOS (usada como "peso" do estado) =====
+   Serve para detectar perda: se um estado que vai substituir outro tem MUITO menos
+   lançamentos, algo está errado — guardamos cópia e avisamos em vez de aceitar calado. */
+function countEntries(s){
+  if(!s)return 0;
+  let n=0;
+  try{
+    const um=(s.uber&&s.uber.months)||{};
+    Object.keys(um).forEach(k=>(um[k]||[]).forEach(r=>{
+      n++; n+=((r.ganhos||[]).length)+((r.gastosExtra||[]).length);
+    }));
+    const pm=(s.pessoal&&s.pessoal.months)||{};
+    Object.keys(pm).forEach(k=>{ n+=(pm[k]||[]).length; });
+    const am=(s.abastecimentos&&s.abastecimentos.months)||{};
+    Object.keys(am).forEach(k=>{ n+=(am[k]||[]).length; });
+    const d=s.despesas||{};
+    Object.keys(d).forEach(k=>{ n+=Object.keys(d[k]||{}).length; });
+  }catch(e){}
+  return n;
+}
+
+/* ===== HISTÓRICO AUTOMÁTICO (as últimas versões dos seus dados, guardadas no aparelho) =====
+   Toda vez que os dados mudam de verdade, guardamos uma cópia. Se algo sumir por qualquer
+   motivo (bug, conflito entre aparelhos, engano), dá pra voltar em 2 toques. */
+const SNAP_KEY='cv_snapshots', SNAP_MAX=12;
+function pushSnapshot(reason){
+  try{
+    const raw=localStorage.getItem(KEY); if(!raw)return;
+    const data=JSON.parse(raw);
+    const cnt=countEntries(data);
+    if(cnt===0)return;                       // não guarda estado vazio
+    let list=[];
+    try{ list=JSON.parse(localStorage.getItem(SNAP_KEY)||'[]'); }catch(e){ list=[]; }
+    const last=list[0];
+    // não duplica se nada mudou desde o último snapshot
+    if(last && last.count===cnt && JSON.stringify(last.data)===raw)return;
+    list.unshift({at:new Date().toISOString(),reason:reason||'auto',count:cnt,data});
+    list=list.slice(0,SNAP_MAX);
+    localStorage.setItem(SNAP_KEY,JSON.stringify(list));
+  }catch(e){ /* espaço cheio: ignora silenciosamente */ }
+}
+function getSnapshots(){
+  try{ return JSON.parse(localStorage.getItem(SNAP_KEY)||'[]'); }catch(e){ return []; }
+}
+function restoreSnapshot(i){
+  const list=getSnapshots(); const s=list[i]; if(!s)return;
+  const atual=countEntries(state);
+  if(!confirm(`Restaurar a versão de ${new Date(s.at).toLocaleString('pt-BR')} (${s.count} lançamentos)?\n\nA versão atual tem ${atual} lançamentos e será substituída (mas fica guardada no histórico).`))return;
+  pushSnapshot('antes-de-restaurar');
+  state=hydrate(s.data)||s.data;
+  localStorage.setItem(KEY,JSON.stringify(state));
+  if(typeof _reRenderAll==='function')_reRenderAll();
+  _dirty=true; markLocalDirty(); _forcePush=true; flushToCloud(false);
+  closeHistoryModal();
+  toast('✅ Versão restaurada e enviada para a nuvem');
+}
+function openHistoryModal(){
+  const list=getSnapshots();
+  const atual=countEntries(state);
+  const body=document.getElementById('historyBody');
+  if(!list.length){
+    body.innerHTML=`<p class="sub" style="margin:0">Ainda não há versões guardadas neste aparelho. Elas passam a ser criadas automaticamente conforme você usa o app.</p>`;
+  } else {
+    body.innerHTML=`
+      <p class="sub" style="margin:0 0 10px">Versão atual: <b>${atual} lançamentos</b>. Se algo sumiu, restaure uma versão anterior — a atual fica guardada.</p>
+      ${list.map((s,i)=>{
+        const dt=new Date(s.at).toLocaleString('pt-BR');
+        const diff=s.count-atual;
+        const tag = diff>0 ? `<span style="color:var(--gain);font-weight:700">+${diff} a mais</span>` : (diff<0?`<span style="color:var(--txt-faint)">${diff}</span>`:`<span style="color:var(--txt-faint)">igual</span>`);
+        return `<div class="lanc-row" style="cursor:pointer" onclick="restoreSnapshot(${i})">
+          <span class="lanc-mid"><b style="color:var(--txt)">${dt}</b><br><span style="font-size:11.5px">${s.count} lançamentos · ${tag}</span></span>
+          <span class="lanc-val" style="color:var(--electric);font-size:13px">↺ Restaurar</span>
+        </div>`;
+      }).join('')}`;
+  }
+  document.getElementById('historyModal').classList.add('open');
+}
+function closeHistoryModal(){ document.getElementById('historyModal').classList.remove('open'); }
+
 function applyRemoteState(remoteData,remoteAt){
+  // GUARDA CONTRA PERDA: se a nuvem tem MENOS lançamentos que este aparelho, isso é suspeito
+  // (pode ser um aparelho desatualizado que sobrescreveu a nuvem). Guardamos cópia e avisamos.
+  const localCount=countEntries(state), remoteCount=countEntries(remoteData);
+  if(localCount>remoteCount && localCount-remoteCount>=1){
+    pushSnapshot('antes-de-aplicar-nuvem-menor');
+    backupLocalState('nuvem-tinha-menos-dados');
+    _applyingRemote=true;
+    state=hydrate(remoteData)||remoteData;
+    localStorage.setItem(KEY,JSON.stringify(state));
+    _lastSyncedAt=remoteAt; _dirty=false; markLocalClean(remoteAt);
+    if(typeof _reRenderAll==='function') _reRenderAll();
+    setSyncBadge('synced');
+    _applyingRemote=false;
+    toast(`⚠️ A nuvem tinha ${remoteCount} lançamentos e este aparelho tinha ${localCount}`,'↺ Ver histórico',openHistoryModal);
+    return;
+  }
   _applyingRemote=true;
   state=hydrate(remoteData)||remoteData;
   localStorage.setItem(KEY,JSON.stringify(state));
@@ -5193,13 +5306,52 @@ function applyRemoteState(remoteData,remoteAt){
   if(typeof _reRenderAll==='function') _reRenderAll();
   setSyncBadge('synced');
   _applyingRemote=false;
+  pushSnapshot('vindo-da-nuvem');
 }
 
-/* Envia o estado atual pro Supabase via REST direto (não depende do SDK), com keepalive:true —
-   isso garante que a requisição sobrevive ao fechamento da aba/navegador, resolvendo o caso em
-   que uma edição feita pouco antes de fechar o app não chegava a sincronizar. */
+let _forcePush=false;        // só fica true quando VOCÊ manda substituir (zerar, restaurar versão)
+let _lastRemoteCount=null;   // quantos lançamentos a nuvem tinha na última vez que olhamos
+
+/* lê o estado atual da nuvem (sem aplicar) — usado para conferir antes de enviar */
+async function remoteSnapshot(){
+  try{
+    const sb=getSb(); if(!sb) return null;
+    const {data,error}=await sb.from('app_state').select('data,updated_at').eq('id',_syncKey).maybeSingle();
+    if(error) return null;
+    if(!data || !data.data) return null;
+    const snap={data:data.data,at:data.updated_at||null,count:countEntries(data.data)};
+    _lastRemoteCount=snap.count;
+    return snap;
+  }catch(e){ return null; }
+}
+
+/* Envia o estado atual pro Supabase.
+   GUARDA CENTRAL: um estado com MENOS lançamentos nunca sobrescreve a nuvem sozinho.
+   Era exatamente isso que apagava seus dados — um aparelho com estado defasado (ou recém-aberto,
+   ainda vazio) empurrava esse vazio por cima do que estava salvo. Agora o envio é BLOQUEADO
+   nesse caso, uma cópia é guardada e você é avisado. */
 async function flushToCloud(useKeepalive){
   if(!_syncKey || !_dirty) return;
+  const localCount=countEntries(state);
+
+  if(!_forcePush){
+    if(useKeepalive){
+      // fechando a página: não dá tempo de consultar a nuvem — usa a última contagem conhecida
+      if(_lastRemoteCount!=null && localCount<_lastRemoteCount){
+        pushSnapshot('envio-bloqueado-ao-fechar');
+        return;   // mantém a pendência; ao reabrir, o app reconcilia com calma
+      }
+    } else {
+      const rem=await remoteSnapshot();
+      if(rem && rem.count>localCount){
+        pushSnapshot('antes-de-envio-bloqueado');
+        _syncing=false; setSyncBadge('error');
+        toast(`⚠️ Envio bloqueado: a nuvem tem ${rem.count} lançamentos e este aparelho só ${localCount}`,'↺ Ver histórico',openHistoryModal);
+        return;
+      }
+    }
+  }
+
   _syncing=true; setSyncBadge('pending');
   const nowIso=new Date().toISOString();
   const payload=[{id:_syncKey,data:state,updated_at:nowIso}];
@@ -5217,8 +5369,11 @@ async function flushToCloud(useKeepalive){
     });
     if(!res.ok) throw new Error('sync http '+res.status);
     _dirty=false; _syncing=false; _lastSyncedAt=nowIso;
+    _lastRemoteCount=localCount;
     markLocalClean(nowIso);            // só limpa a pendência DEPOIS de confirmar que subiu
+    pushSnapshot('enviado');           // guarda esta versão no histórico do aparelho
     setSyncBadge('synced');
+    _forcePush=false;
   }catch(e){
     _syncing=false; setSyncBadge('error');
     // mantém _dirty e a marca persistida: tenta de novo depois, e a nuvem não vai sobrescrever
@@ -5246,23 +5401,42 @@ async function reconcileWithCloud(){
     const remoteAt=(data && data.updated_at)?data.updated_at:null;
     const dirty=localDirty();
     const locAt=localUpdatedAt();
+    const localCount=countEntries(state);
+    const remoteCount=hasRemote?countEntries(data.data):0;
+    if(hasRemote)_lastRemoteCount=remoteCount;
 
-    if(!hasRemote){                       // nuvem vazia -> sobe o que temos aqui
-      _dirty=true; await flushToCloud(false); return;
+    if(!hasRemote){                       // nuvem vazia
+      if(localCount===0){ setSyncBadge('synced'); return; }   // nada aqui também: não faz nada
+      _dirty=true; await flushToCloud(false); return;         // sobe o que temos
     }
-    if(dirty){                            // há trabalho local que nunca subiu
+
+    // REGRA CENTRAL: quem tem MAIS lançamentos manda. Isso impede que um aparelho
+    // defasado (ou recém-aberto, ainda vazio) apague o que já estava salvo.
+    if(localCount>remoteCount){
+      pushSnapshot('local-tem-mais-que-nuvem');
+      _dirty=true; await flushToCloud(false);
+      toast(`☁️ Este aparelho tinha ${localCount} lançamentos e a nuvem ${remoteCount} — enviamos os seus`);
+      return;
+    }
+    if(remoteCount>localCount){
+      if(localCount>0)pushSnapshot('antes-de-receber-nuvem-maior');
+      applyRemoteState(data.data,remoteAt);
+      return;
+    }
+
+    // mesma quantidade: decide pelo mais recente, respeitando pendência local
+    if(dirty){
       if(!remoteAt || !locAt || locAt>=remoteAt){
         _dirty=true; await flushToCloud(false);
         toast('☁️ Enviamos alterações que estavam pendentes neste aparelho');
         return;
       }
-      // conflito real: a nuvem está mais nova E há pendência local -> guarda cópia antes
       backupLocalState('remoto-mais-novo');
+      pushSnapshot('antes-de-aplicar-remoto-mais-novo');
       applyRemoteState(data.data,remoteAt);
       toast('⚠️ Havia alterações locais não enviadas — guardamos uma cópia','↺ Restaurar',restoreConflictBackup);
       return;
     }
-    // local limpo -> pode aplicar a nuvem tranquilamente
     if(!_lastSyncedAt || (remoteAt && remoteAt!==_lastSyncedAt)) applyRemoteState(data.data,remoteAt);
     else setSyncBadge('synced');
   }catch(e){ setSyncBadge('error'); }
@@ -5326,6 +5500,7 @@ async function doLogin(){
       // Antes de sobrescrever, guarda uma cópia do estado local — se havia algo aqui que
       // ainda não tinha subido, ele não se perde e pode ser restaurado.
       backupLocalState('troca-de-codigo');
+      pushSnapshot('antes-de-trocar-codigo');
       state=hydrate(data.data)||data.data;
       localStorage.setItem(KEY,JSON.stringify(state));
       _lastSyncedAt=data.updated_at||new Date().toISOString();
