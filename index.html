@@ -2409,7 +2409,8 @@ function rowCalc(r){
   const totalIda=qIda*(r.valorIda||0);                      // Qtda × Valor
   const totalVolta=qVolta*(r.valorVolta||0);
   const pedagioTotal=(r.pedagioIda||0)+(r.pedagioVolta||0);
-  const gastoTrabalho=totalIda+totalVolta+pedagioTotal;      // ida + volta + pedágio
+  const manutTrab=r.manutUber||0;                           // manutenção marcada como "Trabalho"
+  const gastoTrabalho=totalIda+totalVolta+pedagioTotal+manutTrab;      // ida + volta + pedágio + manut. trabalho
   const trabKwh=(r.tipoIda==='el'?qIda:0)+(r.tipoVolta==='el'?qVolta:0);   // kWh do trabalho
   const trabLitros=(r.tipoIda!=='el'?qIda:0)+(r.tipoVolta!=='el'?qVolta:0); // litros do trabalho
   const trabEl=(r.tipoIda==='el'?totalIda:0)+(r.tipoVolta==='el'?totalVolta:0);
@@ -2422,12 +2423,12 @@ function rowCalc(r){
   const lucro=ganho-gastoUber;                             // Resultado da operação Uber (não abate o trabalho)
   const kmTotal=r.kmTotal||0;
   const custoKm=kmTotal>0?(totalKwh+totalComb)/kmTotal:0;
-  return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,gastoTrabalho,trabKwh,trabLitros,trabEl,trabComb,totalKwh,totalComb,gastoUber,despesa,ganho,lucro,kmTotal,custoKm};
+  return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,manutTrab,gastoTrabalho,trabKwh,trabLitros,trabEl,trabComb,totalKwh,totalComb,gastoUber,despesa,ganho,lucro,kmTotal,custoKm};
 }
 function monthTotals(rows){
-  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioTotal:0,trabKwh:0,trabLitros:0,trabEl:0,trabComb:0,corridas:0,kmTotal:0,horas:0,qtdaKwh:0,totalKwh:0,qtdaComb:0,totalComb:0,combExtra:0,alim:0,manut:0,gastoUber:0,gastoTrabalho:0,uber:0,g99:0,indriver:0,part:0,ifood:0,shopee:0,mercadoLivre:0,despesa:0,ganho:0,lucro:0};
+  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioTotal:0,manutTrab:0,trabKwh:0,trabLitros:0,trabEl:0,trabComb:0,corridas:0,kmTotal:0,horas:0,qtdaKwh:0,totalKwh:0,qtdaComb:0,totalComb:0,combExtra:0,alim:0,manut:0,gastoUber:0,gastoTrabalho:0,uber:0,g99:0,indriver:0,part:0,ifood:0,shopee:0,mercadoLivre:0,despesa:0,ganho:0,lucro:0};
   rows.forEach(r=>{const c=rowCalc(r);
-    tot.kmIda+=r.kmIda||0;tot.kmVolta+=r.kmVolta||0;tot.totalIda+=c.totalIda;tot.totalVolta+=c.totalVolta;tot.pedagioTotal+=c.pedagioTotal;tot.trabEl+=c.trabEl;tot.trabComb+=c.trabComb;tot.trabKwh+=c.trabKwh;tot.trabLitros+=c.trabLitros;
+    tot.kmIda+=r.kmIda||0;tot.kmVolta+=r.kmVolta||0;tot.totalIda+=c.totalIda;tot.totalVolta+=c.totalVolta;tot.pedagioTotal+=c.pedagioTotal;tot.manutTrab+=c.manutTrab;tot.trabEl+=c.trabEl;tot.trabComb+=c.trabComb;tot.trabKwh+=c.trabKwh;tot.trabLitros+=c.trabLitros;
     tot.corridas+=r.corridas||0;tot.kmTotal+=c.kmTotal;tot.horas+=r.horas||0;tot.qtdaKwh+=r.qtdaKwh||0;tot.totalKwh+=c.totalKwh;tot.qtdaComb+=r.qtdaComb||0;tot.totalComb+=c.totalComb;tot.combExtra+=r.combExtra||0;
     tot.alim+=r.alim||0;tot.manut+=r.manut||0;tot.gastoUber+=c.gastoUber;tot.gastoTrabalho+=c.gastoTrabalho;
     tot.uber+=r.uber||0;tot.g99+=r.g99||0;tot.indriver+=r.indriver||0;tot.part+=r.part||0;tot.ifood+=r.ifood||0;tot.shopee+=r.shopee||0;tot.mercadoLivre+=r.mercadoLivre||0;tot.despesa+=c.despesa;tot.ganho+=c.ganho;tot.lucro+=c.lucro;});
@@ -2515,7 +2516,7 @@ function renderUber(){
       <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
       <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">🛣️ Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
       <div class="kpi clickable expense" onclick="openGastoTotalModal()"><div class="k-label">💰 Gasto total <span style="font-size:11px;opacity:.7">▸ ver detalhe</span></div><div class="k-val">${fmt(tot.gastoTrabalho)}</div><div class="k-sub">no mês · ${fmtN(tot.kmIda+tot.kmVolta,0)} km · ${rows.length} dia(s)</div></div>`;
-    const _us=document.getElementById('uberStats'); if(_us)_us.innerHTML=uStatsPanelHtml(rows,'uber');
+    const _us=document.getElementById('uberStats'); if(_us)_us.innerHTML=manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber');
   }
 
   renderOperacao(rows,tot);
@@ -2617,6 +2618,27 @@ function uberStatsMes(rows,mod){
   st.custoPorKm = st.kmTotal>0 ? st.valor/st.kmTotal : 0;
   return st;
 }
+function manutTrabPanelHtml(rows){
+  // lista as manutenções marcadas como "Trabalho" no mês (espelhadas com manutDestino==='uber')
+  const itens=[];
+  (rows||[]).forEach(r=>(r.gastosExtra||[]).forEach(g=>{
+    if(g.categoria==='Manutenção' && g.manutDestino==='uber'){
+      itens.push({data:r.data,valor:g.valor||0,nome:(g.obs||'Manutenção').replace(/^Manutenção:\s*/,''),forma:g.forma||''});
+    }
+  }));
+  if(!itens.length)return '';
+  itens.sort((a,b)=>a.data.localeCompare(b.data));
+  const total=itens.reduce((s,x)=>s+x.valor,0);
+  return `<div class="panel" style="padding:14px 16px;margin-bottom:12px">
+    <h2 style="margin:0 0 4px;font-size:14.5px">🔧 Manutenção (Trabalho) <span style="font-weight:400;color:var(--txt-dim);font-size:12px">— ${fmt(total)}</span></h2>
+    <p class="sub" style="margin:0 0 10px">Gastos de manutenção que você marcou como Trabalho. Edite/exclua na guia Manutenção.</p>
+    ${itens.map(x=>`<div class="lanc-row">
+      <span class="lanc-date">${fmtDateBR(x.data)}</span>
+      <span class="lanc-mid"><b style="color:var(--txt)">🔧 ${x.nome}</b>${x.forma?` · ${x.forma}`:''}</span>
+      <span class="lanc-val" style="color:var(--expense)">${fmt(x.valor)}</span>
+    </div>`).join('')}
+  </div>`;
+}
 function uStatsPanelHtml(rows,mod){
   const st=uberStatsMes(rows,mod);
   if(!rows.length)return '';
@@ -2649,7 +2671,7 @@ function uRenderDias(){
   const cardsHtml=rows.length
     ? `<div id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber')).join('')}</div>`
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('uNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'uber')+cardsHtml;
+  document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber')+cardsHtml;
 }
 /* card de dia genérico (ida/volta) usado por Trabalho e Pessoal */
 function mobileDayCard(r,i,mod){
@@ -3681,16 +3703,18 @@ function recalcRowFromLists(r){
   r.kmTotal=(r.ganhos||[]).reduce((s,g)=>s+(g.km||0),0);
   r.horas=(r.ganhos||[]).reduce((s,g)=>s+(g.horas||0),0);
   // recalcula gastos extra (categorias livres) — Combustível se divide em elétrico (kWh) e gasolina (litros)
-  let alim=0,manut=0,comb=0,kwh=0;
+  let alim=0,manut=0,comb=0,kwh=0,manutUber=0;
   (r.gastosExtra||[]).forEach(g=>{
     if(g.categoria==='Alimentação')alim+=g.valor||0;
     else if(g.categoria==='Combustível'){
       if(g.tipo==='el')kwh+=g.valor||0;
       else comb+=g.valor||0;
     }
+    // manutenção marcada como "Trabalho" é contabilizada à parte (não entra no gastoUber/Corp)
+    else if(g.categoria==='Manutenção' && g.manutDestino==='uber')manutUber+=g.valor||0;
     else manut+=g.valor||0;
   });
-  r.alim=alim; r.manut=manut; r.combExtra=comb; r.kwhExtra=kwh;
+  r.alim=alim; r.manut=manut; r.combExtra=comb; r.kwhExtra=kwh; r.manutUber=manutUber;
 }
 function saveLancamento(){
   const date=document.getElementById('mData').value;
