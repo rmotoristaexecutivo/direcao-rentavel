@@ -5621,22 +5621,12 @@ function openHistoryModal(){
 function closeHistoryModal(){ document.getElementById('historyModal').classList.remove('open'); }
 
 function applyRemoteState(remoteData,remoteAt){
-  // GUARDA CONTRA PERDA: se a nuvem tem MENOS lançamentos que este aparelho, isso é suspeito
-  // (pode ser um aparelho desatualizado que sobrescreveu a nuvem). Guardamos cópia e avisamos.
+  // Antes de aplicar a nuvem, guarda um snapshot do estado atual — se por acaso a nuvem
+  // vier com menos dados do que devia, você recupera pelo histórico (⋯ → 🕘). Mas NÃO
+  // bloqueamos: um dia excluído em outro aparelho DEVE sumir aqui também (era isso que
+  // fazia o dia 12 "voltar" depois de excluído).
   const localCount=countEntries(state), remoteCount=countEntries(remoteData);
-  if(localCount>remoteCount && localCount-remoteCount>=1){
-    pushSnapshot('antes-de-aplicar-nuvem-menor');
-    backupLocalState('nuvem-tinha-menos-dados');
-    _applyingRemote=true;
-    state=hydrate(remoteData)||remoteData;
-    localStorage.setItem(KEY,JSON.stringify(state));
-    _lastSyncedAt=remoteAt; _dirty=false; markLocalClean(remoteAt);
-    if(typeof _reRenderAll==='function') _reRenderAll();
-    setSyncBadge('synced');
-    _applyingRemote=false;
-    toast(`⚠️ A nuvem tinha ${remoteCount} lançamentos e este aparelho tinha ${localCount}`,'↺ Ver histórico',openHistoryModal);
-    return;
-  }
+  if(localCount>remoteCount)pushSnapshot('antes-de-aplicar-nuvem-menor');
   _applyingRemote=true;
   state=hydrate(remoteData)||remoteData;
   localStorage.setItem(KEY,JSON.stringify(state));
@@ -5645,7 +5635,6 @@ function applyRemoteState(remoteData,remoteAt){
   if(typeof _reRenderAll==='function') _reRenderAll();
   setSyncBadge('synced');
   _applyingRemote=false;
-  pushSnapshot('vindo-da-nuvem');
 }
 
 let _forcePush=false;        // só fica true quando VOCÊ manda substituir (zerar, restaurar versão)
@@ -5674,30 +5663,28 @@ async function flushToCloud(useKeepalive){
   const localCount=countEntries(state);
 
   if(!_forcePush){
-    if(useKeepalive){
-      // fechando a página: não dá tempo de consultar a nuvem — usa a última contagem conhecida
-      if(_lastRemoteCount!=null && localCount<_lastRemoteCount){
-        pushSnapshot('envio-bloqueado-ao-fechar');
-        return;   // mantém a pendência; ao reabrir, o app reconcilia com calma
-      }
-    } else {
-      const rem=await remoteSnapshot();
-      if(rem && rem.count>localCount){
-        // A nuvem tem MAIS lançamentos (ex.: o celular subiu algo que este aparelho ainda não tem).
-        // Em vez de travar, guardamos a edição local, trazemos a nuvem completa, e — se a sua
-        // edição tinha adicionado algo — reaplicamos o merge. O importante: você não fica preso
-        // nem perde o que digitou.
-        pushSnapshot('antes-de-mesclar-nuvem-maior');
-        const merged=mergeStates(rem.data, state);   // base = nuvem; sobrepõe adições locais
+    const rem = useKeepalive ? null : await remoteSnapshot();
+    if(rem){
+      // Comparamos QUANDO cada lado editou por último.
+      // - Se a nuvem NÃO mudou desde a última vez que sincronizamos (remote.at === _lastSyncedAt),
+      //   então tudo que a nuvem tem já veio de nós: podemos sobrescrever à vontade
+      //   (inclui exclusões — o dia que você apagou NÃO volta).
+      // - Se a nuvem mudou (outro aparelho editou depois), aí sim há risco de perder algo:
+      //   mesclamos, e como fallback registramos as exclusões locais pra não reviver o que
+      //   você apagou de propósito.
+      const nuvemMudouDesdeUltimoSync = _lastSyncedAt && rem.at && rem.at!==_lastSyncedAt;
+      const nuvemDesconhecida = !_lastSyncedAt;   // nunca sincronizamos nesta sessão
+      if(nuvemMudouDesdeUltimoSync || (nuvemDesconhecida && rem.count>localCount)){
+        pushSnapshot('antes-de-mesclar-divergencia');
+        const merged=mergeStates(rem.data, state);
         _applyingRemote=true;
         state=hydrate(merged)||merged;
         localStorage.setItem(KEY,JSON.stringify(state));
         _applyingRemote=false;
         _lastRemoteCount=countEntries(state);
         if(typeof _reRenderAll==='function')_reRenderAll();
-        // agora o estado local já inclui os da nuvem + sua edição -> pode enviar com segurança
         _dirty=true;
-        // segue para o envio abaixo (não retorna)
+        // segue para o envio abaixo
       }
     }
   }
@@ -5802,56 +5789,34 @@ async function reconcileWithCloud(){
     if(hasRemote)_lastRemoteCount=remoteCount;
 
     if(!hasRemote){                       // nuvem vazia
-      if(localCount===0){ setSyncBadge('synced'); return; }   // nada aqui também: não faz nada
-      _dirty=true; await flushToCloud(false); return;         // sobe o que temos
+      if(localCount===0){ setSyncBadge('synced'); return; }
+      _dirty=true; await flushToCloud(false); return;
     }
 
-    // REGRA CENTRAL: nunca perder lançamento de nenhum lado.
-    // Se as contagens diferem, mesclamos os dois (nuvem + local) — assim o que o celular
-    // subiu e o que este aparelho tem convivem, sem um apagar o outro.
-    if(localCount>remoteCount){
-      pushSnapshot('local-tem-mais-que-nuvem');
-      if(remoteCount>0 && dirty){
-        // pode haver dados na nuvem que não estão aqui: mescla antes de enviar
-        const merged=mergeStates(data.data, state);
-        _applyingRemote=true; state=hydrate(merged)||merged; localStorage.setItem(KEY,JSON.stringify(state)); _applyingRemote=false;
-        if(typeof _reRenderAll==='function')_reRenderAll();
-      }
+    // ---- Decisão por TEMPO, não por contagem (contagem revivia dias excluídos) ----
+    // Sem pendência local: a nuvem é a fonte da verdade. Aplica ela (respeita exclusões
+    // feitas em outros aparelhos).
+    if(!dirty){
+      applyRemoteState(data.data,remoteAt);
+      return;
+    }
+    // Com pendência local:
+    //  - se o carimbo da nuvem é o mesmo de quando sincronizamos por último, ninguém mexeu
+    //    lá fora: nossas mudanças (inclusive exclusões) mandam -> envia direto.
+    //  - se a nuvem mudou desde então, os dois lados editaram: mescla e envia.
+    const nuvemIntacta = _lastSyncedAt && remoteAt && remoteAt===_lastSyncedAt;
+    if(nuvemIntacta){
       _dirty=true; await flushToCloud(false);
       return;
     }
-    if(remoteCount>localCount){
-      if(localCount>0 && dirty){
-        // este aparelho tem edições não enviadas E a nuvem tem mais: mescla os dois
-        pushSnapshot('antes-de-mesclar-na-abertura');
-        const merged=mergeStates(data.data, state);
-        _applyingRemote=true; state=hydrate(merged)||merged; localStorage.setItem(KEY,JSON.stringify(state)); _applyingRemote=false;
-        _lastRemoteCount=countEntries(state);
-        if(typeof _reRenderAll==='function')_reRenderAll();
-        _dirty=true; await flushToCloud(false);
-        toast('🔄 Combinamos os dados deste aparelho com os da nuvem');
-        return;
-      }
-      if(localCount>0)pushSnapshot('antes-de-receber-nuvem-maior');
-      applyRemoteState(data.data,remoteAt);
-      return;
-    }
-
-    // mesma quantidade: decide pelo mais recente, respeitando pendência local
-    if(dirty){
-      if(!remoteAt || !locAt || locAt>=remoteAt){
-        _dirty=true; await flushToCloud(false);
-        toast('☁️ Enviamos alterações que estavam pendentes neste aparelho');
-        return;
-      }
-      backupLocalState('remoto-mais-novo');
-      pushSnapshot('antes-de-aplicar-remoto-mais-novo');
-      applyRemoteState(data.data,remoteAt);
-      toast('⚠️ Havia alterações locais não enviadas — guardamos uma cópia','↺ Restaurar',restoreConflictBackup);
-      return;
-    }
-    if(!_lastSyncedAt || (remoteAt && remoteAt!==_lastSyncedAt)) applyRemoteState(data.data,remoteAt);
-    else setSyncBadge('synced');
+    // divergência real: mescla (aqui pode reviver algo excluído nos dois lados simultaneamente,
+    // caso raro; o histórico protege). Guardamos snapshot antes.
+    pushSnapshot('antes-de-mesclar-na-abertura');
+    const merged=mergeStates(data.data, state);
+    _applyingRemote=true; state=hydrate(merged)||merged; localStorage.setItem(KEY,JSON.stringify(state)); _applyingRemote=false;
+    _lastRemoteCount=countEntries(state);
+    if(typeof _reRenderAll==='function')_reRenderAll();
+    _dirty=true; await flushToCloud(false);
   }catch(e){ setSyncBadge('error'); }
 }
 
