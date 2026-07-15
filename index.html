@@ -1362,7 +1362,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <div class="abast-navbar" id="manutNavbar">
       <button class="abast-back" id="manutBackBtn" onclick="mNavBack()" aria-label="Voltar">‹</button>
       <div class="abast-navbar-title" id="manutNavTitle">Manutenção</div>
-      <span class="abast-spacer"></span>
+      <button class="btn primary desktop-only" id="manutAddBtn" onclick="openManutModal(null)" style="display:none">➕ Nova</button>
+      <span class="abast-spacer" id="manutSpacer"></span>
     </div>
 
     <div id="manutNavBody"></div>
@@ -4686,6 +4687,8 @@ function mNavSetHeader(title,showBack){
   const t=document.getElementById('manutNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('manutBackBtn'); if(b)b.classList.toggle('show',!!showBack);
   const fab=document.getElementById('manutFab'); if(fab)fab.style.display=(_mNavLevel==='lista')?'':'none';
+  const add=document.getElementById('manutAddBtn'); if(add)add.style.display=(_mNavLevel==='lista')?'':'none';
+  const sp=document.getElementById('manutSpacer'); if(sp)sp.style.display=(_mNavLevel==='lista')?'none':'';
 }
 function renderManutencao(){
   const body=document.getElementById('manutNavBody');
