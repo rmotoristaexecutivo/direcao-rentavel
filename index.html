@@ -5683,10 +5683,21 @@ async function flushToCloud(useKeepalive){
     } else {
       const rem=await remoteSnapshot();
       if(rem && rem.count>localCount){
-        pushSnapshot('antes-de-envio-bloqueado');
-        _syncing=false; setSyncBadge('error');
-        toast(`⚠️ Envio bloqueado: a nuvem tem ${rem.count} lançamentos e este aparelho só ${localCount}`,'↺ Ver histórico',openHistoryModal);
-        return;
+        // A nuvem tem MAIS lançamentos (ex.: o celular subiu algo que este aparelho ainda não tem).
+        // Em vez de travar, guardamos a edição local, trazemos a nuvem completa, e — se a sua
+        // edição tinha adicionado algo — reaplicamos o merge. O importante: você não fica preso
+        // nem perde o que digitou.
+        pushSnapshot('antes-de-mesclar-nuvem-maior');
+        const merged=mergeStates(rem.data, state);   // base = nuvem; sobrepõe adições locais
+        _applyingRemote=true;
+        state=hydrate(merged)||merged;
+        localStorage.setItem(KEY,JSON.stringify(state));
+        _applyingRemote=false;
+        _lastRemoteCount=countEntries(state);
+        if(typeof _reRenderAll==='function')_reRenderAll();
+        // agora o estado local já inclui os da nuvem + sua edição -> pode enviar com segurança
+        _dirty=true;
+        // segue para o envio abaixo (não retorna)
       }
     }
   }
@@ -5718,6 +5729,52 @@ async function flushToCloud(useKeepalive){
     // mantém _dirty e a marca persistida: tenta de novo depois, e a nuvem não vai sobrescrever
   }
 }
+/* Une dois estados (base + overlay) sem perder lançamentos de nenhum dos lados.
+   Estratégia por guia: junta as listas de cada mês e remove duplicatas por assinatura.
+   Usado quando um aparelho tenta enviar mas a nuvem já tem mais dados — assim o que estava
+   na nuvem e o que foi editado localmente convivem, em vez de um sobrescrever o outro. */
+function mergeStates(base, overlay){
+  const out=JSON.parse(JSON.stringify(base||{}));
+  const sig=o=>JSON.stringify(o);
+  function mergeMonths(bMonths, oMonths, keyFn){
+    bMonths=bMonths||{}; oMonths=oMonths||{};
+    Object.keys(oMonths).forEach(mk=>{
+      const bArr=bMonths[mk]||[]; const oArr=oMonths[mk]||[];
+      const seen=new Set(bArr.map(keyFn));
+      oArr.forEach(item=>{ const k=keyFn(item); if(!seen.has(k)){ bArr.push(item); seen.add(k); } });
+      bMonths[mk]=bArr;
+    });
+    return bMonths;
+  }
+  // Uber/Corp (dias): combina por data; dentro do dia, une ganhos e gastosExtra por assinatura
+  if(overlay.uber && overlay.uber.months){
+    out.uber=out.uber||{months:{}}; out.uber.months=out.uber.months||{};
+    Object.keys(overlay.uber.months).forEach(mk=>{
+      const bArr=out.uber.months[mk]||[]; const oArr=overlay.uber.months[mk]||[];
+      const byDate={}; bArr.forEach(r=>byDate[r.data]=r);
+      oArr.forEach(or=>{
+        const br=byDate[or.data];
+        if(!br){ bArr.push(or); byDate[or.data]=or; }
+        else {
+          // mescla listas do mesmo dia sem duplicar
+          const gSeen=new Set((br.ganhos||[]).map(sig));
+          (or.ganhos||[]).forEach(g=>{ if(!gSeen.has(sig(g))){ (br.ganhos=br.ganhos||[]).push(g); gSeen.add(sig(g)); } });
+          const eSeen=new Set((br.gastosExtra||[]).map(sig));
+          (or.gastosExtra||[]).forEach(g=>{ if(!eSeen.has(sig(g))){ (br.gastosExtra=br.gastosExtra||[]).push(g); eSeen.add(sig(g)); } });
+          if(typeof recalcRowFromLists==='function')recalcRowFromLists(br);
+        }
+      });
+      bArr.sort((a,b)=>a.data.localeCompare(b.data));
+      out.uber.months[mk]=bArr;
+    });
+  }
+  // Pessoal, Abastecimentos, Manutenção: listas simples por mês
+  if(overlay.pessoal){ out.pessoal=out.pessoal||{months:{}}; out.pessoal.months=mergeMonths(out.pessoal.months, overlay.pessoal.months, sig); }
+  if(overlay.abastecimentos){ out.abastecimentos=out.abastecimentos||{months:{}}; out.abastecimentos.months=mergeMonths(out.abastecimentos.months, overlay.abastecimentos.months, sig); }
+  if(overlay.manutencao){ out.manutencao=out.manutencao||{months:{}}; out.manutencao.months=mergeMonths(out.manutencao.months, overlay.manutencao.months, r=>r.id||sig(r)); }
+  return out;
+}
+
 function scheduleCloudSync(){
   if(_applyingRemote)return;   // não marca como "sujo" o que acabou de vir da nuvem
   _dirty=true;
@@ -5749,15 +5806,32 @@ async function reconcileWithCloud(){
       _dirty=true; await flushToCloud(false); return;         // sobe o que temos
     }
 
-    // REGRA CENTRAL: quem tem MAIS lançamentos manda. Isso impede que um aparelho
-    // defasado (ou recém-aberto, ainda vazio) apague o que já estava salvo.
+    // REGRA CENTRAL: nunca perder lançamento de nenhum lado.
+    // Se as contagens diferem, mesclamos os dois (nuvem + local) — assim o que o celular
+    // subiu e o que este aparelho tem convivem, sem um apagar o outro.
     if(localCount>remoteCount){
       pushSnapshot('local-tem-mais-que-nuvem');
+      if(remoteCount>0 && dirty){
+        // pode haver dados na nuvem que não estão aqui: mescla antes de enviar
+        const merged=mergeStates(data.data, state);
+        _applyingRemote=true; state=hydrate(merged)||merged; localStorage.setItem(KEY,JSON.stringify(state)); _applyingRemote=false;
+        if(typeof _reRenderAll==='function')_reRenderAll();
+      }
       _dirty=true; await flushToCloud(false);
-      toast(`☁️ Este aparelho tinha ${localCount} lançamentos e a nuvem ${remoteCount} — enviamos os seus`);
       return;
     }
     if(remoteCount>localCount){
+      if(localCount>0 && dirty){
+        // este aparelho tem edições não enviadas E a nuvem tem mais: mescla os dois
+        pushSnapshot('antes-de-mesclar-na-abertura');
+        const merged=mergeStates(data.data, state);
+        _applyingRemote=true; state=hydrate(merged)||merged; localStorage.setItem(KEY,JSON.stringify(state)); _applyingRemote=false;
+        _lastRemoteCount=countEntries(state);
+        if(typeof _reRenderAll==='function')_reRenderAll();
+        _dirty=true; await flushToCloud(false);
+        toast('🔄 Combinamos os dados deste aparelho com os da nuvem');
+        return;
+      }
       if(localCount>0)pushSnapshot('antes-de-receber-nuvem-maior');
       applyRemoteState(data.data,remoteAt);
       return;
