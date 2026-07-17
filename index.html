@@ -4445,11 +4445,15 @@ function abKmEntryTotal(r){
   if(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))t+=(r.kmFimEl-(r.kmIniEl||0));
   return t;
 }
+function abLitrosDe(r){ if(r.litros!=null||r.kwh!=null)return r.litros||0; return r.tipo==='el'?0:(r.qtda||0); }
+function abKwhDe(r){ if(r.litros!=null||r.kwh!=null)return r.kwh||0; return r.tipo==='el'?(r.qtda||0):0; }
 function monthTotalsAbast(rows){
-  const tot={valor:0,litros:0,kwh:0,count:(rows||[]).length,kmRodado:0};
+  const tot={valor:0,litros:0,kwh:0,valorComb:0,valorEl:0,count:(rows||[]).length,kmRodado:0};
   (rows||[]).forEach(r=>{
     tot.valor+=r.valor||0;
-    if(r.tipo==='el')tot.kwh+=r.qtda||0; else tot.litros+=r.qtda||0;
+    tot.litros+=abLitrosDe(r); tot.kwh+=abKwhDe(r);
+    tot.valorComb+=(r.valorComb!=null?r.valorComb:(r.tipo==='el'?0:(r.valor||0)));
+    tot.valorEl+=(r.valorEl!=null?r.valorEl:(r.tipo==='el'?(r.valor||0):0));
     tot.kmRodado+=abKmEntryTotal(r);
   });
   return tot;
@@ -4519,8 +4523,11 @@ function abRenderLista(){
     ${tot.kmRodado>0?`<div class="kpi electric"><div class="k-label">🛣️ Km percorridos</div><div class="k-val">${fmtN(tot.kmRodado,0)} km</div><div class="k-sub">combustível + elétrico</div></div>`:''}
   </div>`;
   const listHtml = rows.length ? rows.map((r,i)=>{
-    const icon=r.tipo==='el'?'⚡':'⛽';
-    const un=r.tipo==='el'?'kWh':'L';
+    const litros=abLitrosDe(r), kwh=abKwhDe(r);
+    const qtdParts=[];
+    if(litros>0)qtdParts.push(`⛽ ${fmtN(litros,2)} L`);
+    if(kwh>0)qtdParts.push(`⚡ ${fmtN(kwh,2)} kWh`);
+    const qtdTxt=qtdParts.join(' · ')||'—';
     const parts=[];
     if(r.kmFimComb!=null && r.kmFimComb>(r.kmIniComb||0))parts.push(`⛽ ${fmtN(r.kmFimComb-(r.kmIniComb||0),0)}km`);
     if(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))parts.push(`⚡ ${fmtN(r.kmFimEl-(r.kmIniEl||0),0)}km`);
@@ -4528,7 +4535,7 @@ function abRenderLista(){
     const kmTxt=parts.length?` · ${parts.join(' · ')}${kmTot>0?` (${fmtN(kmTot,0)}km)`:''}`:'';
     return `<div class="lanc-row lanc-clickable" onclick="openAbastModal(${i})">
       <span class="lanc-date">${fmtDateBR(r.data)}<span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></span>
-      <span class="lanc-mid"><b style="color:var(--txt)">${icon} ${r.tipo==='el'?'Elétrico':'Combustível'}</b> · ${fmtN(r.qtda,2)} ${un} · ${r.forma||''}${kmTxt}</span>
+      <span class="lanc-mid"><b style="color:var(--txt)">${qtdTxt}</b> · ${r.forma||''}${kmTxt}</span>
       <span class="lanc-val" style="color:var(--expense)">${fmt(r.valor)}</span>
       <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delAbastEntry(${i})" title="Excluir">✕</button></span>
     </div>`;
@@ -4541,17 +4548,11 @@ function abRenderLista(){
 /* ===== MODAL: novo/editar abastecimento ===== */
 let _abastEditIdx=null, _abastTipo='comb';
 function abSetTipo(t){ _abastTipo=t; abRefreshTipoUI(); }
-function abRefreshTipoUI(){
-  const cb=document.getElementById('abTipoComb'), ce=document.getElementById('abTipoEl'), lbl=document.getElementById('abQtdaLabel');
-  if(cb)cb.classList.toggle('primary',_abastTipo==='comb');
-  if(ce)ce.classList.toggle('primary',_abastTipo==='el');
-  if(lbl)lbl.textContent=_abastTipo==='el'?'kWh':'Litros';
-}
+function abRefreshTipoUI(){ /* mantido por compatibilidade; não usado no novo modal */ }
 function abUpdateKmRodado(){
   const box=document.getElementById('abKmRodadoBox'); if(!box)return;
   const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
   const iniC=g('abKmIniComb'), fimC=g('abKmFimComb'), iniE=g('abKmIniEl'), fimE=g('abKmFimEl');
-  // o KM inicial pode ser 0 — o que importa é o final ser maior que o inicial
   const kmC = fimC>iniC ? (fimC-iniC) : 0;
   const kmE = fimE>iniE ? (fimE-iniE) : 0;
   const tot = kmC+kmE;
@@ -4564,22 +4565,26 @@ function abUpdateKmRodado(){
     document.getElementById('abKmRodado').value=fmtN(tot,1)+' km'+detalhe;
   } else { box.style.display='none'; }
 }
+function abUpdateValorTotal(){
+  const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
+  const total=g('abValorComb')+g('abValorEl');
+  const el=document.getElementById('abValorTotal'); if(el)el.value=fmt(total);
+}
 function openAbastModal(i){
   _abastEditIdx=(i==null?null:i);
   const key=state.abastecimentos.current;
   const rows=ensureAbastMonth(key);
-  const r=(i!=null)?rows[i]:{data:todayStr(),tipo:'comb',qtda:0,valor:0,forma:'Pix'};
-  _abastTipo=r.tipo||'comb';
+  const r=(i!=null)?rows[i]:{data:todayStr(),forma:'Pix'};
+  // compatibilidade com formato antigo (tipo/qtda/valor únicos): converte para os campos separados
+  let litros=r.litros, valorComb=r.valorComb, kwh=r.kwh, valorEl=r.valorEl;
+  if(litros==null && kwh==null && r.qtda!=null){
+    if(r.tipo==='el'){ kwh=r.qtda; valorEl=r.valor; }
+    else { litros=r.qtda; valorComb=r.valor; }
+  }
   document.getElementById('abastModalTitle').textContent=(i!=null)?'✏️ Editar abastecimento':'⛽ Novo abastecimento';
   document.getElementById('abastDelBtn').style.display=(i!=null)?'':'none';
   document.getElementById('abastModalBody').innerHTML=`
     <div class="field"><label>Data</label><input type="date" id="abData" value="${r.data}"></div>
-    <div class="field"><label>Tipo</label>
-      <div style="display:flex;gap:8px">
-        <button type="button" id="abTipoComb" class="btn" style="flex:1;justify-content:center" onclick="abSetTipo('comb')">⛽ Combustível</button>
-        <button type="button" id="abTipoEl" class="btn" style="flex:1;justify-content:center" onclick="abSetTipo('el')">⚡ Elétrico</button>
-      </div>
-    </div>
     <div class="modal-section-title">🛣️ KM Combustível / Elétrico</div>
     <div class="field-row" style="margin-top:6px">
       <div class="field"><label>⛽ KM inicial</label><input inputmode="decimal" id="abKmIniComb" value="${r.kmIniComb??''}" oninput="abUpdateKmRodado()"></div>
@@ -4590,32 +4595,42 @@ function openAbastModal(i){
       <div class="field"><label>⚡ KM final</label><input inputmode="decimal" id="abKmFimEl" value="${r.kmFimEl??''}" oninput="abUpdateKmRodado()"></div>
     </div>
     <div class="field" id="abKmRodadoBox" style="display:none"><label>Total percorrido (automático)</label><input id="abKmRodado" readonly tabindex="-1" value="" style="opacity:.8;font-weight:700;color:var(--electric)"></div>
-    <div class="field-row">
-      <div class="field"><label id="abQtdaLabel">${r.tipo==='el'?'kWh':'Litros'}</label><input inputmode="decimal" id="abQtda" value="${r.qtda||''}"></div>
-      <div class="field"><label>Valor total (R$)</label><input inputmode="decimal" id="abValor" value="${r.valor||''}"></div>
+
+    <div class="modal-section-title">⛽ Combustível</div>
+    <div class="field-row" style="margin-top:6px">
+      <div class="field"><label>Litros</label><input inputmode="decimal" id="abLitros" value="${litros||''}" placeholder="0"></div>
+      <div class="field"><label>Valor gasolina (R$)</label><input inputmode="decimal" id="abValorComb" value="${valorComb||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
     </div>
+
+    <div class="modal-section-title">⚡ Elétrico</div>
+    <div class="field-row" style="margin-top:6px">
+      <div class="field"><label>kWh</label><input inputmode="decimal" id="abKwh" value="${kwh||''}" placeholder="0"></div>
+      <div class="field"><label>Valor elétrico (R$)</label><input inputmode="decimal" id="abValorEl" value="${valorEl||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
+    </div>
+
+    <div class="field"><label>Valor total do abastecimento (automático)</label><input id="abValorTotal" readonly tabindex="-1" value="R$ 0,00" style="font-weight:800;color:var(--electric)"></div>
     <div class="field"><label>Forma de pagamento</label>
       <select id="abForma">${FORMA_PGTO.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
     </div>`;
-  abRefreshTipoUI();
   abUpdateKmRodado();
+  abUpdateValorTotal();
   document.getElementById('abastModal').classList.add('open');
 }
 function closeAbastModal(){ document.getElementById('abastModal').classList.remove('open'); _abastEditIdx=null; }
 function saveAbastEntry(){
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
-  // guarda o campo se ele foi PREENCHIDO (mesmo que com 0) — antes o "0" era descartado
-  // como se estivesse vazio, e por isso o total de km nunca era calculado.
   const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
-  const entry={ data, tipo:_abastTipo, qtda:parseNum(document.getElementById('abQtda').value),
-    valor:parseNum(document.getElementById('abValor').value), forma:document.getElementById('abForma').value };
+  const litros=g('abLitros'), valorComb=g('abValorComb'), kwh=g('abKwh'), valorEl=g('abValorEl');
+  const valorTotal=(valorComb||0)+(valorEl||0);
+  if(valorTotal<=0){ alert('Informe o valor de gasolina e/ou elétrico.'); return; }
+  const entry={ data, forma:document.getElementById('abForma').value,
+    litros:litros||0, valorComb:valorComb||0, kwh:kwh||0, valorEl:valorEl||0, valor:valorTotal };
   const kmIniComb=g('abKmIniComb'), kmFimComb=g('abKmFimComb'), kmIniEl=g('abKmIniEl'), kmFimEl=g('abKmFimEl');
   if(kmIniComb!=null)entry.kmIniComb=kmIniComb;
   if(kmFimComb!=null)entry.kmFimComb=kmFimComb;
   if(kmIniEl!=null)entry.kmIniEl=kmIniEl;
   if(kmFimEl!=null)entry.kmFimEl=kmFimEl;
-  if(entry.valor<=0){ alert('Informe o valor do abastecimento.'); return; }
   const oldKey=state.abastecimentos.current;
   if(_abastEditIdx!=null){ ensureAbastMonth(oldKey).splice(_abastEditIdx,1); }
   const newKey=data.slice(0,7);
