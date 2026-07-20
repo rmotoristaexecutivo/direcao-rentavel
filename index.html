@@ -415,6 +415,9 @@ select option{background:var(--panel-solid);color:var(--txt)}
 .hbar{scrollbar-color:var(--electric) transparent}
 .hbar>div{height:1px}
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+/* Parcelas (Entrada/Financiamento): cabeçalho e dados sempre centralizados entre si */
+table.sched th,table.sched td{text-align:center}
+table.sched td input.cell-in{text-align:center}
 table.sched{min-width:0}
 .uber-table{min-width:max-content}
 .cell-in.mini{min-width:60px;padding:6px 3px}
@@ -1078,7 +1081,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <p class="sub">Marque cada parcela conforme for pagando.</p>
         <div class="tbl-scroll">
           <table class="sched"><thead><tr>
-            <th style="text-align:left">#</th><th>Vencimento</th><th>Valor</th><th>Status</th><th style="text-align:center">Pago</th>
+            <th>#</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Pago</th>
           </tr></thead><tbody id="entradaSched"></tbody>
           <tfoot><tr><td colspan="2">Total cartão</td><td id="entradaTot"></td><td colspan="2"></td></tr></tfoot></table>
         </div>
@@ -1088,13 +1091,13 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <p class="sub">Marque cada parcela conforme for pagando.</p>
         <div class="tbl-scroll">
           <table class="sched"><thead><tr>
-            <th style="text-align:left">#</th><th>Vencimento</th><th>Valor</th>
-            <th style="text-align:center" title="Marque se você pagou essa parcela adiantado">⏩ Adiant.</th>
-            <th title="Desconto obtido por pagar adiantado">💸 Desconto</th>
-            <th title="Valor realmente pago: parcela − desconto">✅ Valor final</th>
-            <th>Status</th><th style="text-align:center">Pago</th>
+            <th>#</th><th>Vencimento</th><th>Valor</th>
+            <th title="Marque se você pagou essa parcela adiantado">⏩ Adiant.</th>
+            <th title="Quanto você pagou de fato nessa parcela">💵 Valor pago</th>
+            <th title="Calculado sozinho: parcela − valor pago">💸 Desconto</th>
+            <th>Status</th><th>Pago</th>
           </tr></thead><tbody id="finSched"></tbody>
-          <tfoot><tr><td colspan="2">Total financiamento</td><td id="finTot"></td><td></td><td id="finTotDesc"></td><td id="finTotFinal"></td><td colspan="2"></td></tr></tfoot></table>
+          <tfoot><tr><td colspan="2">Total financiamento</td><td id="finTot"></td><td></td><td id="finTotFinal"></td><td id="finTotDesc"></td><td colspan="2"></td></tr></tfoot></table>
         </div>
       </div>
     </div>
@@ -1861,39 +1864,41 @@ function buildSchedule(plan,key,tbodyId,totId,extraCols){
   let totalPago=0;      // dinheiro que realmente saiu (já com desconto)
   let totalNominal=0;   // valor de contrato das parcelas quitadas
   let totalDesc=0;      // soma dos descontos obtidos
-  let totalFinalGeral=0;// soma de "valor final" de TODAS as parcelas (pagas ou não)
+  let totalPagoGeral=0; // soma do "valor pago" de TODAS as parcelas (pagas ou não, usando o valor cheio quando não preenchido)
   for(let i=0;i<plan.parcelas;i++){
     const venc=addMonths(plan.inicio,i);
     const pago=!!plan.pagos[i];
     const adiantado=!!(plan.adiantados&&plan.adiantados[i]);
     const desconto=(plan.descontos&&Number(plan.descontos[i]))||0;
-    const valorFinal=Math.max(0,plan.parcelaValor-desconto);
-    if(pago){ totalPago+=valorFinal; totalNominal+=plan.parcelaValor; totalDesc+=desconto; }
-    totalFinalGeral+=valorFinal;
+    const valorPago=Math.max(0,plan.parcelaValor-desconto);   // o que você efetivamente pagou
+    if(pago){ totalPago+=valorPago; totalNominal+=plan.parcelaValor; totalDesc+=desconto; }
+    totalPagoGeral+=valorPago;
     const vd=new Date(venc+'T00:00:00');
     let status,cls;
     if(pago){status=adiantado?'Pago ⏩':'Pago';cls='pago';}
     else if(vd<today){status='Em atraso';cls='atraso';}
     else{status='Pendente';cls='pend';}
     const tr=document.createElement('tr');
+    // Você digita quanto PAGOU (valor pago) — o desconto é calculado sozinho (parcela − valor pago),
+    // sem precisar fazer conta nenhuma.
     const colsExtra = extraCols ? `
-      <td style="text-align:center"><input type="checkbox" class="chk" ${adiantado?'checked':''} onchange="toggleAdiantado('${key}',${i},this.checked)" title="Paguei essa parcela adiantado"></td>
-      <td><input class="cell-in" inputmode="decimal" value="${desconto?fmtN(desconto,2):''}" placeholder="0,00" onchange="setDescontoParcela('${key}',${i},this.value)" title="Desconto obtido por antecipar"></td>
-      <td style="font-weight:700;color:${desconto>0?'var(--gain)':'var(--txt)'}">${fmt(valorFinal)}</td>` : '';
-    tr.innerHTML=`<td style="text-align:left;color:var(--txt-faint)">${i+1}</td>
+      <td><input type="checkbox" class="chk" ${adiantado?'checked':''} onchange="toggleAdiantado('${key}',${i},this.checked)" title="Paguei essa parcela adiantado"></td>
+      <td><input class="cell-in" inputmode="decimal" value="${desconto>0?fmtN(valorPago,2):''}" placeholder="${fmtN(plan.parcelaValor,2)}" onchange="setValorPagoParcela('${key}',${i},this.value)" title="Quanto você pagou de fato"></td>
+      <td style="font-weight:700;color:${desconto>0?'var(--gain)':'var(--txt-faint)'}">${desconto>0?fmt(desconto):'—'}</td>` : '';
+    tr.innerHTML=`<td style="color:var(--txt-faint)">${i+1}</td>
       <td><input class="cell-in date" type="date" value="${venc}" onchange="reanchor('${key}',${i},this.value)"></td>
       <td>${fmt(plan.parcelaValor)}</td>
       ${colsExtra}
-      <td style="text-align:right"><span class="badge ${cls}">${status}</span></td>
-      <td style="text-align:center"><input type="checkbox" class="chk" ${pago?'checked':''} onchange="togglePago('${tbodyId}',${i},this.checked)"></td>`;
+      <td><span class="badge ${cls}">${status}</span></td>
+      <td><input type="checkbox" class="chk" ${pago?'checked':''} onchange="togglePago('${tbodyId}',${i},this.checked)"></td>`;
     tb.appendChild(tr);
   }
   document.getElementById(totId).textContent=fmt(plan.parcelas*plan.parcelaValor);
   if(extraCols){
-    const td=document.getElementById(totId==='finTot'?'finTotDesc':''),
-          tf=document.getElementById(totId==='finTot'?'finTotFinal':'');
-    if(td)td.innerHTML=totalDesc>0?`<span style="color:var(--gain);font-weight:700">−${fmt(totalDesc)}</span>`:'—';
-    if(tf)tf.innerHTML=`<span style="font-weight:700">${fmt(totalFinalGeral)}</span>`;
+    const tf=document.getElementById(totId==='finTot'?'finTotFinal':''),
+          td=document.getElementById(totId==='finTot'?'finTotDesc':'');
+    if(tf)tf.innerHTML=`<span style="font-weight:700">${fmt(totalPagoGeral)}</span>`;
+    if(td)td.innerHTML=totalDesc>0?`<span style="color:var(--gain);font-weight:700">${fmt(totalDesc)}</span>`:'—';
   }
   return {pago:totalPago,nominal:totalNominal,desconto:totalDesc};
 }
@@ -1904,12 +1909,13 @@ function toggleAdiantado(key,i,val){
   if(val)plan.adiantados[i]=true; else delete plan.adiantados[i];
   save();renderFinance();
 }
-/* grava o desconto obtido ao antecipar uma parcela */
-function setDescontoParcela(key,i,val){
+/* você digita quanto pagou de fato; o desconto (parcela − valor pago) é calculado sozinho */
+function setValorPagoParcela(key,i,val){
   const plan = key==='entrada'?state.finance.entrada:state.finance.fin;
   if(!plan.descontos)plan.descontos={};
-  const v=parseNum(val);
-  if(v>0)plan.descontos[i]=v; else delete plan.descontos[i];
+  const valorPago=parseNum(val);
+  const desconto=Math.max(0,plan.parcelaValor-valorPago);
+  if(desconto>0.004)plan.descontos[i]=Math.round(desconto*100)/100; else delete plan.descontos[i];
   save();renderFinance();
 }
 function reanchor(key,i,newDate){
