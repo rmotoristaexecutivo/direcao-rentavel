@@ -1300,12 +1300,12 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
             <th rowspan="2">Data</th>
             <th colspan="7" class="g-ida">👤 Ida</th>
             <th colspan="7" class="g-volta">👤 Volta</th>
-            <th colspan="4" class="g-trab">👤 Totais</th>
+            <th colspan="6" class="g-trab">👤 Totais</th>
           </tr>
           <tr>
             <th class="c-trab">KM ida</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">R$</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
             <th class="c-trab">KM volta</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">R$</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
-            <th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
+            <th class="c-trab">🛣️ KM total</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Média km/l</th><th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
           </tr>
         </thead>
         <tbody id="pessoalBody"></tbody>
@@ -4185,10 +4185,14 @@ function renderPessoal(){
         <td class="t-volta">${_inpBlankP(i,'pedagioVolta',r.pedagioVolta)}</td>
         <td class="t-volta calc" style="color:#a855f7;font-weight:700">${blk(c.totalVolta,fmt(c.totalVolta))}</td>`;
       }
+      const _kmDia=(r.kmIda||0)+(r.kmVolta||0);
+      const _mediaDia=c.litros>0?_kmDia/c.litros:0;
       tr.innerHTML=`
         <td class="data-cell"><button class="row-del" onclick="delPessoalRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updatePessoalCell(${i},'data',this.value)"></div></td>
         ${idaCells}
         ${voltaCells}
+        <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDia,fmtN(_kmDia,1))}</td>
+        <td class="t-tot calc" style="color:var(--hybrid)" title="KM do dia ÷ litros gastos">${blk(_mediaDia,fmtN(_mediaDia,1))}</td>
         <td class="t-tot calc" style="color:var(--electric)">${blk(c.kwh,fmtN(c.kwh,2))}</td>
         <td class="t-tot calc" style="color:var(--hybrid)">${blk(c.litros,fmtN(c.litros,2))}</td>
         <td class="t-tot calc" style="color:#f97316">${blk(c.pedagioTotal,fmt(c.pedagioTotal))}</td>
@@ -4203,6 +4207,8 @@ function renderPessoal(){
       <td class="t-volta" style="color:#a855f7">${fmtN(tot.kmVolta,0)}</td><td class="t-volta"></td><td class="t-volta"></td><td class="t-volta"></td><td class="t-volta"></td>
       <td class="t-volta" style="color:#f97316">${fmt(tot.pedagioVolta)}</td>
       <td class="t-volta" style="color:#a855f7;font-weight:700">${fmt(tot.totalVolta)}</td>
+      <td class="t-tot" style="color:var(--txt);font-weight:700">${fmtN(tot.kmIda+tot.kmVolta,1)}</td>
+      <td class="t-tot" style="color:var(--hybrid);font-weight:700" title="KM total do mês ÷ litros gastos">${tot.litros>0?fmtN((tot.kmIda+tot.kmVolta)/tot.litros,1):'-'}</td>
       <td class="t-tot" style="color:var(--electric)">${fmtN(tot.kwh,2)}</td>
       <td class="t-tot" style="color:var(--hybrid)">${fmtN(tot.litros,2)}</td>
       <td class="t-tot" style="color:#f97316;font-weight:700">${fmt(tot.pedagioTotal)}</td>
