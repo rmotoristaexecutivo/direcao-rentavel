@@ -1088,9 +1088,13 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <p class="sub">Marque cada parcela conforme for pagando.</p>
         <div class="tbl-scroll">
           <table class="sched"><thead><tr>
-            <th style="text-align:left">#</th><th>Vencimento</th><th>Valor</th><th>Status</th><th style="text-align:center">Pago</th>
+            <th style="text-align:left">#</th><th>Vencimento</th><th>Valor</th>
+            <th style="text-align:center" title="Marque se você pagou essa parcela adiantado">⏩ Adiant.</th>
+            <th title="Desconto obtido por pagar adiantado">💸 Desconto</th>
+            <th title="Valor realmente pago: parcela − desconto">✅ Valor final</th>
+            <th>Status</th><th style="text-align:center">Pago</th>
           </tr></thead><tbody id="finSched"></tbody>
-          <tfoot><tr><td colspan="2">Total financiamento</td><td id="finTot"></td><td colspan="2"></td></tr></tfoot></table>
+          <tfoot><tr><td colspan="2">Total financiamento</td><td id="finTot"></td><td></td><td id="finTotDesc"></td><td id="finTotFinal"></td><td colspan="2"></td></tr></tfoot></table>
         </div>
       </div>
     </div>
@@ -1632,7 +1636,7 @@ const defaultState={
   finance:{
     carValue:150000,
     entrada:{valor:30000,parcelas:12,parcelaValor:3218,inicio:'2026-07-20',pagos:[]},
-    fin:{valor:120000,parcelas:60,parcelaValor:3000,taxa:1.8,inicio:'2026-07-20',pagos:[],parcelaManual:false}
+    fin:{valor:120000,parcelas:60,parcelaValor:3000,taxa:1.8,inicio:'2026-07-20',pagos:[],parcelaManual:false,adiantados:{},descontos:{}}
   },
   uber:{
     current:'2026-07',
@@ -1682,6 +1686,9 @@ function hydrate(s){
   if(!s||!s.finance||!s.uber)return null;
   if(s.finance.fin && s.finance.fin.taxa==null)s.finance.fin.taxa=1.8;
   if(s.finance.fin && s.finance.fin.parcelaManual==null)s.finance.fin.parcelaManual=false;
+  // pagamento adiantado com desconto (bucket novo) — garante o shape em states antigos
+  if(s.finance.fin && (!s.finance.fin.adiantados || typeof s.finance.fin.adiantados!=='object'))s.finance.fin.adiantados={};
+  if(s.finance.fin && (!s.finance.fin.descontos || typeof s.finance.fin.descontos!=='object'))s.finance.fin.descontos={};
   if(!s.uber.config)s.uber.config={consumoEl:16.7,tarifa:0.95,consumoHib:20,preco:6.00,kwhKm:0.18,kmL:20};
   if(s.uber.config.kwhKm==null)s.uber.config.kwhKm=0.18;
   if(s.uber.config.kmL==null)s.uber.config.kmL=20;
@@ -1848,29 +1855,62 @@ function onFinanceInput(){
   document.getElementById('finParcelaValor').value=fmtN(f.fin.parcelaValor,2);
   save();renderFinance();
 }
-function buildSchedule(plan,key,tbodyId,totId){
+function buildSchedule(plan,key,tbodyId,totId,extraCols){
   const tb=document.getElementById(tbodyId);tb.innerHTML='';
   const today=new Date();today.setHours(0,0,0,0);
-  let totalPago=0;
+  let totalPago=0;      // dinheiro que realmente saiu (já com desconto)
+  let totalNominal=0;   // valor de contrato das parcelas quitadas
+  let totalDesc=0;      // soma dos descontos obtidos
+  let totalFinalGeral=0;// soma de "valor final" de TODAS as parcelas (pagas ou não)
   for(let i=0;i<plan.parcelas;i++){
     const venc=addMonths(plan.inicio,i);
     const pago=!!plan.pagos[i];
-    if(pago)totalPago+=plan.parcelaValor;
+    const adiantado=!!(plan.adiantados&&plan.adiantados[i]);
+    const desconto=(plan.descontos&&Number(plan.descontos[i]))||0;
+    const valorFinal=Math.max(0,plan.parcelaValor-desconto);
+    if(pago){ totalPago+=valorFinal; totalNominal+=plan.parcelaValor; totalDesc+=desconto; }
+    totalFinalGeral+=valorFinal;
     const vd=new Date(venc+'T00:00:00');
     let status,cls;
-    if(pago){status='Pago';cls='pago';}
+    if(pago){status=adiantado?'Pago ⏩':'Pago';cls='pago';}
     else if(vd<today){status='Em atraso';cls='atraso';}
     else{status='Pendente';cls='pend';}
     const tr=document.createElement('tr');
+    const colsExtra = extraCols ? `
+      <td style="text-align:center"><input type="checkbox" class="chk" ${adiantado?'checked':''} onchange="toggleAdiantado('${key}',${i},this.checked)" title="Paguei essa parcela adiantado"></td>
+      <td><input class="cell-in" inputmode="decimal" value="${desconto?fmtN(desconto,2):''}" placeholder="0,00" onchange="setDescontoParcela('${key}',${i},this.value)" title="Desconto obtido por antecipar"></td>
+      <td style="font-weight:700;color:${desconto>0?'var(--gain)':'var(--txt)'}">${fmt(valorFinal)}</td>` : '';
     tr.innerHTML=`<td style="text-align:left;color:var(--txt-faint)">${i+1}</td>
       <td><input class="cell-in date" type="date" value="${venc}" onchange="reanchor('${key}',${i},this.value)"></td>
       <td>${fmt(plan.parcelaValor)}</td>
+      ${colsExtra}
       <td style="text-align:right"><span class="badge ${cls}">${status}</span></td>
       <td style="text-align:center"><input type="checkbox" class="chk" ${pago?'checked':''} onchange="togglePago('${tbodyId}',${i},this.checked)"></td>`;
     tb.appendChild(tr);
   }
   document.getElementById(totId).textContent=fmt(plan.parcelas*plan.parcelaValor);
-  return totalPago;
+  if(extraCols){
+    const td=document.getElementById(totId==='finTot'?'finTotDesc':''),
+          tf=document.getElementById(totId==='finTot'?'finTotFinal':'');
+    if(td)td.innerHTML=totalDesc>0?`<span style="color:var(--gain);font-weight:700">−${fmt(totalDesc)}</span>`:'—';
+    if(tf)tf.innerHTML=`<span style="font-weight:700">${fmt(totalFinalGeral)}</span>`;
+  }
+  return {pago:totalPago,nominal:totalNominal,desconto:totalDesc};
+}
+/* marca/desmarca "paguei adiantado" numa parcela */
+function toggleAdiantado(key,i,val){
+  const plan = key==='entrada'?state.finance.entrada:state.finance.fin;
+  if(!plan.adiantados)plan.adiantados={};
+  if(val)plan.adiantados[i]=true; else delete plan.adiantados[i];
+  save();renderFinance();
+}
+/* grava o desconto obtido ao antecipar uma parcela */
+function setDescontoParcela(key,i,val){
+  const plan = key==='entrada'?state.finance.entrada:state.finance.fin;
+  if(!plan.descontos)plan.descontos={};
+  const v=parseNum(val);
+  if(v>0)plan.descontos[i]=v; else delete plan.descontos[i];
+  save();renderFinance();
 }
 function reanchor(key,i,newDate){
   if(!newDate)return;
@@ -1890,10 +1930,14 @@ function renderFinance(){
   const jurosCartao=totEntrada-f.entrada.valor;
   const jurosFin=totFin-f.fin.valor;                        // juros só do financiamento
 
-  const pagoEntrada=buildSchedule(f.entrada,'entrada','entradaSched','entradaTot');
-  const pagoFin=buildSchedule(f.fin,'fin','finSched','finTot');
-  const restanteFin=totFin-pagoFin;                          // saldo devedor só do financiamento
-  const pctFin=totFin>0?(pagoFin/totFin*100):0;
+  const resEntrada=buildSchedule(f.entrada,'entrada','entradaSched','entradaTot',false);
+  const resFin=buildSchedule(f.fin,'fin','finSched','finTot',true);
+  const pagoEntrada=resEntrada.pago;
+  const pagoFin=resFin.pago;                                 // dinheiro que saiu (já com desconto)
+  // O saldo devedor cai pelo valor de CONTRATO das parcelas quitadas — quitar com desconto
+  // liquida a parcela inteira, mesmo tendo custado menos.
+  const restanteFin=totFin-resFin.nominal;
+  const pctFin=totFin>0?(resFin.nominal/totFin*100):0;
 
   const pctEntrada=totEntrada>0?(pagoEntrada/totEntrada*100):0;
 
@@ -1901,7 +1945,7 @@ function renderFinance(){
     <div class="kpi electric"><div class="k-label">🚗 Valor do carro</div><div class="k-val">${fmt(f.carValue)}</div><div class="k-sub">preço à vista</div></div>
     <div class="kpi hybrid"><div class="k-label">💰 Total do financiamento</div><div class="k-val">${fmt(totFin)}</div><div class="k-sub">${f.fin.parcelas}x de ${fmt(f.fin.parcelaValor)}</div></div>
     <div class="kpi expense"><div class="k-label">📈 Juros do financiamento</div><div class="k-val">${fmt(jurosFin)}</div><div class="k-sub">sobre ${fmt(f.fin.valor)} financiado</div></div>
-    <div class="kpi gain"><div class="k-label">✅ Já pago (financ.)</div><div class="k-val">${fmt(pagoFin)}</div><div class="k-sub">${fmtN(pctFin,1)}% quitado</div></div>
+    <div class="kpi gain"><div class="k-label">✅ Já pago (financ.)</div><div class="k-val">${fmt(pagoFin)}</div><div class="k-sub">${fmtN(pctFin,1)}% quitado${resFin.desconto>0?` · 💸 economizou ${fmt(resFin.desconto)}`:''}</div></div>
     <div class="kpi gain"><div class="k-label">💳 Já pago (crt. entrada)</div><div class="k-val">${fmt(pagoEntrada)}</div><div class="k-sub">${fmtN(pctEntrada,1)}% quitado</div></div>
     <div class="kpi"><div class="k-label">⏳ Saldo devedor (financ.)</div><div class="k-val">${fmt(restanteFin)}</div><div class="k-sub">${proxParcelaFin()}</div></div>`;
 
@@ -1925,10 +1969,13 @@ function renderFinanceMobile(){
   const f=state.finance;
   const totEntrada=f.entrada.parcelas*f.entrada.parcelaValor;
   const totFin=f.fin.parcelas*f.fin.parcelaValor;
-  const pagoFin=f.fin.pagos.reduce((s,p,i)=>s+(p?f.fin.parcelaValor:0),0);
+  // considera desconto por antecipação: o dinheiro pago é menor, mas a parcela quita integral
+  const descFin=f.fin.pagos.reduce((s,p,i)=>s+(p?((f.fin.descontos&&Number(f.fin.descontos[i]))||0):0),0);
+  const nominalFin=f.fin.pagos.reduce((s,p)=>s+(p?f.fin.parcelaValor:0),0);
+  const pagoFin=nominalFin-descFin;
   const pagoEntrada=f.entrada.pagos.reduce((s,p,i)=>s+(p?f.entrada.parcelaValor:0),0);
-  const restanteFin=totFin-pagoFin;
-  const pctFin=totFin>0?(pagoFin/totFin*100):0;
+  const restanteFin=totFin-nominalFin;
+  const pctFin=totFin>0?(nominalFin/totFin*100):0;
   const totalDivida=totFin+totEntrada;
   const totalPago=pagoFin+pagoEntrada;
   const restanteTudo=totalDivida-totalPago;
@@ -2001,12 +2048,18 @@ function accParcelas(key,plan,titulo,c){
     if(filtro==='pagas'&&!pago)continue;
     if(filtro==='avencer'&&(pago||atraso))continue;
     if(filtro==='atraso'&&!atraso)continue;
+    const adiant=!!(plan.adiantados&&plan.adiantados[i]);
+    const desc=(plan.descontos&&Number(plan.descontos[i]))||0;
+    const valFinal=Math.max(0,plan.parcelaValor-desc);
+    const valHtml = desc>0
+      ? `<span style="text-decoration:line-through;opacity:.55;font-size:11.5px">${fmt(plan.parcelaValor)}</span> <b style="color:var(--gain)">${fmt(valFinal)}</b>`
+      : fmt(plan.parcelaValor);
     itens+=`<div class="m-parc ${cls}">
       <span class="m-parc-num">${i+1}</span>
       <span class="m-parc-st">${ic}</span>
       <div class="m-parc-body">
-        <div class="m-parc-venc">${fmtDateBR(venc)}</div>
-        <div class="m-parc-val">${fmt(plan.parcelaValor)}</div>
+        <div class="m-parc-venc">${fmtDateBR(venc)}${adiant?' <span style="font-size:10.5px;color:var(--gain)">⏩ adiantado</span>':''}</div>
+        <div class="m-parc-val">${valHtml}</div>
       </div>
       <input type="checkbox" class="m-parc-chk" ${pago?'checked':''} onchange="togglePago('${key==='fin'?'finSched':'entradaSched'}',${i},this.checked)">
     </div>`;
