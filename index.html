@@ -921,7 +921,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
     <div class="login-logo">🚗</div>
-    <h1>Controle do Veículo</h1>
+    <h1>Direção Rentável</h1>
     <p class="login-sub">Digite sua chave de acesso para sincronizar seus dados entre dispositivos. Use sempre a mesma chave em todos os aparelhos.</p>
     <div class="field">
       <label>Sua chave de acesso</label>
@@ -939,7 +939,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <div class="brand">
       <div class="logo">🚗</div>
       <div>
-        <h1>Controle do Veículo</h1>
+        <h1>Direção Rentável</h1>
       </div>
     </div>
     <div class="actions">
@@ -4730,6 +4730,8 @@ function delAbastEntry(i){
 function ensureManutMonth(k){ if(!state.manutencao.months[k])state.manutencao.months[k]=[]; return state.manutencao.months[k]; }
 function manutMonthLabel(key){ const{y,m}=monthKeyParts(key||state.manutencao.current); return `${MESES[m-1]} de ${y}`; }
 function manutId(){ return 'mn-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7); }
+// Nome pra exibir: se for "Outro" e tiver descrição, mostra a descrição em vez do genérico
+function manutNome(r){ return (r.servico==='Outro' && r.servicoOutro) ? r.servicoOutro : r.servico; }
 function monthTotalsManut(rows){
   const tot={valor:0,count:(rows||[]).length,uber:0,corp:0,pessoal:0};
   (rows||[]).forEach(r=>{
@@ -4769,7 +4771,7 @@ function applyManutMirror(m){
   const mesKey=m.data.slice(0,7);
   (m.rateio||[]).forEach(a=>{
     if(!(a.valor>0))return;
-    const nome=`Manutenção: ${m.servico}`;
+    const nome=`Manutenção: ${manutNome(m)}`;
     if(a.destino==='uber' || a.destino==='corp'){
       // ambos moram em state.uber (Trabalho e Corp compartilham a base de dias)
       const rows=ensureMonth(mesKey);
@@ -4844,10 +4846,11 @@ function mRenderLista(){
       const d=MANUT_DESTINOS.find(x=>x.key===a.destino); return d?d.label:a.destino;
     });
     const odo=r.odometro?` · ${fmtN(r.odometro,0)}km`:'';
+    const valHtml=r.garantia?`<span style="color:var(--gain);font-weight:700;font-size:13px">🛡️ Garantia</span>`:`<span style="color:var(--expense)">${fmt(r.valor)}</span>`;
     return `<div class="lanc-row lanc-clickable" onclick="openManutModal(${i})">
       <span class="lanc-date">${fmtDateBR(r.data)}<span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></span>
-      <span class="lanc-mid"><b style="color:var(--txt)">🔧 ${r.servico}</b> · ${r.forma||''}${odo}${dests.length?`<br><span style="font-size:11px">${dests.join(' · ')}</span>`:''}</span>
-      <span class="lanc-val" style="color:var(--expense)">${fmt(r.valor)}</span>
+      <span class="lanc-mid"><b style="color:var(--txt)">🔧 ${manutNome(r)}</b> · ${r.forma||''}${odo}${dests.length?`<br><span style="font-size:11px">${dests.join(' · ')}</span>`:''}</span>
+      <span class="lanc-val">${valHtml}</span>
       <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delManutEntry(${i})" title="Excluir">✕</button></span>
     </div>`;
   }).join('') : `<div class="lanc-empty">Nenhuma manutenção em ${manutMonthLabel(key)} ainda. Toque no ＋ pra adicionar.</div>`;
@@ -4870,15 +4873,21 @@ function openManutModal(i){
   document.getElementById('manutModalBody').innerHTML=`
     <div class="field"><label>Data</label><input type="date" id="mnData" value="${r.data}"></div>
     <div class="field"><label>Serviço</label>
-      <select id="mnServico">${MANUT_SERVICOS.map(s=>`<option value="${s}"${s===r.servico?' selected':''}>${s}</option>`).join('')}</select>
+      <select id="mnServico" onchange="onManutServicoChange()">${MANUT_SERVICOS.map(s=>`<option value="${s}"${s===r.servico?' selected':''}>${s}</option>`).join('')}</select>
+    </div>
+    <div class="field" id="mnOutroBox" style="display:none">
+      <label>Descreva o serviço</label>
+      <input type="text" id="mnOutroDesc" value="${r.servicoOutro||''}" placeholder="ex.: Higienização do ar-condicionado">
     </div>
     <div class="field-row">
       <div class="field"><label>Odômetro (opcional)</label><input inputmode="decimal" id="mnOdo" value="${r.odometro||''}" placeholder="km"></div>
-      <div class="field"><label>Valor total (R$)</label><input inputmode="decimal" id="mnValor" value="${r.valor||''}" oninput="onManutValorInput()"></div>
+      <div class="field"><label>Valor total (R$)</label><input inputmode="decimal" id="mnValor" value="${r.garantia?'':(r.valor||'')}" oninput="onManutValorInput()" ${r.garantia?'disabled':''}></div>
     </div>
+    <label class="mn-dest-check" style="padding:4px 0 8px"><input type="checkbox" id="mnGarantia" ${r.garantia?'checked':''} onchange="onManutGarantiaChange()"> 🛡️ Serviço em garantia (concessionária) — sem custo</label>
     <div class="field"><label>Forma de pagamento</label>
       <select id="mnForma">${MANUT_FORMAS.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
     </div>
+    <div id="mnRateioSection">
     <div class="modal-section-title">📍 Este gasto é de qual guia?</div>
     <p class="sub" style="margin:4px 0 8px">Marque uma ou mais. Deixe em branco pra dividir manualmente. O valor entra como despesa na(s) guia(s) escolhida(s).</p>
     <div id="mnRateioBox">
@@ -4889,9 +4898,30 @@ function openManutModal(i){
         </div>`).join('')}
     </div>
     <div class="field" id="mnRateioMsgBox" style="display:none"><input id="mnRateioMsg" readonly tabindex="-1" value="" style="opacity:.85;border-style:dashed"></div>
-    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="onManutSplitEqual()">⚖️ Dividir o valor igualmente entre os marcados</button>`;
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" onclick="onManutSplitEqual()">⚖️ Dividir o valor igualmente entre os marcados</button>
+    </div>`;
   onManutRateioInput();
+  onManutServicoChange();
+  onManutGarantiaChange();
   document.getElementById('manutModal').classList.add('open');
+}
+function onManutGarantiaChange(){
+  const chk=document.getElementById('mnGarantia'); if(!chk)return;
+  const valorEl=document.getElementById('mnValor');
+  const rateioSection=document.getElementById('mnRateioSection');
+  if(chk.checked){
+    valorEl.value=''; valorEl.disabled=true; valorEl.placeholder='N/A';
+    if(rateioSection)rateioSection.style.display='none';
+  } else {
+    valorEl.disabled=false; valorEl.placeholder='';
+    if(rateioSection)rateioSection.style.display='';
+  }
+  onManutRateioInput();
+}
+function onManutServicoChange(){
+  const sel=document.getElementById('mnServico'); if(!sel)return;
+  const box=document.getElementById('mnOutroBox'); if(!box)return;
+  box.style.display=(sel.value==='Outro')?'':'none';
 }
 function closeManutModal(){ document.getElementById('manutModal').classList.remove('open'); _manutEditIdx=null; }
 function onManutValorInput(){ onManutRateioInput(); }
@@ -4929,18 +4959,24 @@ function onManutRateioInput(){
 function saveManutEntry(){
   const data=document.getElementById('mnData').value;
   if(!data){ alert('Escolha a data.'); return; }
-  const valor=parseNum(document.getElementById('mnValor').value);
-  if(valor<=0){ alert('Informe o valor da manutenção.'); return; }
+  const garantia=!!document.getElementById('mnGarantia').checked;
+  const valor=garantia?0:parseNum(document.getElementById('mnValor').value);
+  if(!garantia && valor<=0){ alert('Informe o valor da manutenção (ou marque "Serviço em garantia" se foi sem custo).'); return; }
   const rateio=[];
-  MANUT_DESTINOS.forEach(d=>{ const v=parseNum(document.getElementById('mnVal_'+d.key).value); if(v>0)rateio.push({destino:d.key,valor:v}); });
-  if(!rateio.length){ alert('Marque ao menos uma guia (Trabalho, Corp ou Pessoal) e informe o valor dela.'); return; }
-  const somaRat=rateio.reduce((s,a)=>s+a.valor,0);
-  if(Math.abs(somaRat-valor)>0.02){
-    if(!confirm(`A soma do rateio (${fmt(somaRat)}) é diferente do valor total (${fmt(valor)}).\n\nDeseja salvar assim mesmo? O que vai contar nas guias é o rateio.`))return;
+  if(!garantia){
+    MANUT_DESTINOS.forEach(d=>{ const v=parseNum(document.getElementById('mnVal_'+d.key).value); if(v>0)rateio.push({destino:d.key,valor:v}); });
+    if(!rateio.length){ alert('Marque ao menos uma guia (Trabalho, Corp ou Pessoal) e informe o valor dela.'); return; }
+    const somaRat=rateio.reduce((s,a)=>s+a.valor,0);
+    if(Math.abs(somaRat-valor)>0.02){
+      if(!confirm(`A soma do rateio (${fmt(somaRat)}) é diferente do valor total (${fmt(valor)}).\n\nDeseja salvar assim mesmo? O que vai contar nas guias é o rateio.`))return;
+    }
   }
+  const servico=document.getElementById('mnServico').value;
+  const servicoOutro=(document.getElementById('mnOutroDesc')?.value||'').trim();
+  if(servico==='Outro' && !servicoOutro){ alert('Descreva o serviço.'); return; }
   const entry={ id:(_manutEditIdx!=null?ensureManutMonth(state.manutencao.current)[_manutEditIdx].id:manutId()),
-    data, servico:document.getElementById('mnServico').value, forma:document.getElementById('mnForma').value,
-    valor, odometro:parseNum(document.getElementById('mnOdo').value)||null, rateio };
+    data, servico, servicoOutro:(servico==='Outro'?servicoOutro:''), forma:document.getElementById('mnForma').value,
+    valor, garantia, odometro:parseNum(document.getElementById('mnOdo').value)||null, rateio };
 
   // remove o antigo (e seu espelho) se for edição
   const oldKey=state.manutencao.current;
@@ -4966,7 +5002,7 @@ function delManutEntry(i){
   const removed=rows[i]; rows.splice(i,1);
   removeManutMirror(removed.id);
   save(); renderManutencao(); renderUber(); renderPessoal();
-  toast(`Manutenção "${removed.servico}" excluída`,'↺ Desfazer',()=>{
+  toast(`Manutenção "${manutNome(removed)}" excluída`,'↺ Desfazer',()=>{
     rows.splice(Math.min(i,rows.length),0,removed); rows.sort((a,b)=>a.data.localeCompare(b.data));
     applyManutMirror(removed); save(); renderManutencao(); renderUber(); renderPessoal();
   });
