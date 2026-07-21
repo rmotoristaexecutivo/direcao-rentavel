@@ -1127,23 +1127,13 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
     <!-- ===== DESKTOP (inalterado) ===== -->
     <div class="desktop-only">
-    <div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">🏢</span>
-      <p class="sub" style="margin:0">Lance a <b>ida e volta do trabalho</b> (hospital), com tipo elétrico ou combustível. É o custo do seu deslocamento — sai do bolso (ou substitui o ônibus/metrô). A operação do Uber fica na aba ao lado.</p>
-    </div>
-
     <div id="uberNav"></div>
 
     <div class="month-nav">
       <button class="btn" onclick="addUberRowForDate()">＋ Adicionar dia</button>
       <button class="btn" onclick="fillMonth()">📅 Preencher mês inteiro</button>
       <button class="btn danger" onclick="clearMonth()">🗑 Limpar mês</button>
-      <span class="king-rates" title="Capacidade usada para calcular kWh a partir do % de bateria gasto. A coluna Qtda na tabela é editável se quiser ajustar à mão.">⚙️ King (padrão):
-        <input id="cfgBateria" inputmode="decimal" onchange="onKingRates()" title="capacidade da bateria em kWh"> kWh bateria ·
-        <input id="cfgKmL" inputmode="decimal" onchange="onKingRates()" title="km por litro no combustível"> km/l
-      </span>
     </div>
-    <p class="sub" style="margin-top:6px">💡 No modo ⚡ elétrico, informe o <b>% de bateria gasto</b> no trecho — o app calcula os kWh a partir da capacidade da bateria. No modo ⛽ combustível, informe o <b>km/l</b>. A coluna <b>Qtda</b> também é editável se quiser ajustar à mão.</p>
 
     <div class="kpis" id="uberKpis"></div>
     <div id="uberStats"></div>
@@ -1186,11 +1176,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <!-- =================== ABA OPERAÇÃO (UBER) =================== -->
   <section class="view" id="view-operacao">
-
-    <div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">🚗</span>
-      <p class="sub" style="margin:0">Sua operação pessoal: corridas, km, horas, energia/combustível e ganhos por app — direto, sem planilha na tela.</p>
-    </div>
 
     <div id="opNav"></div>
 
@@ -1269,11 +1254,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <!-- =================== ABA DESPESA PESSOAL (uso particular do carro) =================== -->
   <section class="view" id="view-pessoal">
 
-    <div class="panel desktop-only" style="padding:14px 20px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">👤</span>
-      <p class="sub" style="margin:0">Gastos <b>particulares</b> do carro — fora do trabalho de app e fora do deslocamento ao hospital. Lance a <b>ida e volta</b> do passeio/viagem, com tipo elétrico ou combustível. Mês próprio, independente das outras abas.</p>
-    </div>
-
     <!-- ===== MOBILE: navegação Anos → Meses → Dias ===== -->
     <div class="mobile-only">
       <div class="m-navbar" id="pNavbar">
@@ -1292,12 +1272,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button class="btn" onclick="addPessoalRowForDate()">＋ Adicionar dia</button>
       <button class="btn" onclick="fillMonthP()">📅 Preencher mês inteiro</button>
       <button class="btn danger" onclick="clearMonthP()">🗑 Limpar mês</button>
-      <span class="king-rates" title="Capacidade usada para calcular kWh a partir do % de bateria gasto. A coluna Qtda na tabela é editável se quiser ajustar à mão.">⚙️ King (padrão):
-        <input id="pCfgBateria" inputmode="decimal" onchange="onKingRatesP()" title="capacidade da bateria em kWh"> kWh bateria ·
-        <input id="pCfgKmL" inputmode="decimal" onchange="onKingRatesP()" title="km por litro no combustível"> km/l
-      </span>
     </div>
-    <p class="sub" style="margin-top:6px">💡 No modo ⚡ elétrico, informe o <b>% de bateria gasto</b> no trecho — o app calcula os kWh a partir da capacidade da bateria. No modo ⛽ combustível, informe o <b>km/l</b>. A coluna <b>Qtda</b> também é editável se quiser ajustar à mão.</p>
 
     <div class="kpis" id="pessoalKpis"></div>
     <div id="pessoalStats"></div>
@@ -1329,11 +1304,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <!-- =================== ABA ABASTECIMENTOS =================== -->
   <section class="view" id="view-abastecimento">
-    <div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">⛽</span>
-      <p class="sub" style="margin:0">Todo abastecimento que você fizer — <b>combustível ou elétrico</b>, encheu o tanque/bateria ou não. Data, valor, litros/kWh e forma de pagamento.</p>
-    </div>
-
     <div class="abast-navbar" id="abastNavbar">
       <button class="abast-back" id="abastBackBtn" onclick="abNavBack()" aria-label="Voltar">‹</button>
       <div class="abast-navbar-title" id="abastNavTitle">Abastecimentos</div>
@@ -1364,11 +1334,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <!-- =================== ABA MANUTENÇÃO =================== -->
   <section class="view" id="view-manutencao">
-    <div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px">
-      <span style="font-size:22px">🔧</span>
-      <p class="sub" style="margin:0">Gastos de manutenção do veículo. Marque se o gasto é de <b>Trabalho</b>, <b>Corp</b> ou <b>Pessoal</b> (ou divida entre eles) — o valor entra automaticamente como despesa na guia escolhida, na mesma data.</p>
-    </div>
-
     <div class="abast-navbar" id="manutNavbar">
       <button class="abast-back" id="manutBackBtn" onclick="mNavBack()" aria-label="Voltar">‹</button>
       <div class="abast-navbar-title" id="manutNavTitle">Manutenção</div>
@@ -2285,8 +2250,10 @@ function undoDelUberRow(){
 }
 function onKingRates(){
   const cf=state.uber.config;
-  cf.bateriaKwh=parseNum(document.getElementById('cfgBateria').value)||18.3;
-  cf.kmL=parseNum(document.getElementById('cfgKmL').value)||20;
+  const _a=document.getElementById('cfgBateria'), _b=document.getElementById('cfgKmL');
+  if(!_a||!_b)return;   // campos removidos da tela: nada a fazer
+  cf.bateriaKwh=parseNum(_a.value)||18.3;
+  cf.kmL=parseNum(_b.value)||20;
   // não sobrescreve a Qtda já lançada — o padrão novo só vale como sugestão para dias novos ou ao trocar o KM/Tipo de uma linha
   save();
   toast('Padrão atualizado — vale para novos lançamentos ou ao editar KM/Tipo de uma linha');
@@ -2454,8 +2421,10 @@ function renderParcelaPanel(){
 }
 function onUberCfg(){
   const cf=state.uber.config;
-  cf.bateriaKwh=parseNum(document.getElementById('cfgBateria').value);
-  cf.kmL=parseNum(document.getElementById('cfgKmL').value);
+  const _a=document.getElementById('cfgBateria'), _b=document.getElementById('cfgKmL');
+  if(!_a||!_b)return;   // campos removidos da tela: nada a fazer
+  cf.bateriaKwh=parseNum(_a.value);
+  cf.kmL=parseNum(_b.value);
   save();renderUber(true);
 }
 function renderUberCfg(){
@@ -4123,8 +4092,10 @@ function undoDelPessoalRow(){
 }
 function onKingRatesP(){
   const cf=state.pessoal.config;
-  cf.bateriaKwh=parseNum(document.getElementById('pCfgBateria').value)||18.3;
-  cf.kmL=parseNum(document.getElementById('pCfgKmL').value)||20;
+  const _a=document.getElementById('pCfgBateria'), _b=document.getElementById('pCfgKmL');
+  if(!_a||!_b)return;   // campos removidos da tela: nada a fazer
+  cf.bateriaKwh=parseNum(_a.value)||18.3;
+  cf.kmL=parseNum(_b.value)||20;
   save();
   toast('Padrão atualizado — vale para novos lançamentos ou ao editar KM/Tipo de uma linha');
 }
