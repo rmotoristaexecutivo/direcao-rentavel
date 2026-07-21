@@ -1156,12 +1156,12 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
             <th rowspan="2">Data</th>
             <th colspan="6" class="g-ida">🏢 Ida ao trabalho</th>
             <th colspan="7" class="g-volta">🏢 Volta do trabalho</th>
-            <th colspan="4" class="g-trab">🏢 Totais</th>
+            <th colspan="6" class="g-trab">🏢 Totais</th>
           </tr>
           <tr>
             <th class="c-trab">KM ida</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">Valor/unid.</th><th class="c-trab">Total (R$)</th>
             <th class="c-trab">KM volta</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">Valor/unid.</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
-            <th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
+            <th class="c-trab">🛣️ KM total</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Média km/l</th><th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
           </tr>
         </thead>
         <tbody id="uberBody"></tbody>
@@ -2552,10 +2552,14 @@ function renderUber(){
         <td class="t-volta">${_inpBlank(i,'pedagioVolta',r.pedagioVolta)}</td>
         <td class="t-volta calc" style="color:#a855f7;font-weight:700">${blk(c.totalVolta,fmt(c.totalVolta))}</td>`;
       }
+      const _kmDiaTrab=(r.kmIda||0)+(r.kmVolta||0);
+      const _mediaDiaTrab=c.trabLitros>0?_kmDiaTrab/c.trabLitros:0;
       tr.innerHTML=`
         <td class="data-cell"><button class="row-del" onclick="delUberRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updateCell(${i},'data',this.value)"><span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></div></td>
         ${idaCells}
         ${voltaCells}
+        <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDiaTrab,fmtN(_kmDiaTrab,1))}</td>
+        <td class="t-tot calc" style="color:var(--hybrid)" title="KM do dia ÷ litros gastos">${blk(_mediaDiaTrab,fmtN(_mediaDiaTrab,1))}</td>
         <td class="t-tot calc" style="color:var(--electric)">${blk(c.trabKwh,fmtN(c.trabKwh,2))}</td>
         <td class="t-tot calc" style="color:var(--hybrid)">${blk(c.trabLitros,fmtN(c.trabLitros,2))}</td>
         <td class="t-tot calc" style="color:#f97316">${blk(c.pedagioTotal,fmt(c.pedagioTotal))}</td>
@@ -2569,6 +2573,8 @@ function renderUber(){
       <td class="t-volta" style="color:#a855f7">${fmtN(tot.kmVolta,0)}</td><td class="t-volta"></td><td class="t-volta"></td><td class="t-volta"></td><td class="t-volta"></td>
       <td class="t-volta" style="color:#a855f7"></td>
       <td class="t-volta" style="color:#a855f7;font-weight:700">${fmt(tot.totalVolta)}</td>
+      <td class="t-tot" style="color:var(--txt);font-weight:700">${fmtN(tot.kmIda+tot.kmVolta,1)}</td>
+      <td class="t-tot" style="color:var(--hybrid);font-weight:700" title="KM total do mês ÷ litros gastos">${tot.trabLitros>0?fmtN((tot.kmIda+tot.kmVolta)/tot.trabLitros,1):'-'}</td>
       <td class="t-tot" style="color:var(--electric)">${fmtN(tot.trabKwh,2)}</td>
       <td class="t-tot" style="color:var(--hybrid)">${fmtN(tot.trabLitros,2)}</td>
       <td class="t-tot" style="color:#f97316;font-weight:700">${fmt(tot.pedagioTotal)}</td>
@@ -4555,6 +4561,68 @@ function renderAbastecimento(){
   if(_abNavLevel==='lista')return abRenderLista();
   return abRenderMeses();
 }
+/* Km rodado por mês, calculado pela DIFERENÇA entre a última leitura de KM conhecida até o
+   fim de um mês e a última leitura conhecida até o fim do mês anterior — não é a soma dos
+   trechos de cada abastecimento dentro do mês, é a variação real do odômetro mês a mês
+   (funciona mesmo cruzando a virada do ano). Combustível e elétrico contam à parte, depois somam. */
+function abMonthlyKmSeries(year){
+  const all=[];
+  Object.keys(state.abastecimentos.months).forEach(mk=>{
+    (state.abastecimentos.months[mk]||[]).forEach(r=>all.push(r));
+  });
+  all.sort((a,b)=>a.data.localeCompare(b.data));
+  function lastReadingUntil(monthKey,field){
+    let val=null;
+    for(const r of all){
+      if(r.data.slice(0,7)>monthKey)break;
+      if(r[field]!=null)val=r[field];
+    }
+    return val;
+  }
+  const mStart=year===2026?7:1;
+  const out=[];
+  let prevComb=null, prevEl=null;
+  // referência: última leitura conhecida ANTES do primeiro mês do ano (se houver ano/mês anterior)
+  const beforeKey=`${year-1}-12`;
+  prevComb=lastReadingUntil(beforeKey,'kmFimComb');
+  prevEl=lastReadingUntil(beforeKey,'kmFimEl');
+  for(let m=mStart;m<=12;m++){
+    const key=`${year}-${pad(m)}`;
+    const combNow=lastReadingUntil(key,'kmFimComb');
+    const elNow=lastReadingUntil(key,'kmFimEl');
+    let km=0;
+    if(prevComb!=null && combNow!=null && combNow>prevComb)km+=(combNow-prevComb);
+    if(prevEl!=null && elNow!=null && elNow>prevEl)km+=(elNow-prevEl);
+    out.push({m,key,km});
+    if(combNow!=null)prevComb=combNow;
+    if(elNow!=null)prevEl=elNow;
+  }
+  return out;
+}
+function abKmChart(items){
+  // items: [{label, km}] — barras simples de km por mês, mesmo padrão visual do resumoChart
+  const withData=items.filter(i=>i.km>0);
+  if(!withData.length)return'';
+  const n=items.length, dense=n>10;
+  const slot=dense?32:Math.min(74,Math.max(46,560/n));
+  const W=Math.max(520,Math.round(n*slot+24)), H=170, padT=18, padB=32, padL=10, padR=10;
+  const innerH=H-padT-padB, y0=padT+innerH;
+  const max=Math.max(1,...items.map(i=>i.km));
+  const sx=i=>padL+slot*i+slot/2, bw=Math.min(slot*0.5,26);
+  let grid='';for(let k=0;k<=3;k++){const yy=padT+innerH*k/3;grid+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" opacity=".5"/>`;}
+  let bars='';
+  items.forEach((it,i)=>{
+    const cx=sx(i), hg=(it.km/max)*innerH;
+    bars+=`<rect x="${cx-bw/2}" y="${y0-hg}" width="${bw}" height="${Math.max(hg,it.km>0?2:0)}" rx="3" fill="var(--electric)" opacity="${it.km>0?.9:.25}"/>`;
+    if(it.km>0)bars+=`<text x="${cx}" y="${y0-hg-6}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--txt)">${fmtN(it.km,0)}</text>`;
+    bars+=`<text x="${cx}" y="${H-padB+15}" text-anchor="middle" font-size="${dense?9:10}" fill="var(--txt-faint)">${it.label}</text>`;
+  });
+  return`<div class="panel" style="padding:16px 14px;margin-top:12px">
+    <h2 style="margin:0 0 8px;font-size:14.5px">🛣️ Km rodado por mês</h2>
+    <p class="sub" style="margin:0 0 8px">Diferença entre a última leitura de km de um mês e a do mês anterior — não é a soma dos abastecimentos dentro do mês.</p>
+    <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,760)}px;max-width:100%;height:${H}px">${grid}${bars}</svg></div>
+  </div>`;
+}
 function abRenderMeses(){
   const years=abastYears();
   const y=_abNavYear;
@@ -4562,20 +4630,27 @@ function abRenderMeses(){
   const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_abNavYear=${yy};renderAbastecimento()">${yy}</button>`).join('');
   const mStart=y===2026?7:1;
   let cards='';
+  const kmSeries=abMonthlyKmSeries(y);
+  const chartItems=kmSeries.map(s=>({label:MESES[s.m-1].slice(0,3),km:s.km}));
   for(let m=mStart;m<=12;m++){
     const key=`${y}-${pad(m)}`;
     const rows=state.abastecimentos.months[key]||[];
     const has=rows.length>0;
     const tot=monthTotalsAbast(rows);
+    const kmMes=(kmSeries.find(s=>s.m===m)||{}).km||0;
+    const mediaKmL=(kmMes>0 && tot.litros>0)?kmMes/tot.litros:0;
     cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="abNavGoLista('${key}')">
       <div class="mo-h">${MESES[m-1]}</div>
       ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b style="color:var(--expense)">${fmt(tot.valor)}</b></div>
-      <div class="mo-row"><span>⚡ ${fmtN(tot.kwh,1)} kWh</span><span>⛽ ${fmtN(tot.litros,1)} L</span></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+      <div class="mo-row"><span>⚡ ${fmtN(tot.kwh,1)} kWh</span><span>⛽ ${fmtN(tot.litros,1)} L</span></div>
+      ${kmMes>0?`<div class="mo-row"><span>🛣️ Km no mês</span><b style="color:var(--electric)">${fmtN(kmMes,0)} km</b></div>`:''}
+      ${mediaKmL>0?`<div class="mo-row"><span>⛽ Média km/L</span><b style="color:var(--gain)">${fmtN(mediaKmL,1)}</b></div>`:''}`:`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
   }
   document.getElementById('abastNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}<span class="yr-tot">Ano ${y}: 💸 <b style="color:var(--expense)">${fmt(abastYearTotal(y))}</b></span></div>
-    <div class="month-cards mo-nav">${cards}</div>`;
+    <div class="month-cards mo-nav">${cards}</div>
+    ${abKmChart(chartItems)}`;
 }
 function abRenderLista(){
   const key=state.abastecimentos.current;
@@ -4849,7 +4924,7 @@ function mRenderLista(){
     const valHtml=r.garantia?`<span style="color:var(--gain);font-weight:700;font-size:13px">🛡️ Garantia</span>`:`<span style="color:var(--expense)">${fmt(r.valor)}</span>`;
     return `<div class="lanc-row lanc-clickable" onclick="openManutModal(${i})">
       <span class="lanc-date">${fmtDateBR(r.data)}<span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></span>
-      <span class="lanc-mid"><b style="color:var(--txt)">🔧 ${manutNome(r)}</b> · ${r.forma||''}${odo}${dests.length?`<br><span style="font-size:11px">${dests.join(' · ')}</span>`:''}</span>
+      <span class="lanc-mid"><b style="color:var(--txt)">🔧 ${manutNome(r)}</b>${r.forma?` · ${r.forma}`:''}${odo}${dests.length?`<br><span style="font-size:11px">${dests.join(' · ')}</span>`:''}</span>
       <span class="lanc-val">${valHtml}</span>
       <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delManutEntry(${i})" title="Excluir">✕</button></span>
     </div>`;
@@ -4884,7 +4959,7 @@ function openManutModal(i){
       <div class="field"><label>Valor total (R$)</label><input inputmode="decimal" id="mnValor" value="${r.garantia?'':(r.valor||'')}" oninput="onManutValorInput()" ${r.garantia?'disabled':''}></div>
     </div>
     <label class="mn-dest-check" style="padding:4px 0 8px"><input type="checkbox" id="mnGarantia" ${r.garantia?'checked':''} onchange="onManutGarantiaChange()"> 🛡️ Serviço em garantia (concessionária) — sem custo</label>
-    <div class="field"><label>Forma de pagamento</label>
+    <div class="field" id="mnFormaBox"><label>Forma de pagamento</label>
       <select id="mnForma">${MANUT_FORMAS.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
     </div>
     <div id="mnRateioSection">
@@ -4909,12 +4984,15 @@ function onManutGarantiaChange(){
   const chk=document.getElementById('mnGarantia'); if(!chk)return;
   const valorEl=document.getElementById('mnValor');
   const rateioSection=document.getElementById('mnRateioSection');
+  const formaBox=document.getElementById('mnFormaBox');
   if(chk.checked){
     valorEl.value=''; valorEl.disabled=true; valorEl.placeholder='N/A';
     if(rateioSection)rateioSection.style.display='none';
+    if(formaBox)formaBox.style.display='none';
   } else {
     valorEl.disabled=false; valorEl.placeholder='';
     if(rateioSection)rateioSection.style.display='';
+    if(formaBox)formaBox.style.display='';
   }
   onManutRateioInput();
 }
@@ -4975,7 +5053,7 @@ function saveManutEntry(){
   const servicoOutro=(document.getElementById('mnOutroDesc')?.value||'').trim();
   if(servico==='Outro' && !servicoOutro){ alert('Descreva o serviço.'); return; }
   const entry={ id:(_manutEditIdx!=null?ensureManutMonth(state.manutencao.current)[_manutEditIdx].id:manutId()),
-    data, servico, servicoOutro:(servico==='Outro'?servicoOutro:''), forma:document.getElementById('mnForma').value,
+    data, servico, servicoOutro:(servico==='Outro'?servicoOutro:''), forma:(garantia?'':document.getElementById('mnForma').value),
     valor, garantia, odometro:parseNum(document.getElementById('mnOdo').value)||null, rateio };
 
   // remove o antigo (e seu espelho) se for edição
