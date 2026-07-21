@@ -1161,7 +1161,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
           <tr>
             <th class="c-trab">KM ida</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">Valor/unid.</th><th class="c-trab">Total (R$)</th>
             <th class="c-trab">KM volta</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">Valor/unid.</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
-            <th class="c-trab">🛣️ KM total</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Média km/l</th><th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
+            <th class="c-trab" title="KM total do dia">🛣️ KM</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Km/l</th><th class="c-trab" title="Total de kWh no dia">🔋 kWh</th><th class="c-trab" title="Total de litros no dia">⛽ Litros</th><th class="c-trab" title="Pedágio total do dia">🛣️ Pedágio</th><th class="c-trab" title="Gasto total do dia">💰 Gasto (R$)</th>
           </tr>
         </thead>
         <tbody id="uberBody"></tbody>
@@ -1315,7 +1315,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
           <tr>
             <th class="c-trab">KM ida</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">R$</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
             <th class="c-trab">KM volta</th><th class="c-trab">Tipo</th><th class="c-trab" title="⚡ Elétrico: % de bateria gasto no trecho · ⛽ Combustível: km/l">Consumo</th><th class="c-trab" title="Calculado: % bateria → kWh, ou KM ÷ km/l — editável se quiser ajustar à mão">Qtda ✎</th><th class="c-trab" title="⚡ Valor por kWh · ⛽ Valor por litro — varia por onde você abasteceu/carregou naquele dia">R$</th><th class="c-trab">🛣️ Pedágio</th><th class="c-trab">Total (R$)</th>
-            <th class="c-trab">🛣️ KM total</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Média km/l</th><th class="c-trab">🔋 Total kWh</th><th class="c-trab">⛽ Total litros</th><th class="c-trab">🛣️ Pedágio total</th><th class="c-trab">💰 Gasto dia (R$)</th>
+            <th class="c-trab" title="KM total do dia">🛣️ KM</th><th class="c-trab" title="Média de consumo do dia: KM total ÷ litros gastos">⛽ Km/l</th><th class="c-trab" title="Total de kWh no dia">🔋 kWh</th><th class="c-trab" title="Total de litros no dia">⛽ Litros</th><th class="c-trab" title="Pedágio total do dia">🛣️ Pedágio</th><th class="c-trab" title="Gasto total do dia">💰 Gasto (R$)</th>
           </tr>
         </thead>
         <tbody id="pessoalBody"></tbody>
@@ -2385,9 +2385,7 @@ function renderUberNav(){
     </div>`;
   }
   const navTrab=`
-    <div class="yr-bar">${yearBtns}
-      <span class="yr-tot">Ano ${selYear}: 💸 <b style="color:var(--expense)">${fmt(totY.trab)}</b> de deslocamento</span>
-    </div>
+    <div class="yr-bar">${yearBtns}</div>
     <div class="month-cards mo-nav">${cardsTrab}</div>
     <div class="sel-month">📋 Editando: <b>${monthLabel()}</b></div>`;
   const navCorp=`
@@ -4058,7 +4056,7 @@ function renderPessoalNav(){
     </div>`;
   }
   el.innerHTML=`
-    <div class="yr-bar">${yearBtns}<span class="yr-tot">Ano ${selYear}: 💰 gasto total ${fmt(totY)}</span></div>
+    <div class="yr-bar">${yearBtns}</div>
     <div class="month-cards mo-nav">${cards}</div>
     <div class="sel-month">📋 Editando: <b>${pMonthLabel()}</b></div>`;
 }
@@ -4291,7 +4289,10 @@ function renderPessoal(){
   syncPessoalHbar();
   renderPessoalMobile();
 }
-function syncPessoalHbar(){ const el=document.getElementById('pessoalHbarInner'); if(el)el.style.width='0%'; }
+function syncPessoalHbar(){
+  syncOneHbar(document.querySelector('#view-pessoal .uber-scroll'), document.getElementById('pessoalHbar'));
+  if(!window._hbarResize){ window.addEventListener('resize',syncUberHbar); window._hbarResize=true; }
+}
 
 /* ============================================================
    DESPESA PESSOAL — CAMADA MOBILE
@@ -4590,10 +4591,10 @@ function abMonthlyKmSeries(year){
     const key=`${year}-${pad(m)}`;
     const combNow=lastReadingUntil(key,'kmFimComb');
     const elNow=lastReadingUntil(key,'kmFimEl');
-    let km=0;
-    if(prevComb!=null && combNow!=null && combNow>prevComb)km+=(combNow-prevComb);
-    if(prevEl!=null && elNow!=null && elNow>prevEl)km+=(elNow-prevEl);
-    out.push({m,key,km});
+    let km=0, hasPrev=false;
+    if(prevComb!=null && combNow!=null && combNow>prevComb){ km+=(combNow-prevComb); hasPrev=true; }
+    if(prevEl!=null && elNow!=null && elNow>prevEl){ km+=(elNow-prevEl); hasPrev=true; }
+    out.push({m,key,km,hasPrev});
     if(combNow!=null)prevComb=combNow;
     if(elNow!=null)prevEl=elNow;
   }
@@ -4637,7 +4638,11 @@ function abRenderMeses(){
     const rows=state.abastecimentos.months[key]||[];
     const has=rows.length>0;
     const tot=monthTotalsAbast(rows);
-    const kmMes=(kmSeries.find(s=>s.m===m)||{}).km||0;
+    const serie=kmSeries.find(s=>s.m===m)||{};
+    // sem mês anterior pra comparar (início dos dados): usa a soma dos trechos de cada
+    // abastecimento do mês como estimativa, em vez de mostrar 0/nada.
+    const kmMes = serie.hasPrev ? serie.km : tot.kmRodado;
+    if(!serie.hasPrev)chartItems[m-mStart].km=tot.kmRodado;
     const mediaKmL=(kmMes>0 && tot.litros>0)?kmMes/tot.litros:0;
     cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="abNavGoLista('${key}')">
       <div class="mo-h">${MESES[m-1]}</div>
@@ -4648,7 +4653,7 @@ function abRenderMeses(){
     </div>`;
   }
   document.getElementById('abastNavBody').innerHTML=`
-    <div class="yr-bar">${yearBtns}<span class="yr-tot">Ano ${y}: 💸 <b style="color:var(--expense)">${fmt(abastYearTotal(y))}</b></span></div>
+    <div class="yr-bar">${yearBtns}</div>
     <div class="month-cards mo-nav">${cards}</div>
     ${abKmChart(chartItems)}`;
 }
@@ -4900,7 +4905,7 @@ function mRenderMeses(){
     </div>`;
   }
   document.getElementById('manutNavBody').innerHTML=`
-    <div class="yr-bar">${yearBtns}<span class="yr-tot">Ano ${y}: 🔧 <b style="color:var(--expense)">${fmt(manutYearTotal(y))}</b></span></div>
+    <div class="yr-bar">${yearBtns}</div>
     <div class="month-cards mo-nav">${cards}</div>`;
 }
 function mRenderLista(){
