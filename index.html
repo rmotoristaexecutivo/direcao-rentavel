@@ -168,7 +168,9 @@ body::after{
 .wrap{max-width:1320px;margin:0 auto;padding:28px 20px 80px}
 
 /* ---------- Header ---------- */
-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:26px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:26px;
+  position:sticky;top:0;z-index:40;background:var(--panel-solid);padding:14px 4px;
+  border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
 .brand{display:flex;align-items:center;gap:14px}
 .logo{
   width:50px;height:50px;border-radius:14px;display:grid;place-items:center;font-size:24px;
@@ -324,7 +326,8 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .lanc-row .lanc-actions{display:flex;gap:4px}
 
 /* ---------- Tabs ---------- */
-.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);padding:6px;border-radius:15px;margin-bottom:26px;backdrop-filter:blur(12px);width:fit-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.tabs{display:flex;gap:6px;background:var(--panel-solid);border:1px solid var(--line);padding:6px;border-radius:15px;margin-bottom:26px;backdrop-filter:blur(12px);width:fit-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  position:sticky;top:calc(var(--hdrH,82px) + 1px);z-index:39}
 .tab{
   font-family:'Sora';font-weight:600;font-size:14px;cursor:pointer;border:none;background:transparent;color:var(--txt-dim);
   padding:11px 22px;border-radius:11px;transition:.2s;display:inline-flex;align-items:center;gap:9px;white-space:nowrap;flex-shrink:0;
