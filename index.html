@@ -325,6 +325,20 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .lanc-row .lanc-val{font-weight:800;font-variant-numeric:tabular-nums}
 .lanc-row .lanc-actions{display:flex;gap:4px}
 
+/* ---------- Card de abastecimento (duas linhas: cabeçalho + chips) ---------- */
+.ab-row{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+.ab-row:last-child{border-bottom:0}
+.ab-row:hover{background:rgba(255,255,255,.03)}
+.ab-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ab-date{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ab-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ab-val{font-weight:800;font-size:15px;color:var(--expense);font-variant-numeric:tabular-nums}
+.ab-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ab-tag{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:9px;background:var(--bg2);
+  border:1px solid var(--line);color:var(--txt-dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ab-tag.km{color:var(--electric);border-color:rgba(45,212,191,.3)}
+.ab-tag.med{color:var(--gain);border-color:rgba(52,211,153,.3)}
+
 /* ---------- Tabs ---------- */
 .tabs{display:flex;gap:6px;background:var(--panel-solid);border:1px solid var(--line);padding:6px;border-radius:15px;margin-bottom:26px;backdrop-filter:blur(12px);width:fit-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
   position:sticky;top:calc(var(--hdrH,82px) + 1px);z-index:39}
@@ -4643,20 +4657,28 @@ function abRenderLista(){
   </div>`;
   const listHtml = rows.length ? rows.map((r,i)=>{
     const litros=abLitrosDe(r), kwh=abKwhDe(r);
-    const qtdParts=[];
-    if(litros>0)qtdParts.push(`⛽ ${fmtN(litros,2)} L`);
-    if(kwh>0)qtdParts.push(`⚡ ${fmtN(kwh,2)} kWh`);
-    const qtdTxt=qtdParts.join(' · ')||'—';
-    const parts=[];
-    if(r.kmFimComb!=null && r.kmFimComb>(r.kmIniComb||0))parts.push(`⛽ ${fmtN(r.kmFimComb-(r.kmIniComb||0),0)}km`);
-    if(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))parts.push(`⚡ ${fmtN(r.kmFimEl-(r.kmIniEl||0),0)}km`);
-    const kmTot=abKmEntryTotal(r);
-    const kmTxt=parts.length?` · ${parts.join(' · ')}${kmTot>0?` (${fmtN(kmTot,0)}km)`:''}`:'';
-    return `<div class="lanc-row lanc-clickable" onclick="openAbastModal(${i})">
-      <span class="lanc-date">${fmtDateBR(r.data)}<span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></span>
-      <span class="lanc-mid"><b style="color:var(--txt)">${qtdTxt}</b> · ${r.forma||''}${kmTxt}</span>
-      <span class="lanc-val" style="color:var(--expense)">${fmt(r.valor)}</span>
-      <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delAbastEntry(${i})" title="Excluir">✕</button></span>
+    const kmC=(r.kmFimComb!=null && r.kmFimComb>(r.kmIniComb||0))?(r.kmFimComb-(r.kmIniComb||0)):0;
+    const kmE=(r.kmFimEl!=null && r.kmFimEl>(r.kmIniEl||0))?(r.kmFimEl-(r.kmIniEl||0)):0;
+    const kmTot=kmC+kmE;
+    const kmL=(kmTot>0 && litros>0)?kmTot/litros:0;
+    const tags=[];
+    if(litros>0)tags.push(`<span class="ab-tag">⛽ ${fmtN(litros,2)} L</span>`);
+    if(kwh>0)tags.push(`<span class="ab-tag">⚡ ${fmtN(kwh,2)} kWh</span>`);
+    if(kmTot>0){
+      // só detalha comb/elétrico quando os dois existem — senão o total já diz tudo
+      const det=(kmC>0&&kmE>0)?` <span style="opacity:.65">(⛽${fmtN(kmC,0)}+⚡${fmtN(kmE,0)})</span>`:'';
+      tags.push(`<span class="ab-tag km">🛣️ ${fmtN(kmTot,0)} km${det}</span>`);
+    }
+    if(kmL>0)tags.push(`<span class="ab-tag med">📊 ${fmtN(kmL,2)} km/l</span>`);
+    return `<div class="ab-row" onclick="openAbastModal(${i})">
+      <div class="ab-row-top">
+        <span class="ab-date">${fmtDateBR(r.data)}<span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></span>
+        <span class="ab-right">
+          <span class="ab-val">${fmt(r.valor)}</span>
+          <button class="row-del" onclick="event.stopPropagation();delAbastEntry(${i})" title="Excluir">✕</button>
+        </span>
+      </div>
+      ${tags.length?`<div class="ab-tags">${tags.join('')}</div>`:''}
     </div>`;
   }).join('') : `<div class="lanc-empty">Nenhum abastecimento em ${abastMonthLabel(key)} ainda. Toque no ＋ pra adicionar.</div>`;
 
@@ -4682,6 +4704,20 @@ function abUpdateKmRodado(){
     if(kmE>0)partes.push(`⚡ ${fmtN(kmE,1)}`);
     const detalhe = partes.length>1 ? ` (${partes.join(' + ')})` : '';
     document.getElementById('abKmRodado').value=fmtN(tot,1)+' km'+detalhe;
+  } else { box.style.display='none'; }
+  abUpdateKmL();
+}
+/* Média km/l do abastecimento: km total percorrido ÷ litros abastecidos.
+   Só aparece quando os dois lados existem — sem litros não há o que dividir. */
+function abUpdateKmL(){
+  const box=document.getElementById('abKmLBox'); if(!box)return;
+  const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
+  const iniC=g('abKmIniComb'), fimC=g('abKmFimComb'), iniE=g('abKmIniEl'), fimE=g('abKmFimEl');
+  const km=(fimC>iniC?(fimC-iniC):0)+(fimE>iniE?(fimE-iniE):0);
+  const litros=g('abLitros');
+  if(km>0 && litros>0){
+    box.style.display='';
+    document.getElementById('abKmL').value=`${fmtN(km/litros,2)} km/l`;
   } else { box.style.display='none'; }
 }
 function abUpdateValorTotal(){
@@ -4717,7 +4753,7 @@ function openAbastModal(i){
 
     <div class="modal-section-title">⛽ Combustível</div>
     <div class="field-row" style="margin-top:6px">
-      <div class="field"><label>Litros</label><input inputmode="decimal" id="abLitros" value="${litros||''}" placeholder="0"></div>
+      <div class="field"><label>Litros</label><input inputmode="decimal" id="abLitros" value="${litros||''}" placeholder="0" oninput="abUpdateKmL()"></div>
       <div class="field"><label>Valor gasolina (R$)</label><input inputmode="decimal" id="abValorComb" value="${valorComb||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
     </div>
 
@@ -4728,6 +4764,7 @@ function openAbastModal(i){
     </div>
 
     <div class="field"><label>Valor total do abastecimento (automático)</label><input id="abValorTotal" readonly tabindex="-1" value="R$ 0,00" style="font-weight:800;color:var(--electric)"></div>
+    <div class="field" id="abKmLBox" style="display:none"><label>Média km/l (automático)</label><input id="abKmL" readonly tabindex="-1" value="" style="font-weight:800;color:var(--gain)"></div>
     <div class="field"><label>Forma de pagamento</label>
       <select id="abForma">${FORMA_PGTO.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
     </div>`;
