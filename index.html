@@ -339,6 +339,66 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .ab-tag.km{color:var(--electric);border-color:rgba(45,212,191,.3)}
 .ab-tag.med{color:var(--gain);border-color:rgba(52,211,153,.3)}
 
+/* ---------- Linha compacta de dia (Trabalho / Pessoal) ---------- */
+.d-row{padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+.d-row:last-child{border-bottom:0}
+.d-row:hover{background:rgba(255,255,255,.03)}
+.d-row.fds{background:rgba(99,102,241,.06)}
+.d-row.fds:hover{background:rgba(99,102,241,.1)}
+.d-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.d-date{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.d-wd{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--bg2);color:var(--txt-faint)}
+.d-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.d-val{font-weight:800;font-size:15px;color:var(--expense);font-variant-numeric:tabular-nums}
+.d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.d-tag{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:9px;background:var(--bg2);
+  border:1px solid var(--line);color:var(--txt-dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+.d-tag.km{color:var(--electric);border-color:rgba(45,212,191,.3)}
+.d-tag.el{color:var(--hybrid);border-color:rgba(250,204,21,.3)}
+.d-tag.med{color:var(--gain);border-color:rgba(52,211,153,.3)}
+.d-tag.ped{color:#f97316;border-color:rgba(249,115,22,.3)}
+.d-tag.vazio{font-style:italic;font-weight:600;opacity:.7}
+
+/* ---------- Painel de gráficos por período ---------- */
+.per-panel{padding:16px 14px;margin-top:12px}
+.per-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.per-chip{font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--line);color:var(--txt-dim);transition:.15s;white-space:nowrap}
+.per-chip:hover{border-color:var(--line-strong);color:var(--txt)}
+.per-chip.active{background:var(--electric);border-color:var(--electric);color:#04121a}
+.per-sum{display:flex;flex-wrap:wrap;gap:14px;margin:2px 0 10px;font-size:12px;color:var(--txt-dim)}
+.per-sum b{font-size:14px;font-variant-numeric:tabular-nums}
+
+/* ---------- Guia Resumos ---------- */
+.res-nav{display:flex;align-items:center;gap:8px}
+.res-nav .btn{padding:8px 14px;font-size:16px;font-weight:800;line-height:1}
+.res-nav .btn:disabled{opacity:.3;cursor:not-allowed}
+.res-select{flex:1;min-width:0;font-family:'Manrope';font-weight:700;font-size:14.5px;color:var(--txt);
+  background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer}
+.res-total{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.res-total>span:first-child{font-size:12.5px;color:var(--txt-dim);font-weight:600}
+.res-total b{font-family:'Sora';font-size:24px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.res-total-cmp{font-size:11.5px;font-weight:700}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+.res-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;cursor:pointer;transition:.16s}
+.res-card:hover{border-color:var(--line-strong)}
+.res-card.on{border-color:var(--electric);background:rgba(45,212,191,.05)}
+.res-card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.res-card-t{font-size:13px;font-weight:700;color:var(--txt-dim)}
+.res-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);display:flex;
+  align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#04121a;flex-shrink:0}
+.res-card.on .res-chk{background:var(--electric);border-color:var(--electric)}
+.res-card-v{font-family:'Sora';font-size:21px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.res-card-s{font-size:11px;color:var(--txt-faint);margin-top:3px}
+.res-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+@media (max-width:640px){
+  .res-grid{grid-template-columns:1fr 1fr;gap:9px}
+  .res-card{padding:11px 12px}
+  .res-card-v{font-size:17px}
+  .res-card-t{font-size:11.5px}
+  .res-total b{font-size:20px}
+}
+
 /* ---------- Tabs ---------- */
 .tabs{display:flex;gap:6px;background:var(--panel-solid);border:1px solid var(--line);padding:6px;border-radius:15px;margin-bottom:26px;backdrop-filter:blur(12px);width:fit-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
   position:sticky;top:calc(var(--hdrH,82px) + 1px);z-index:39}
@@ -714,9 +774,10 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     background:var(--panel-solid,var(--bg));border-top:1px solid var(--line);
     backdrop-filter:blur(14px);padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
   #mobileNav button{flex:1;background:none;border:0;color:var(--txt-faint);
-    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;
-    font-size:10.5px;font-weight:600;cursor:pointer;border-radius:10px;transition:.15s}
-  #mobileNav button .ic{font-size:20px;line-height:1}
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 1px;
+    font-size:9.5px;font-weight:600;cursor:pointer;border-radius:10px;transition:.15s;
+    min-width:0;overflow:hidden;white-space:nowrap}
+  #mobileNav button .ic{font-size:18px;line-height:1}
   #mobileNav button.active{color:var(--accent,#22c55e)}
   #mobileNav button.active .ic{transform:translateY(-1px)}
 
@@ -991,6 +1052,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <button class="tab" data-tab="pessoal">👤 Despesa Pessoal</button>
     <button class="tab" data-tab="abastecimento">⛽ Abastecimentos</button>
     <button class="tab" data-tab="manutencao">🔧 Manutenção</button>
+    <button class="tab" data-tab="resumo">📊 Resumos</button>
   </div>
 
   <!-- ===== BOTTOM NAV (mobile) ===== -->
@@ -1001,6 +1063,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <button data-tab="pessoal" class="active" onclick="mobileGoTab('pessoal')"><span class="ic">👤</span>Pessoal</button>
     <button data-tab="abastecimento" onclick="mobileGoTab('abastecimento')"><span class="ic">⛽</span>Abastec.</button>
     <button data-tab="manutencao" onclick="mobileGoTab('manutencao')"><span class="ic">🔧</span>Manut.</button>
+    <button data-tab="resumo" onclick="mobileGoTab('resumo')"><span class="ic">📊</span>Resumo</button>
   </nav>
 
   <!-- =================== ABA FINANCIAMENTO =================== -->
@@ -1376,6 +1439,11 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       </div>
     </div>
   </div>
+
+  <!-- =================== ABA RESUMOS =================== -->
+  <section class="view" id="view-resumo">
+    <div id="resumoBody"></div>
+  </section>
 
   <!-- ===== FAB + BOTTOM SHEET (mobile, Despesa Pessoal) ===== -->
   <button id="pessoalFab" class="mob-fab" onclick="openPSheet(null)" aria-label="Novo lançamento">＋</button>
@@ -1754,6 +1822,7 @@ function activateTab(tab){
   if(tab==='pessoal')renderPessoal();
   if(tab==='abastecimento')renderAbastecimento();
   if(tab==='manutencao')renderManutencao();
+  if(tab==='resumo')renderResumoTab();
   // o FAB (＋) só deve aparecer na aba ativa, e mesmo assim só no nível certo (ver uNavSetHeader/pNavSetHeader/abNavSetHeader)
   const pFab=document.getElementById('pessoalFab'); if(pFab && tab!=='pessoal')pFab.style.display='none';
   const uFab=document.getElementById('uberFab'); if(uFab && tab!=='uber')uFab.style.display='none';
@@ -2565,7 +2634,8 @@ function renderUber(){
       <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
       <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">🛣️ Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
       <div class="kpi clickable expense" onclick="openGastoTotalModal()"><div class="k-label">💰 Gasto total <span style="font-size:11px;opacity:.7">▸ ver detalhe</span></div><div class="k-val">${fmt(tot.gastoTrabalho)}</div><div class="k-sub">no mês · ${fmtN(tot.kmIda+tot.kmVolta,0)} km · ${rows.length} dia(s)</div></div>`;
-    const _us=document.getElementById('uberStats'); if(_us)_us.innerHTML=manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber');
+    const _us=document.getElementById('uberStats');
+    if(_us){ _us.innerHTML=manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber')+'<div id="perPanel-uber-d"></div>'; renderPeriodPanel('uber'); }
   }
 
   renderOperacao(rows,tot);
@@ -2633,7 +2703,8 @@ function uRenderMeses(){
       ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
   }
-  document.getElementById('uNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div>`;
+  document.getElementById('uNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div><div id="perPanel-uber-m"></div>`;
+  renderPeriodPanel('uber');
 }
 /* Médias/estatísticas do mês — serve as guias Trabalho e Pessoal (mesma estrutura ida/volta).
    Só conta trechos realmente preenchidos — um dia sem volta não puxa a média da volta pra baixo. */
@@ -2688,6 +2759,111 @@ function manutTrabPanelHtml(rows){
     </div>`).join('')}
   </div>`;
 }
+/* ============================================================
+   GRÁFICOS POR PERÍODO — Trabalho e Pessoal
+   Agrupa TODOS os lançamentos (de todos os meses) por dia, semana, mês,
+   trimestre ou ano, e plota a métrica escolhida: km, litros, gasto ou km/l.
+   ============================================================ */
+const PER_METRICAS={
+  km:    {label:'🛣️ Km percorrido',     color:'var(--electric)', unidade:'km',   f:v=>fmtN(v,0),  soma:true},
+  litros:{label:'⛽ Litros abastecidos', color:'var(--hybrid)',   unidade:'L',    f:v=>fmtN(v,2),  soma:true},
+  valor: {label:'💰 Valor gasto',        color:'var(--expense)',  unidade:'',     f:v=>fmt(v),     soma:true},
+  kml:   {label:'📊 Média km/l',         color:'var(--gain)',     unidade:'km/l', f:v=>fmtN(v,2),  soma:false}
+};
+const PER_PERIODOS=[['dia','Dia',30],['semana','Semana',16],['mes','Mês',12],['trimestre','Trimestre',8],['ano','Ano',10]];
+const _perCfg={uber:{periodo:'mes',metrica:'km'},pessoal:{periodo:'mes',metrica:'km'}};
+
+/* devolve a chave de agrupamento e o rótulo curto de uma data, conforme o período */
+function perKeyOf(dateStr,periodo){
+  const d=new Date(dateStr+'T00:00:00');
+  const y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
+  if(periodo==='dia')      return {k:dateStr, label:`${pad(day)}/${pad(m)}`};
+  if(periodo==='semana'){
+    const ws=new Date(d); ws.setDate(day-d.getDay());   // semana começa no domingo
+    return {k:`${ws.getFullYear()}-${pad(ws.getMonth()+1)}-${pad(ws.getDate())}`,
+            label:`${pad(ws.getDate())}/${pad(ws.getMonth()+1)}`};
+  }
+  if(periodo==='mes')      return {k:`${y}-${pad(m)}`, label:`${MESES[m-1].slice(0,3)}/${String(y).slice(2)}`};
+  if(periodo==='trimestre'){const t=Math.floor((m-1)/3)+1; return {k:`${y}-T${t}`, label:`T${t}/${String(y).slice(2)}`};}
+  return {k:String(y), label:String(y)};
+}
+function perBuildSeries(mod,periodo){
+  const months = mod==='uber' ? state.uber.months : state.pessoal.months;
+  const acc={};
+  Object.keys(months||{}).forEach(mk=>{
+    (months[mk]||[]).forEach(r=>{
+      if(!r.data)return;
+      const c = mod==='uber' ? rowCalc(r) : rowCalcP(r);
+      const {k,label}=perKeyOf(r.data,periodo);
+      if(!acc[k])acc[k]={k,label,km:0,litros:0,kwh:0,valor:0};
+      acc[k].km    += (r.kmIda||0)+(r.kmVolta||0);
+      acc[k].litros+= mod==='uber' ? c.trabLitros : c.litros;
+      acc[k].kwh   += mod==='uber' ? c.trabKwh    : c.kwh;
+      acc[k].valor += mod==='uber' ? c.gastoTrabalho : c.gastoDia;
+    });
+  });
+  const arr=Object.values(acc).sort((a,b)=>a.k.localeCompare(b.k));
+  // km/l é razão, não soma: calcula em cima dos totais de cada período
+  arr.forEach(x=>{ x.kml = x.litros>0 ? x.km/x.litros : 0; });
+  return arr;
+}
+function perChartSvg(items,metrica){
+  const meta=PER_METRICAS[metrica];
+  const n=items.length;
+  if(!n)return `<div class="lanc-empty">Sem dados nesse período ainda.</div>`;
+  const dense=n>14;
+  const slot=dense?30:Math.min(70,Math.max(40,620/n));
+  const W=Math.max(560,Math.round(n*slot+28)), H=196, padT=22, padB=34, padL=12, padR=12;
+  const innerH=H-padT-padB, y0=padT+innerH;
+  const max=Math.max(...items.map(i=>i[metrica]),0.0001);
+  const sx=i=>padL+slot*i+slot/2, bw=Math.min(slot*0.55,28);
+  let grid='';
+  for(let k=0;k<=3;k++){const yy=padT+innerH*k/3;grid+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" opacity=".5"/>`;}
+  let bars='';
+  items.forEach((it,i)=>{
+    const v=it[metrica], cx=sx(i), hg=(v/max)*innerH;
+    bars+=`<rect x="${cx-bw/2}" y="${y0-hg}" width="${bw}" height="${Math.max(hg,v>0?2:0)}" rx="3" fill="${meta.color}" opacity="${v>0?.9:.2}"><title>${it.label}: ${meta.f(v)} ${meta.unidade}</title></rect>`;
+    if(v>0)bars+=`<text x="${cx}" y="${y0-hg-6}" text-anchor="middle" font-size="${dense?8.5:10}" font-weight="700" fill="var(--txt)">${meta.f(v)}</text>`;
+    bars+=`<text x="${cx}" y="${H-padB+16}" text-anchor="middle" font-size="${dense?8.5:10}" fill="var(--txt-faint)"${dense?` transform="rotate(-40 ${cx} ${H-padB+16})"`:''}>${it.label}</text>`;
+  });
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,720)}px;max-width:100%;height:${H}px">${grid}${bars}</svg></div>`;
+}
+function perPanelInner(mod){
+  const cfg=_perCfg[mod];
+  const limite=(PER_PERIODOS.find(p=>p[0]===cfg.periodo)||[])[2]||12;
+  const todos=perBuildSeries(mod,cfg.periodo);
+  const items=todos.slice(-limite);           // mostra só os períodos mais recentes
+  const meta=PER_METRICAS[cfg.metrica];
+  const chipsP=PER_PERIODOS.map(([k,lbl])=>`<button class="per-chip${cfg.periodo===k?' active':''}" onclick="setPerPeriodo('${mod}','${k}')">${lbl}</button>`).join('');
+  const chipsM=Object.keys(PER_METRICAS).map(k=>`<button class="per-chip${cfg.metrica===k?' active':''}" onclick="setPerMetrica('${mod}','${k}')">${PER_METRICAS[k].label}</button>`).join('');
+  // resumo do que está no gráfico
+  const somaKm=items.reduce((s,x)=>s+x.km,0), somaL=items.reduce((s,x)=>s+x.litros,0);
+  const somaV=items.reduce((s,x)=>s+x.valor,0);
+  const val=meta.soma ? items.reduce((s,x)=>s+x[cfg.metrica],0) : (somaL>0?somaKm/somaL:0);
+  const media=items.length ? (meta.soma ? val/items.length : val) : 0;
+  const nomePeriodo={dia:'dia',semana:'semana',mes:'mês',trimestre:'trimestre',ano:'ano'}[cfg.periodo];
+  return `<div class="panel per-panel">
+    <h2 style="margin:0 0 10px;font-size:14.5px">📈 Evolução</h2>
+    <div class="per-bar">${chipsP}</div>
+    <div class="per-bar">${chipsM}</div>
+    ${items.length?`<div class="per-sum">
+      <span>${meta.soma?'Total':'Média geral'}: <b style="color:${meta.color}">${meta.f(val)} ${meta.unidade}</b></span>
+      <span>Média por ${nomePeriodo}: <b style="color:${meta.color}">${meta.f(media)} ${meta.unidade}</b></span>
+      <span>Períodos: <b>${items.length}</b></span>
+      ${cfg.metrica!=='valor'&&somaV>0?`<span>Gasto: <b style="color:var(--expense)">${fmt(somaV)}</b></span>`:''}
+    </div>`:''}
+    ${perChartSvg(items,cfg.metrica)}
+  </div>`;
+}
+function renderPeriodPanel(mod){
+  ['d','m'].forEach(sfx=>{
+    const el=document.getElementById(`perPanel-${mod}-${sfx}`);
+    if(el)el.innerHTML=perPanelInner(mod);
+  });
+}
+function setPerPeriodo(mod,p){ _perCfg[mod].periodo=p; renderPeriodPanel(mod); }
+function setPerMetrica(mod,m){ _perCfg[mod].metrica=m; renderPeriodPanel(mod); }
+
 function uStatsPanelHtml(rows,mod){
   const st=uberStatsMes(rows,mod);
   if(!rows.length)return '';
@@ -2718,40 +2894,38 @@ function uRenderDias(){
     <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
   </div>`;
   const cardsHtml=rows.length
-    ? `<div id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber')).join('')}</div>`
+    ? `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber')).join('')}</div>`
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
   document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber')+cardsHtml;
 }
-/* card de dia genérico (ida/volta) usado por Trabalho e Pessoal */
+/* Linha compacta de dia (Trabalho e Pessoal): mostra só data, resumo em chips e total.
+   Tocar abre o modal completo de edição — a lista fica limpa e rápida de percorrer. */
 function mobileDayCard(r,i,mod){
   const isUber=mod==='uber';
   const c=isUber?rowCalc(r):rowCalcP(r);
   const gastoDia=isUber?c.gastoTrabalho:c.gastoDia;
+  const km=(r.kmIda||0)+(r.kmVolta||0);
+  const litros=isUber?c.trabLitros:c.litros;
+  const kwh=isUber?c.trabKwh:c.kwh;
   const _dt=r.data?new Date(r.data+'T00:00:00'):null;
   const fds=_dt&&(_dt.getDay()===0||_dt.getDay()===6);
-  const idaVazia   = !(r.kmIda||0)   && !(r.qtdaIda||0)   && !(r.valorIda||0)   && !(r.pedagioIda||0)   && !(r.pctIda||0);
-  const voltaVazia = !(r.kmVolta||0) && !(r.qtdaVolta||0) && !(r.valorVolta||0) && !(r.pedagioVolta||0) && !(r.pctVolta||0);
-  const editFn=isUber?`openUSheet(${i})`:`openPSheet(${i})`;
-  const delFn=isUber?`delUberRow(${i})`:`delPessoalRow(${i})`;
   const openFn=isUber?'openUSheet':'openPSheet';
-  const trecho=(vazio,cls,km,tipo,qtda,total,ped)=>{
-    const tap=`onclick="${openFn}(${i},'${cls}')" style="cursor:pointer"`;
-    if(vazio)return `<div class="m-trecho ${cls} vazio" ${tap}><span class="m-trecho-ic">${cls==='ida'?'🅰️':'🅱️'}</span><div class="m-trecho-body"><div class="m-trecho-t1">${cls==='ida'?'Ida':'Volta'}</div><div class="m-trecho-t2">toque para adicionar</div></div><div class="m-trecho-val">＋</div></div>`;
-    const un=tipo==='el'?'kWh':'L';
-    const pedTxt=ped?` · 🛣️ ${fmt(ped)}`:'';
-    return `<div class="m-trecho ${cls}" ${tap}><span class="m-trecho-ic">${cls==='ida'?'🅰️':'🅱️'}</span><div class="m-trecho-body"><div class="m-trecho-t1">${cls==='ida'?'Ida':'Volta'} · ${tipo==='el'?'⚡':'⛽'} ${fmtN(km,0)} km</div><div class="m-trecho-t2">${fmtN(qtda,2)} ${un}${pedTxt}</div></div><div class="m-trecho-val">${fmt(total+(ped||0))}</div></div>`;
-  };
-  return `<div class="m-daycard${fds?' fds':''}">
-    <div class="m-day-head">
-      <div class="m-day-date">${fmtDateBR(r.data)}<span class="m-day-wd">${diaSemanaCurto(r.data)}</span></div>
-      <div class="m-day-total">${fmt(gastoDia)}</div>
+  const delFn=isUber?`delUberRow(${i})`:`delPessoalRow(${i})`;
+  const tags=[];
+  if(km>0)tags.push(`<span class="d-tag km">🛣️ ${fmtN(km,0)} km</span>`);
+  if(litros>0)tags.push(`<span class="d-tag">⛽ ${fmtN(litros,2)} L</span>`);
+  if(kwh>0)tags.push(`<span class="d-tag el">⚡ ${fmtN(kwh,2)} kWh</span>`);
+  if(km>0&&litros>0)tags.push(`<span class="d-tag med">📊 ${fmtN(km/litros,2)} km/l</span>`);
+  if(c.pedagioTotal>0)tags.push(`<span class="d-tag ped">🛣️ ${fmt(c.pedagioTotal)}</span>`);
+  return `<div class="d-row${fds?' fds':''}" onclick="${openFn}(${i})">
+    <div class="d-row-top">
+      <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span></span>
+      <span class="d-right">
+        <span class="d-val">${fmt(gastoDia)}</span>
+        <button class="row-del" onclick="event.stopPropagation();${delFn}" title="Excluir">✕</button>
+      </span>
     </div>
-    ${trecho(idaVazia,'ida',r.kmIda,r.tipoIda,c.qIda,c.totalIda,r.pedagioIda)}
-    ${trecho(voltaVazia,'volta',r.kmVolta,r.tipoVolta,c.qVolta,c.totalVolta,r.pedagioVolta)}
-    <div class="m-day-actions">
-      <button class="m-edit" onclick="${editFn}">✏️ Editar</button>
-      <button onclick="${delFn}">🗑️ Excluir</button>
-    </div>
+    <div class="d-tags">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
   </div>`;
 }
 function uMonthStep(dir){
@@ -4269,7 +4443,8 @@ function renderPessoal(){
       <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.combVal)}</div><div class="k-sub">${fmtN(tot.litros,1)} L</div></div>
       <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">🛣️ Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
       <div class="kpi expense"><div class="k-label">💰 Gasto total</div><div class="k-val">${fmt(tot.gastoDia)}</div><div class="k-sub">no mês · ${fmtN(tot.kmIda+tot.kmVolta,0)} km · ${rows.length} dia(s)</div></div>`;
-    const _ps=document.getElementById('pessoalStats'); if(_ps)_ps.innerHTML=uStatsPanelHtml(rows,'pessoal');
+    const _ps=document.getElementById('pessoalStats');
+    if(_ps){ _ps.innerHTML=uStatsPanelHtml(rows,'pessoal')+'<div id="perPanel-pessoal-d"></div>'; renderPeriodPanel('pessoal'); }
   }
   syncPessoalHbar();
   renderPessoalMobile();
@@ -4339,7 +4514,8 @@ function pRenderMeses(){
       ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
   }
-  document.getElementById('pNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div>`;
+  document.getElementById('pNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div><div id="perPanel-pessoal-m"></div>`;
+  renderPeriodPanel('pessoal');
 }
 function pRenderDias(){
   const rows=ensurePessoalMonth(state.pessoal.current);
@@ -4354,7 +4530,7 @@ function pRenderDias(){
     <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.combVal)}</div><div class="k-sub">${fmtN(tot.litros,1)} L</div></div>
   </div>`;
   const cardsHtml=rows.length
-    ? `<div id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal')).join('')}</div>`
+    ? `<div class="panel" style="padding:4px 0;margin-top:12px" id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal')).join('')}</div>`
     : `<div class="m-empty-state">Nenhum lançamento em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
   document.getElementById('pNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'pessoal')+cardsHtml;
 }
@@ -5099,6 +5275,194 @@ function delManutEntry(i){
   });
 }
 
+/* ============================================================
+   GUIA RESUMOS — consulta livre por período e por fonte de gasto.
+   Escolha a granularidade (dia, semana, quinzena, mês, trimestre, semestre, ano),
+   o período específico, e quais fontes entram na conta.
+   ============================================================ */
+const RES_GRANS=[['dia','Dia'],['semana','Semana'],['quinzena','Quinzena'],['mes','Mês'],
+                 ['trimestre','Trimestre'],['semestre','Semestre'],['ano','Ano']];
+const RES_FONTES={
+  trabalho:     {label:'🏢 Trabalho',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
+  corp:         {label:'🚗 Corp',          cor:'var(--expense)', sub:'energia, alimentação, manutenção'},
+  pessoal:      {label:'👤 Pessoal',       cor:'var(--expense)', sub:'uso particular do carro'},
+  abastecimento:{label:'⛽ Abastecimento', cor:'var(--hybrid)',  sub:'compras de combustível/carga'},
+  manutencao:   {label:'🔧 Manutenção',    cor:'#f97316',        sub:'serviços no veículo'},
+  financiamento:{label:'💳 Financiamento', cor:'var(--neutral)', sub:'parcelas que vencem no período'}
+};
+const _resCfg={gran:'mes',periodo:null,fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}};
+
+/* chave de período — o prefixo evita que granularidades diferentes se misturem */
+function resKey(dateStr,gran){
+  const d=new Date(dateStr+'T00:00:00');
+  const y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
+  if(gran==='dia')      return `D:${dateStr}`;
+  if(gran==='semana'){ const ws=new Date(d); ws.setDate(day-d.getDay());
+    return `W:${ws.getFullYear()}-${pad(ws.getMonth()+1)}-${pad(ws.getDate())}`; }
+  if(gran==='quinzena') return `Q:${y}-${pad(m)}-${day<=15?1:2}`;
+  if(gran==='mes')      return `M:${y}-${pad(m)}`;
+  if(gran==='trimestre')return `T:${y}-${Math.floor((m-1)/3)+1}`;
+  if(gran==='semestre') return `S:${y}-${m<=6?1:2}`;
+  return `A:${y}`;
+}
+function resLabel(key){
+  const [tipo,resto]=[key.slice(0,1),key.slice(2)];
+  if(tipo==='D'){ const [y,m,d]=resto.split('-'); return `${d}/${m}/${y} · ${diaSemanaCurto(resto)}`; }
+  if(tipo==='W'){ const ini=new Date(resto+'T00:00:00'); const fim=new Date(ini); fim.setDate(ini.getDate()+6);
+    return `${pad(ini.getDate())}/${pad(ini.getMonth()+1)} a ${pad(fim.getDate())}/${pad(fim.getMonth()+1)} de ${fim.getFullYear()}`; }
+  if(tipo==='Q'){ const [y,m,q]=resto.split('-'); return `${q}ª quinzena · ${MESES[Number(m)-1]} ${y}`; }
+  if(tipo==='M'){ const [y,m]=resto.split('-'); return `${MESES[Number(m)-1]} ${y}`; }
+  if(tipo==='T'){ const [y,t]=resto.split('-'); return `${t}º trimestre de ${y}`; }
+  if(tipo==='S'){ const [y,sm]=resto.split('-'); return `${sm}º semestre de ${y}`; }
+  return resto;
+}
+/* junta todos os lançamentos do app numa lista única, marcados pela fonte */
+function resCollect(){
+  const out=[];
+  Object.values(state.uber.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
+    if(!r.data)return;
+    const c=rowCalc(r);
+    if(c.gastoTrabalho>0)out.push({data:r.data,fonte:'trabalho',valor:c.gastoTrabalho,
+      km:(r.kmIda||0)+(r.kmVolta||0),litros:c.trabLitros,kwh:c.trabKwh});
+    if(c.gastoUber>0||c.ganho>0)out.push({data:r.data,fonte:'corp',valor:c.gastoUber,ganho:c.ganho,
+      km:c.kmTotal||0,corridas:r.corridas||0,horas:r.horas||0});
+  }));
+  Object.values(state.pessoal.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
+    if(!r.data)return;
+    const c=rowCalcP(r);
+    if(c.gastoDia>0)out.push({data:r.data,fonte:'pessoal',valor:c.gastoDia,
+      km:(r.kmIda||0)+(r.kmVolta||0),litros:c.litros,kwh:c.kwh});
+  }));
+  Object.values(state.abastecimentos.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
+    if(!r.data)return;
+    out.push({data:r.data,fonte:'abastecimento',valor:r.valor||0,
+      litros:abLitrosDe(r),kwh:abKwhDe(r),km:abKmEntryTotal(r)});
+  }));
+  Object.values(state.manutencao.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
+    if(!r.data)return;
+    out.push({data:r.data,fonte:'manutencao',valor:r.valor||0,servico:manutNome(r),garantia:!!r.garantia});
+  }));
+  // parcelas do financiamento, pela data de vencimento
+  const f=state.finance&&state.finance.fin;
+  if(f&&f.parcelas>0&&f.inicio){
+    for(let i=0;i<f.parcelas;i++){
+      const venc=addMonths(f.inicio,i);
+      const desc=(f.descontos&&Number(f.descontos[i]))||0;
+      out.push({data:venc,fonte:'financiamento',valor:Math.max(0,f.parcelaValor-desc),
+        parcelaN:i+1,pago:!!f.pagos[i]});
+    }
+  }
+  return out;
+}
+function resPeriodosDisponiveis(gran,itens){
+  const set=new Set(itens.map(x=>resKey(x.data,gran)));
+  set.add(resKey(todayStr(),gran));    // garante que o período atual sempre aparece
+  return [...set].sort().reverse();     // mais recente primeiro
+}
+function resAgrega(itens,periodoKey,gran){
+  const dentro=itens.filter(x=>resKey(x.data,gran)===periodoKey);
+  const porFonte={};
+  Object.keys(RES_FONTES).forEach(f=>{
+    const lista=dentro.filter(x=>x.fonte===f);
+    porFonte[f]={
+      n:lista.length,
+      valor:lista.reduce((s,x)=>s+(x.valor||0),0),
+      km:lista.reduce((s,x)=>s+(x.km||0),0),
+      litros:lista.reduce((s,x)=>s+(x.litros||0),0),
+      kwh:lista.reduce((s,x)=>s+(x.kwh||0),0),
+      ganho:lista.reduce((s,x)=>s+(x.ganho||0),0),
+      corridas:lista.reduce((s,x)=>s+(x.corridas||0),0),
+      itens:lista
+    };
+  });
+  return porFonte;
+}
+function setResGran(g){
+  _resCfg.gran=g; _resCfg.periodo=null;   // volta pro período mais recente da nova granularidade
+  renderResumoTab();
+}
+function setResPeriodo(k){ _resCfg.periodo=k; renderResumoTab(); }
+function resStepPeriodo(dir){
+  const itens=resCollect();
+  const lista=resPeriodosDisponiveis(_resCfg.gran,itens);
+  const idx=lista.indexOf(_resCfg.periodo);
+  const novo=lista[idx+dir];
+  if(novo){ _resCfg.periodo=novo; renderResumoTab(); }
+}
+function toggleResFonte(f){ _resCfg.fontes[f]=!_resCfg.fontes[f]; renderResumoTab(); }
+function renderResumoTab(){
+  const el=document.getElementById('resumoBody'); if(!el)return;
+  const itens=resCollect();
+  const lista=resPeriodosDisponiveis(_resCfg.gran,itens);
+  if(!_resCfg.periodo || !lista.includes(_resCfg.periodo))_resCfg.periodo=lista[0];
+  const periodo=_resCfg.periodo;
+  const idx=lista.indexOf(periodo);
+  const dados=resAgrega(itens,periodo,_resCfg.gran);
+  // período anterior, pra comparar
+  const anterior=lista[idx+1] ? resAgrega(itens,lista[idx+1],_resCfg.gran) : null;
+
+  const chipsGran=RES_GRANS.map(([k,lbl])=>`<button class="per-chip${_resCfg.gran===k?' active':''}" onclick="setResGran('${k}')">${lbl}</button>`).join('');
+  const options=lista.map(k=>`<option value="${k}"${k===periodo?' selected':''}>${resLabel(k)}</option>`).join('');
+  const chipsFonte=Object.keys(RES_FONTES).map(f=>{
+    const on=_resCfg.fontes[f];
+    return `<button class="per-chip${on?' active':''}" onclick="toggleResFonte('${f}')">${on?'✓ ':''}${RES_FONTES[f].label}</button>`;
+  }).join('');
+
+  // total só das fontes marcadas
+  let total=0, totalAnt=0;
+  Object.keys(RES_FONTES).forEach(f=>{
+    if(_resCfg.fontes[f]){ total+=dados[f].valor; if(anterior)totalAnt+=anterior[f].valor; }
+  });
+  const diff=anterior?total-totalAnt:0;
+  const pctDiff=(anterior&&totalAnt>0)?(diff/totalAnt*100):0;
+
+  const cards=Object.keys(RES_FONTES).map(f=>{
+    const d=dados[f], meta=RES_FONTES[f], on=_resCfg.fontes[f];
+    const extras=[];
+    if(d.km>0)extras.push(`🛣️ ${fmtN(d.km,0)} km`);
+    if(d.litros>0)extras.push(`⛽ ${fmtN(d.litros,2)} L`);
+    if(d.kwh>0)extras.push(`⚡ ${fmtN(d.kwh,2)} kWh`);
+    if(d.km>0&&d.litros>0)extras.push(`📊 ${fmtN(d.km/d.litros,2)} km/l`);
+    if(f==='corp'&&d.ganho>0){ extras.push(`💵 fat. ${fmt(d.ganho)}`); extras.push(`📊 saldo ${fmt(d.ganho-d.valor)}`); }
+    if(f==='corp'&&d.corridas>0)extras.push(`🚕 ${fmtN(d.corridas,0)} corridas`);
+    const ant=anterior?anterior[f].valor:null;
+    const delta=(ant!=null&&ant>0)?((d.valor-ant)/ant*100):null;
+    return `<div class="res-card${on?' on':''}" onclick="toggleResFonte('${f}')">
+      <div class="res-card-h">
+        <span class="res-card-t">${meta.label}</span>
+        <span class="res-chk">${on?'✓':''}</span>
+      </div>
+      <div class="res-card-v" style="color:${meta.cor}">${fmt(d.valor)}</div>
+      <div class="res-card-s">${d.n} lançamento(s)${delta!=null?` · <span style="color:${delta>0?'var(--expense)':'var(--gain)'}">${delta>0?'▲':'▼'} ${fmtN(Math.abs(delta),0)}%</span>`:''}</div>
+      ${extras.length?`<div class="res-tags">${extras.map(e=>`<span class="d-tag">${e}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="panel" style="padding:16px 14px">
+      <h2 style="margin:0 0 10px;font-size:15px">📊 Resumo por período</h2>
+      <div class="per-bar">${chipsGran}</div>
+      <div class="res-nav">
+        <button class="btn" onclick="resStepPeriodo(1)" ${idx>=lista.length-1?'disabled':''} title="Período anterior">‹</button>
+        <select class="res-select" onchange="setResPeriodo(this.value)">${options}</select>
+        <button class="btn" onclick="resStepPeriodo(-1)" ${idx<=0?'disabled':''} title="Próximo período">›</button>
+      </div>
+    </div>
+
+    <div class="panel" style="padding:16px 14px;margin-top:12px">
+      <h2 style="margin:0 0 4px;font-size:14.5px">🎯 O que entra na conta</h2>
+      <p class="sub" style="margin:0 0 10px">Toque para incluir ou tirar do total. <b>Atenção:</b> manutenções já estão somadas dentro de Trabalho/Corp/Pessoal (foram rateadas lá), então marcar as duas coisas conta em dobro.</p>
+      <div class="per-bar">${chipsFonte}</div>
+      <div class="res-total">
+        <span>Total selecionado</span>
+        <b>${fmt(total)}</b>
+        ${anterior?`<span class="res-total-cmp" style="color:${diff>0?'var(--expense)':'var(--gain)'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}${totalAnt>0?` (${fmtN(Math.abs(pctDiff),0)}%)`:''} vs período anterior</span>`:''}
+      </div>
+    </div>
+
+    <div class="res-grid">${cards}</div>`;
+}
+
 /* ============ Import / Export / Reset ============ */
 function exportJSON(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
@@ -5628,7 +5992,7 @@ function initApp(){
   _reRenderAll=function(){
     renderFinanceInputs();renderFinance();renderUberCfg();renderUber();
     renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();
-    renderResumo();renderPessoal();renderAbastecimento();renderManutencao();
+    renderResumo();renderPessoal();renderAbastecimento();renderManutencao();renderResumoTab();
   };
   renderFinanceInputs();
   renderFinance();
@@ -5641,6 +6005,7 @@ function initApp(){
   renderResumo();
   renderAbastecimento();
   renderManutencao();
+  renderResumoTab();
 
   // reformata os campos numéricos da comparação ao sair (ex.: "1,800" vira "1.800")
   // (só anexa uma vez — initApp pode rodar de novo ao trocar o código de sincronização)
