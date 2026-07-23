@@ -368,35 +368,52 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .per-chip.active{background:var(--electric);border-color:var(--electric);color:#04121a}
 .per-sum{display:flex;flex-wrap:wrap;gap:14px;margin:2px 0 10px;font-size:12px;color:var(--txt-dim)}
 .per-sum b{font-size:14px;font-variant-numeric:tabular-nums}
+.per-bloco{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.per-bloco:first-of-type{margin-top:6px;padding-top:0;border-top:0}
+.per-bloco-h{font-size:12.5px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
+.per-legenda{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 4px}
+.per-leg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--txt-dim)}
+.per-leg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex-shrink:0}
 
-/* ---------- Guia Resumos ---------- */
+/* ---------- Guia Resumos: dois painéis (Entrada / Saída) ---------- */
+.res-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.res-big{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 18px 16px;cursor:pointer;transition:.16s}
+.res-big:hover{border-color:var(--line-strong)}
+.res-big.aberto{cursor:default;border-color:var(--line-strong)}
+.res-big.entrada.aberto{border-color:rgba(52,211,153,.45)}
+.res-big.saida.aberto{border-color:rgba(244,63,94,.35)}
+.res-big-h{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:13px;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px}
+.res-big-arrow{font-size:12px;opacity:.6}
+.res-big-v{font-family:'Sora';font-size:30px;font-weight:800;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;margin-top:8px;line-height:1.1}
+.res-big-s{font-size:11.5px;color:var(--txt-faint);margin-top:5px}
+.res-cfg{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.res-cfg-t{font-size:12px;font-weight:700;color:var(--txt-dim);margin-bottom:7px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.res-cfg-acts{display:flex;gap:4px}
+.res-cfg-acts button{background:none;border:1px solid var(--line);color:var(--txt-faint);
+  font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;cursor:pointer;
+  font-family:'Manrope';text-transform:none;letter-spacing:0}
+.res-cfg-acts button:hover{color:var(--txt);border-color:var(--line-strong)}
 .res-nav{display:flex;align-items:center;gap:8px}
-.res-nav .btn{padding:8px 14px;font-size:16px;font-weight:800;line-height:1}
+.res-nav .btn{padding:8px 13px;font-size:16px;font-weight:800;line-height:1}
 .res-nav .btn:disabled{opacity:.3;cursor:not-allowed}
-.res-select{flex:1;min-width:0;font-family:'Manrope';font-weight:700;font-size:14.5px;color:var(--txt);
-  background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer}
-.res-total{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-.res-total>span:first-child{font-size:12.5px;color:var(--txt-dim);font-weight:600}
-.res-total b{font-family:'Sora';font-size:24px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.res-total-cmp{font-size:11.5px;font-weight:700}
-.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
-.res-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;cursor:pointer;transition:.16s}
-.res-card:hover{border-color:var(--line-strong)}
-.res-card.on{border-color:var(--electric);background:rgba(45,212,191,.05)}
-.res-card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.res-card-t{font-size:13px;font-weight:700;color:var(--txt-dim)}
-.res-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);display:flex;
-  align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#04121a;flex-shrink:0}
-.res-card.on .res-chk{background:var(--electric);border-color:var(--electric)}
-.res-card-v{font-family:'Sora';font-size:21px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.res-card-s{font-size:11px;color:var(--txt-faint);margin-top:3px}
-.res-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
-@media (max-width:640px){
-  .res-grid{grid-template-columns:1fr 1fr;gap:9px}
-  .res-card{padding:11px 12px}
-  .res-card-v{font-size:17px}
-  .res-card-t{font-size:11.5px}
-  .res-total b{font-size:20px}
+.res-select{flex:1;min-width:0;font-family:'Manrope';font-weight:700;font-size:14px;color:var(--txt);
+  background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  padding:10px 12px;cursor:pointer}
+.res-det{padding:9px 0;border-bottom:1px solid var(--line)}
+.res-det:last-child{border-bottom:0}
+.res-det-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:13px;font-weight:600}
+.res-det-h b{font-variant-numeric:tabular-nums;font-size:14px}
+.res-det-bar{height:5px;border-radius:3px;background:var(--bg2);overflow:hidden;margin:6px 0 4px}
+.res-det-bar span{display:block;height:100%;border-radius:3px;transition:width .3s}
+.res-det-s{font-size:10.5px;color:var(--txt-faint)}
+@media (max-width:760px){
+  .res-2col{grid-template-columns:1fr;gap:10px}
+  .res-big{padding:15px 15px 13px}
+  .res-big-v{font-size:26px}
 }
 
 /* ---------- Tabs ---------- */
@@ -2765,13 +2782,17 @@ function manutTrabPanelHtml(rows){
    trimestre ou ano, e plota a métrica escolhida: km, litros, gasto ou km/l.
    ============================================================ */
 const PER_METRICAS={
-  km:    {label:'🛣️ Km percorrido',     color:'var(--electric)', unidade:'km',   f:v=>fmtN(v,0),  soma:true},
-  litros:{label:'⛽ Litros abastecidos', color:'var(--hybrid)',   unidade:'L',    f:v=>fmtN(v,2),  soma:true},
-  valor: {label:'💰 Valor gasto',        color:'var(--expense)',  unidade:'',     f:v=>fmt(v),     soma:true},
-  kml:   {label:'📊 Média km/l',         color:'var(--gain)',     unidade:'km/l', f:v=>fmtN(v,2),  soma:false}
+  km:    {label:'🛣️ Km percorrido',     color:'var(--electric)', unidade:'km',   f:v=>fmtN(v,0),  fs:v=>fmtN(v,0), soma:true},
+  litros:{label:'⛽ Litros abastecidos', color:'var(--hybrid)',   unidade:'L',    f:v=>fmtN(v,2),  fs:v=>fmtN(v,1), soma:true},
+  valor: {label:'💰 Valor gasto',        color:'var(--expense)',  unidade:'',     f:v=>fmt(v),     fs:v=>fmtN(v,0), soma:true},
+  kml:   {label:'📊 Média km/l',         color:'var(--gain)',     unidade:'km/l', f:v=>fmtN(v,2),  fs:v=>fmtN(v,1), soma:false}
 };
 const PER_PERIODOS=[['dia','Dia',30],['semana','Semana',16],['mes','Mês',12],['trimestre','Trimestre',8],['ano','Ano',10]];
-const _perCfg={uber:{periodo:'mes',metrica:'km'},pessoal:{periodo:'mes',metrica:'km'}};
+/* metricas é multi-seleção: dá pra ver km e litros juntos, ou tudo de uma vez */
+const _perCfg={
+  uber:   {periodo:'mes',metricas:{km:true,litros:false,valor:false,kml:false}},
+  pessoal:{periodo:'mes',metricas:{km:true,litros:false,valor:false,kml:false}}
+};
 
 /* devolve a chave de agrupamento e o rótulo curto de uma data, conforme o período */
 function perKeyOf(dateStr,periodo){
@@ -2807,13 +2828,55 @@ function perBuildSeries(mod,periodo){
   arr.forEach(x=>{ x.kml = x.litros>0 ? x.km/x.litros : 0; });
   return arr;
 }
-function perChartSvg(items,metrica){
+/* Barras agrupadas: um gráfico só, com uma barra por métrica lado a lado em cada período.
+   Como as métricas têm escalas muito diferentes (km na casa das centenas, km/l na casa das
+   dezenas), cada série é normalizada pelo SEU próprio máximo — o número real fica escrito
+   na barra. Serve pra comparar a evolução de cada uma, não a altura entre elas. */
+function perChartAgrupado(items,metricas){
+  const n=items.length, m=metricas.length;
+  if(!n||!m)return `<div class="lanc-empty">Sem dados nesse período ainda.</div>`;
+  // com poucos períodos as barras ficam largas e bem separadas; com muitos, elas encolhem
+  const slot=Math.max(80,Math.min(340,700/n));
+  const gap=Math.max(7,Math.min(20,slot*0.07));
+  const bw=Math.max(9,Math.min(48,(slot*0.66-(m-1)*gap)/m));
+  const larguraGrupo=m*bw+(m-1)*gap;
+  const padT=30, padB=38, padL=16, padR=16;
+  const W=Math.round(n*slot+padL+padR), H=230;
+  const innerH=H-padT-padB, y0=padT+innerH;
+  const maxPorMetrica={};
+  metricas.forEach(k=>{ maxPorMetrica[k]=Math.max(...items.map(i=>i[k]),0.0001); });
+  const fsRotulo=Math.max(8.5,Math.min(12,bw*0.42));
+  const mostrarRotulo=bw>=14;      // barra estreita demais não comporta número legível
+  let grid='';
+  for(let k=0;k<=3;k++){const yy=padT+innerH*k/3;grid+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" opacity=".5"/>`;}
+  let bars='';
+  items.forEach((it,i)=>{
+    const cxGrupo=padL+slot*i+slot/2;
+    const x0=cxGrupo-larguraGrupo/2;
+    metricas.forEach((k,j)=>{
+      const meta=PER_METRICAS[k], v=it[k];
+      const hg=(v/maxPorMetrica[k])*innerH;
+      const x=x0+j*(bw+gap);
+      bars+=`<rect x="${x}" y="${y0-hg}" width="${bw}" height="${Math.max(hg,v>0?2:0)}" rx="3" fill="${meta.color}" opacity="${v>0?.9:.2}"><title>${it.label} · ${meta.label}: ${meta.f(v)} ${meta.unidade}</title></rect>`;
+      if(mostrarRotulo&&v>0)bars+=`<text x="${x+bw/2}" y="${y0-hg-7}" text-anchor="middle" font-size="${fsRotulo}" font-weight="800" fill="${meta.color}">${meta.fs(v)}</text>`;
+    });
+    bars+=`<text x="${cxGrupo}" y="${H-padB+18}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--txt-faint)">${it.label}</text>`;
+  });
+  const legenda=metricas.map(k=>`<span class="per-leg"><i style="background:${PER_METRICAS[k].color}"></i>${PER_METRICAS[k].label}</span>`).join('');
+  return `<div class="per-legenda">${legenda}</div>
+    <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${Math.max(W,560)}px;height:auto;display:block">${grid}${bars}</svg></div>
+    <p class="sub" style="margin:6px 0 0;font-size:10.5px">💡 Cada cor tem escala própria (o valor real está na barra) — as alturas mostram a evolução de cada métrica, não a comparação entre elas.</p>`;
+}
+/* Um mini-gráfico por métrica. Cada um tem escala própria — km (centenas) e km/l (dezenas)
+   não cabem no mesmo eixo sem uma sumir, então empilhamos gráficos que dividem o eixo de períodos. */
+function perChartSvg(items,metrica,compacto){
   const meta=PER_METRICAS[metrica];
   const n=items.length;
   if(!n)return `<div class="lanc-empty">Sem dados nesse período ainda.</div>`;
   const dense=n>14;
   const slot=dense?30:Math.min(70,Math.max(40,620/n));
-  const W=Math.max(560,Math.round(n*slot+28)), H=196, padT=22, padB=34, padL=12, padR=12;
+  const H=compacto?150:196;
+  const W=Math.max(560,Math.round(n*slot+28)), padT=22, padB=compacto?30:34, padL=12, padR=12;
   const innerH=H-padT-padB, y0=padT+innerH;
   const max=Math.max(...items.map(i=>i[metrica]),0.0001);
   const sx=i=>padL+slot*i+slot/2, bw=Math.min(slot*0.55,28);
@@ -2833,26 +2896,58 @@ function perPanelInner(mod){
   const limite=(PER_PERIODOS.find(p=>p[0]===cfg.periodo)||[])[2]||12;
   const todos=perBuildSeries(mod,cfg.periodo);
   const items=todos.slice(-limite);           // mostra só os períodos mais recentes
-  const meta=PER_METRICAS[cfg.metrica];
+  const sel=Object.keys(PER_METRICAS).filter(k=>cfg.metricas[k]);
   const chipsP=PER_PERIODOS.map(([k,lbl])=>`<button class="per-chip${cfg.periodo===k?' active':''}" onclick="setPerPeriodo('${mod}','${k}')">${lbl}</button>`).join('');
-  const chipsM=Object.keys(PER_METRICAS).map(k=>`<button class="per-chip${cfg.metrica===k?' active':''}" onclick="setPerMetrica('${mod}','${k}')">${PER_METRICAS[k].label}</button>`).join('');
-  // resumo do que está no gráfico
-  const somaKm=items.reduce((s,x)=>s+x.km,0), somaL=items.reduce((s,x)=>s+x.litros,0);
-  const somaV=items.reduce((s,x)=>s+x.valor,0);
-  const val=meta.soma ? items.reduce((s,x)=>s+x[cfg.metrica],0) : (somaL>0?somaKm/somaL:0);
-  const media=items.length ? (meta.soma ? val/items.length : val) : 0;
+  const chipsM=Object.keys(PER_METRICAS).map(k=>{
+    const on=cfg.metricas[k];
+    return `<button class="per-chip${on?' active':''}" onclick="setPerMetrica('${mod}','${k}')">${on?'✓ ':''}${PER_METRICAS[k].label}</button>`;
+  }).join('');
   const nomePeriodo={dia:'dia',semana:'semana',mes:'mês',trimestre:'trimestre',ano:'ano'}[cfg.periodo];
+
+  let blocos='';
+  if(!sel.length){
+    blocos=`<div class="lanc-empty">Marque ao menos uma métrica acima pra ver o gráfico.</div>`;
+  } else if(!items.length){
+    blocos=`<div class="lanc-empty">Sem dados nesse período ainda.</div>`;
+  } else {
+    const somaKm=items.reduce((s,x)=>s+x.km,0), somaL=items.reduce((s,x)=>s+x.litros,0);
+    // resumo de cada métrica selecionada (vale nos dois formatos de gráfico)
+    const resumo=sel.map(k=>{
+      const meta=PER_METRICAS[k];
+      const val=meta.soma ? items.reduce((s,x)=>s+x[k],0) : (somaL>0?somaKm/somaL:0);
+      const media=meta.soma ? val/items.length : val;
+      return {k,meta,val,media};
+    });
+    // Dia/Semana geram muitas barras -> um gráfico por métrica.
+    // Mês/Trimestre/Ano têm poucas barras -> tudo num gráfico só, lado a lado.
+    const agrupar = ['mes','trimestre','ano'].includes(cfg.periodo) && sel.length>1;
+    if(agrupar){
+      blocos=`<div class="per-sum">${resumo.map(r=>
+        `<span>${r.meta.label}: <b style="color:${r.meta.color}">${r.meta.f(r.val)} ${r.meta.unidade}</b></span>`).join('')}</div>
+        ${perChartAgrupado(items,sel)}`;
+    } else {
+      const compacto=sel.length>1;
+      blocos=resumo.map(r=>`<div class="per-bloco">
+        <div class="per-bloco-h" style="color:${r.meta.color}">${r.meta.label}</div>
+        <div class="per-sum">
+          <span>${r.meta.soma?'Total':'Média geral'}: <b style="color:${r.meta.color}">${r.meta.f(r.val)} ${r.meta.unidade}</b></span>
+          <span>Por ${nomePeriodo}: <b style="color:${r.meta.color}">${r.meta.f(r.media)} ${r.meta.unidade}</b></span>
+        </div>
+        ${perChartSvg(items,r.k,compacto)}
+      </div>`).join('');
+    }
+  }
   return `<div class="panel per-panel">
     <h2 style="margin:0 0 10px;font-size:14.5px">📈 Evolução</h2>
     <div class="per-bar">${chipsP}</div>
-    <div class="per-bar">${chipsM}</div>
-    ${items.length?`<div class="per-sum">
-      <span>${meta.soma?'Total':'Média geral'}: <b style="color:${meta.color}">${meta.f(val)} ${meta.unidade}</b></span>
-      <span>Média por ${nomePeriodo}: <b style="color:${meta.color}">${meta.f(media)} ${meta.unidade}</b></span>
-      <span>Períodos: <b>${items.length}</b></span>
-      ${cfg.metrica!=='valor'&&somaV>0?`<span>Gasto: <b style="color:var(--expense)">${fmt(somaV)}</b></span>`:''}
-    </div>`:''}
-    ${perChartSvg(items,cfg.metrica)}
+    <div class="per-bar">${chipsM}
+      <span class="res-cfg-acts" style="margin-left:auto">
+        <button onclick="perMarcarTodas('${mod}',true)">todas</button>
+        <button onclick="perMarcarTodas('${mod}',false)">limpar</button>
+      </span>
+    </div>
+    ${items.length?`<div class="per-sum" style="margin-bottom:2px"><span>Períodos no gráfico: <b>${items.length}</b></span></div>`:''}
+    ${blocos}
   </div>`;
 }
 function renderPeriodPanel(mod){
@@ -2862,7 +2957,11 @@ function renderPeriodPanel(mod){
   });
 }
 function setPerPeriodo(mod,p){ _perCfg[mod].periodo=p; renderPeriodPanel(mod); }
-function setPerMetrica(mod,m){ _perCfg[mod].metrica=m; renderPeriodPanel(mod); }
+function setPerMetrica(mod,m){ _perCfg[mod].metricas[m]=!_perCfg[mod].metricas[m]; renderPeriodPanel(mod); }
+function perMarcarTodas(mod,on){
+  Object.keys(PER_METRICAS).forEach(k=>{ _perCfg[mod].metricas[k]=on; });
+  renderPeriodPanel(mod);
+}
 
 function uStatsPanelHtml(rows,mod){
   const st=uberStatsMes(rows,mod);
@@ -5276,13 +5375,20 @@ function delManutEntry(i){
 }
 
 /* ============================================================
-   GUIA RESUMOS — consulta livre por período e por fonte de gasto.
-   Escolha a granularidade (dia, semana, quinzena, mês, trimestre, semestre, ano),
-   o período específico, e quais fontes entram na conta.
+   GUIA RESUMOS — dois painéis independentes: ENTRADA e SAÍDA.
+   Cada um tem sua própria seleção de período (dia…ano) e de fontes,
+   e mostra o total do que foi selecionado. São visões separadas —
+   um não desconta do outro.
    ============================================================ */
 const RES_GRANS=[['dia','Dia'],['semana','Semana'],['quinzena','Quinzena'],['mes','Mês'],
                  ['trimestre','Trimestre'],['semestre','Semestre'],['ano','Ano']];
-const RES_FONTES={
+/* fontes de ENTRADA = os apps por onde entra dinheiro (slug sem espaço para uso nos handlers) */
+const RES_APPS=[['Uber','uber'],['99','g99'],['InDriver','indriver'],['Particular','particular'],
+                ['Shopee','shopee'],['Mercado Livre','mercadolivre'],['iFood','ifood']];
+const RES_FONTES_ENT={};
+RES_APPS.forEach(([nome,slug])=>{ RES_FONTES_ENT[slug]={label:nome,cor:'var(--gain)'}; });
+/* fontes de SAÍDA */
+const RES_FONTES_SAI={
   trabalho:     {label:'🏢 Trabalho',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
   corp:         {label:'🚗 Corp',          cor:'var(--expense)', sub:'energia, alimentação, manutenção'},
   pessoal:      {label:'👤 Pessoal',       cor:'var(--expense)', sub:'uso particular do carro'},
@@ -5290,7 +5396,13 @@ const RES_FONTES={
   manutencao:   {label:'🔧 Manutenção',    cor:'#f97316',        sub:'serviços no veículo'},
   financiamento:{label:'💳 Financiamento', cor:'var(--neutral)', sub:'parcelas que vencem no período'}
 };
-const _resCfg={gran:'mes',periodo:null,fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}};
+function resFontesDe(lado){ return lado==='entrada'?RES_FONTES_ENT:RES_FONTES_SAI; }
+
+const _resCfg={
+  entrada:{gran:'mes',periodo:null,aberto:false,fontes:{}},
+  saida:  {gran:'mes',periodo:null,aberto:false,fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}}
+};
+Object.keys(RES_FONTES_ENT).forEach(k=>{ _resCfg.entrada.fontes[k]=true; });   // entradas: tudo marcado
 
 /* chave de período — o prefixo evita que granularidades diferentes se misturem */
 function resKey(dateStr,gran){
@@ -5306,7 +5418,7 @@ function resKey(dateStr,gran){
   return `A:${y}`;
 }
 function resLabel(key){
-  const [tipo,resto]=[key.slice(0,1),key.slice(2)];
+  const tipo=key.slice(0,1), resto=key.slice(2);
   if(tipo==='D'){ const [y,m,d]=resto.split('-'); return `${d}/${m}/${y} · ${diaSemanaCurto(resto)}`; }
   if(tipo==='W'){ const ini=new Date(resto+'T00:00:00'); const fim=new Date(ini); fim.setDate(ini.getDate()+6);
     return `${pad(ini.getDate())}/${pad(ini.getMonth()+1)} a ${pad(fim.getDate())}/${pad(fim.getMonth()+1)} de ${fim.getFullYear()}`; }
@@ -5316,39 +5428,49 @@ function resLabel(key){
   if(tipo==='S'){ const [y,sm]=resto.split('-'); return `${sm}º semestre de ${y}`; }
   return resto;
 }
-/* junta todos os lançamentos do app numa lista única, marcados pela fonte */
+/* nome do app -> slug usado como chave de fonte */
+function resAppSlug(nome){
+  const achou=RES_APPS.find(([n])=>n===nome);
+  return achou?achou[1]:null;
+}
+/* junta todos os lançamentos do app numa lista única, marcada por lado e fonte */
 function resCollect(){
   const out=[];
   Object.values(state.uber.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
     const c=rowCalc(r);
-    if(c.gastoTrabalho>0)out.push({data:r.data,fonte:'trabalho',valor:c.gastoTrabalho,
+    if(c.gastoTrabalho>0)out.push({data:r.data,lado:'saida',fonte:'trabalho',valor:c.gastoTrabalho,
       km:(r.kmIda||0)+(r.kmVolta||0),litros:c.trabLitros,kwh:c.trabKwh});
-    if(c.gastoUber>0||c.ganho>0)out.push({data:r.data,fonte:'corp',valor:c.gastoUber,ganho:c.ganho,
+    if(c.gastoUber>0)out.push({data:r.data,lado:'saida',fonte:'corp',valor:c.gastoUber,
       km:c.kmTotal||0,corridas:r.corridas||0,horas:r.horas||0});
+    // ganhos entram separados por app
+    (r.ganhos||[]).forEach(g=>{
+      const slug=resAppSlug(g.app);
+      if(slug && (g.valor||0)>0)out.push({data:r.data,lado:'entrada',fonte:slug,valor:g.valor,
+        km:c.kmTotal||0,corridas:r.corridas||0,horas:r.horas||0});
+    });
   }));
   Object.values(state.pessoal.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
     const c=rowCalcP(r);
-    if(c.gastoDia>0)out.push({data:r.data,fonte:'pessoal',valor:c.gastoDia,
+    if(c.gastoDia>0)out.push({data:r.data,lado:'saida',fonte:'pessoal',valor:c.gastoDia,
       km:(r.kmIda||0)+(r.kmVolta||0),litros:c.litros,kwh:c.kwh});
   }));
   Object.values(state.abastecimentos.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
-    out.push({data:r.data,fonte:'abastecimento',valor:r.valor||0,
+    out.push({data:r.data,lado:'saida',fonte:'abastecimento',valor:r.valor||0,
       litros:abLitrosDe(r),kwh:abKwhDe(r),km:abKmEntryTotal(r)});
   }));
   Object.values(state.manutencao.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
-    out.push({data:r.data,fonte:'manutencao',valor:r.valor||0,servico:manutNome(r),garantia:!!r.garantia});
+    out.push({data:r.data,lado:'saida',fonte:'manutencao',valor:r.valor||0,servico:manutNome(r)});
   }));
-  // parcelas do financiamento, pela data de vencimento
   const f=state.finance&&state.finance.fin;
   if(f&&f.parcelas>0&&f.inicio){
     for(let i=0;i<f.parcelas;i++){
       const venc=addMonths(f.inicio,i);
       const desc=(f.descontos&&Number(f.descontos[i]))||0;
-      out.push({data:venc,fonte:'financiamento',valor:Math.max(0,f.parcelaValor-desc),
+      out.push({data:venc,lado:'saida',fonte:'financiamento',valor:Math.max(0,f.parcelaValor-desc),
         parcelaN:i+1,pago:!!f.pagos[i]});
     }
   }
@@ -5356,13 +5478,21 @@ function resCollect(){
 }
 function resPeriodosDisponiveis(gran,itens){
   const set=new Set(itens.map(x=>resKey(x.data,gran)));
-  set.add(resKey(todayStr(),gran));    // garante que o período atual sempre aparece
-  return [...set].sort().reverse();     // mais recente primeiro
+  set.add(resKey(todayStr(),gran));
+  return [...set].sort().reverse();
 }
-function resAgrega(itens,periodoKey,gran){
-  const dentro=itens.filter(x=>resKey(x.data,gran)===periodoKey);
+/* As parcelas do financiamento vão anos pra frente, então o "mais recente" da lista
+   seria um período futuro e vazio. O padrão certo é o período de HOJE. */
+function resPeriodoPadrao(gran,lista){
+  const hoje=resKey(todayStr(),gran);
+  if(lista.includes(hoje))return hoje;
+  return lista.find(k=>k<=hoje) || lista[lista.length-1];
+}
+function resAgrega(itens,lado,periodoKey,gran){
+  const fontes=resFontesDe(lado);
+  const dentro=itens.filter(x=>x.lado===lado && resKey(x.data,gran)===periodoKey);
   const porFonte={};
-  Object.keys(RES_FONTES).forEach(f=>{
+  Object.keys(fontes).forEach(f=>{
     const lista=dentro.filter(x=>x.fonte===f);
     porFonte[f]={
       n:lista.length,
@@ -5370,97 +5500,111 @@ function resAgrega(itens,periodoKey,gran){
       km:lista.reduce((s,x)=>s+(x.km||0),0),
       litros:lista.reduce((s,x)=>s+(x.litros||0),0),
       kwh:lista.reduce((s,x)=>s+(x.kwh||0),0),
-      ganho:lista.reduce((s,x)=>s+(x.ganho||0),0),
-      corridas:lista.reduce((s,x)=>s+(x.corridas||0),0),
-      itens:lista
+      corridas:lista.reduce((s,x)=>s+(x.corridas||0),0)
     };
   });
   return porFonte;
 }
-function setResGran(g){
-  _resCfg.gran=g; _resCfg.periodo=null;   // volta pro período mais recente da nova granularidade
+function resTotalDe(lado,itens){
+  const cfg=_resCfg[lado];
+  const lista=resPeriodosDisponiveis(cfg.gran,itens);
+  if(!cfg.periodo || !lista.includes(cfg.periodo))cfg.periodo=resPeriodoPadrao(cfg.gran,lista);
+  const dados=resAgrega(itens,lado,cfg.periodo,cfg.gran);
+  let total=0, nFontes=0;
+  Object.keys(resFontesDe(lado)).forEach(f=>{ if(cfg.fontes[f]){ total+=dados[f].valor; nFontes++; } });
+  return {total,dados,lista,nFontes};
+}
+/* ---- interações ---- */
+function toggleResLado(lado){ _resCfg[lado].aberto=!_resCfg[lado].aberto; renderResumoTab(); }
+function setResGran(lado,g){ _resCfg[lado].gran=g; _resCfg[lado].periodo=null; renderResumoTab(); }
+function setResPeriodo(lado,k){ _resCfg[lado].periodo=k; renderResumoTab(); }
+function resStepPeriodo(lado,dir){
+  const itens=resCollect();
+  const lista=resPeriodosDisponiveis(_resCfg[lado].gran,itens);
+  const novo=lista[lista.indexOf(_resCfg[lado].periodo)+dir];
+  if(novo){ _resCfg[lado].periodo=novo; renderResumoTab(); }
+}
+function toggleResFonte(lado,f){ _resCfg[lado].fontes[f]=!_resCfg[lado].fontes[f]; renderResumoTab(); }
+function resMarcarTodas(lado,on){
+  Object.keys(resFontesDe(lado)).forEach(f=>{ _resCfg[lado].fontes[f]=on; });
   renderResumoTab();
 }
-function setResPeriodo(k){ _resCfg.periodo=k; renderResumoTab(); }
-function resStepPeriodo(dir){
-  const itens=resCollect();
-  const lista=resPeriodosDisponiveis(_resCfg.gran,itens);
-  const idx=lista.indexOf(_resCfg.periodo);
-  const novo=lista[idx+dir];
-  if(novo){ _resCfg.periodo=novo; renderResumoTab(); }
-}
-function toggleResFonte(f){ _resCfg.fontes[f]=!_resCfg.fontes[f]; renderResumoTab(); }
-function renderResumoTab(){
-  const el=document.getElementById('resumoBody'); if(!el)return;
-  const itens=resCollect();
-  const lista=resPeriodosDisponiveis(_resCfg.gran,itens);
-  if(!_resCfg.periodo || !lista.includes(_resCfg.periodo))_resCfg.periodo=lista[0];
-  const periodo=_resCfg.periodo;
-  const idx=lista.indexOf(periodo);
-  const dados=resAgrega(itens,periodo,_resCfg.gran);
-  // período anterior, pra comparar
-  const anterior=lista[idx+1] ? resAgrega(itens,lista[idx+1],_resCfg.gran) : null;
+/* ---- render ---- */
+function resPainelHtml(lado,itens){
+  const cfg=_resCfg[lado];
+  const fontes=resFontesDe(lado);
+  const {total,dados,lista,nFontes}=resTotalDe(lado,itens);
+  const idx=lista.indexOf(cfg.periodo);
+  const ehEntrada=lado==='entrada';
+  const cor=ehEntrada?'var(--gain)':'var(--expense)';
+  const titulo=ehEntrada?'💵 Entrada':'💸 Saída';
 
-  const chipsGran=RES_GRANS.map(([k,lbl])=>`<button class="per-chip${_resCfg.gran===k?' active':''}" onclick="setResGran('${k}')">${lbl}</button>`).join('');
-  const options=lista.map(k=>`<option value="${k}"${k===periodo?' selected':''}>${resLabel(k)}</option>`).join('');
-  const chipsFonte=Object.keys(RES_FONTES).map(f=>{
-    const on=_resCfg.fontes[f];
-    return `<button class="per-chip${on?' active':''}" onclick="toggleResFonte('${f}')">${on?'✓ ':''}${RES_FONTES[f].label}</button>`;
+  if(!cfg.aberto){
+    return `<div class="res-big ${lado}" onclick="toggleResLado('${lado}')">
+      <div class="res-big-h"><span>${titulo}</span><span class="res-big-arrow">▾</span></div>
+      <div class="res-big-v" style="color:${cor}">${fmt(total)}</div>
+      <div class="res-big-s">${resLabel(cfg.periodo)} · ${nFontes} fonte(s)</div>
+    </div>`;
+  }
+  const chipsGran=RES_GRANS.map(([k,lbl])=>`<button class="per-chip${cfg.gran===k?' active':''}" onclick="setResGran('${lado}','${k}')">${lbl}</button>`).join('');
+  const options=lista.map(k=>`<option value="${k}"${k===cfg.periodo?' selected':''}>${resLabel(k)}</option>`).join('');
+  const chipsFonte=Object.keys(fontes).map(f=>{
+    const on=cfg.fontes[f];
+    return `<button class="per-chip${on?' active':''}" onclick="toggleResFonte('${lado}','${f}')">${on?'✓ ':''}${fontes[f].label}</button>`;
   }).join('');
-
-  // total só das fontes marcadas
-  let total=0, totalAnt=0;
-  Object.keys(RES_FONTES).forEach(f=>{
-    if(_resCfg.fontes[f]){ total+=dados[f].valor; if(anterior)totalAnt+=anterior[f].valor; }
-  });
-  const diff=anterior?total-totalAnt:0;
-  const pctDiff=(anterior&&totalAnt>0)?(diff/totalAnt*100):0;
-
-  const cards=Object.keys(RES_FONTES).map(f=>{
-    const d=dados[f], meta=RES_FONTES[f], on=_resCfg.fontes[f];
+  const detalhes=Object.keys(fontes).filter(f=>cfg.fontes[f]&&dados[f].n>0).map(f=>{
+    const d=dados[f], meta=fontes[f];
     const extras=[];
     if(d.km>0)extras.push(`🛣️ ${fmtN(d.km,0)} km`);
     if(d.litros>0)extras.push(`⛽ ${fmtN(d.litros,2)} L`);
     if(d.kwh>0)extras.push(`⚡ ${fmtN(d.kwh,2)} kWh`);
     if(d.km>0&&d.litros>0)extras.push(`📊 ${fmtN(d.km/d.litros,2)} km/l`);
-    if(f==='corp'&&d.ganho>0){ extras.push(`💵 fat. ${fmt(d.ganho)}`); extras.push(`📊 saldo ${fmt(d.ganho-d.valor)}`); }
-    if(f==='corp'&&d.corridas>0)extras.push(`🚕 ${fmtN(d.corridas,0)} corridas`);
-    const ant=anterior?anterior[f].valor:null;
-    const delta=(ant!=null&&ant>0)?((d.valor-ant)/ant*100):null;
-    return `<div class="res-card${on?' on':''}" onclick="toggleResFonte('${f}')">
-      <div class="res-card-h">
-        <span class="res-card-t">${meta.label}</span>
-        <span class="res-chk">${on?'✓':''}</span>
-      </div>
-      <div class="res-card-v" style="color:${meta.cor}">${fmt(d.valor)}</div>
-      <div class="res-card-s">${d.n} lançamento(s)${delta!=null?` · <span style="color:${delta>0?'var(--expense)':'var(--gain)'}">${delta>0?'▲':'▼'} ${fmtN(Math.abs(delta),0)}%</span>`:''}</div>
-      ${extras.length?`<div class="res-tags">${extras.map(e=>`<span class="d-tag">${e}</span>`).join('')}</div>`:''}
+    if(d.corridas>0)extras.push(`🚕 ${fmtN(d.corridas,0)} corridas`);
+    const pct=total>0?(d.valor/total*100):0;
+    return `<div class="res-det">
+      <div class="res-det-h"><span>${meta.label}</span><b style="color:${meta.cor||cor}">${fmt(d.valor)}</b></div>
+      <div class="res-det-bar"><span style="width:${pct}%;background:${meta.cor||cor}"></span></div>
+      <div class="res-det-s">${fmtN(pct,0)}% · ${d.n} lançamento(s)${extras.length?` · ${extras.join(' · ')}`:''}</div>
     </div>`;
-  }).join('');
+  }).join('') || `<div class="lanc-empty">Nada lançado nesse período com as fontes marcadas.</div>`;
 
-  el.innerHTML=`
-    <div class="panel" style="padding:16px 14px">
-      <h2 style="margin:0 0 10px;font-size:15px">📊 Resumo por período</h2>
+  return `<div class="res-big ${lado} aberto">
+    <div class="res-big-h" onclick="toggleResLado('${lado}')" style="cursor:pointer">
+      <span>${titulo}</span><span class="res-big-arrow">▴</span>
+    </div>
+    <div class="res-big-v" style="color:${cor}">${fmt(total)}</div>
+    <div class="res-big-s">${resLabel(cfg.periodo)} · ${nFontes} fonte(s)</div>
+
+    <div class="res-cfg">
+      <div class="res-cfg-t">📅 Período</div>
       <div class="per-bar">${chipsGran}</div>
       <div class="res-nav">
-        <button class="btn" onclick="resStepPeriodo(1)" ${idx>=lista.length-1?'disabled':''} title="Período anterior">‹</button>
-        <select class="res-select" onchange="setResPeriodo(this.value)">${options}</select>
-        <button class="btn" onclick="resStepPeriodo(-1)" ${idx<=0?'disabled':''} title="Próximo período">›</button>
+        <button class="btn" onclick="resStepPeriodo('${lado}',1)" ${idx>=lista.length-1?'disabled':''} title="Anterior">‹</button>
+        <select class="res-select" onchange="setResPeriodo('${lado}',this.value)">${options}</select>
+        <button class="btn" onclick="resStepPeriodo('${lado}',-1)" ${idx<=0?'disabled':''} title="Próximo">›</button>
       </div>
-    </div>
 
-    <div class="panel" style="padding:16px 14px;margin-top:12px">
-      <h2 style="margin:0 0 4px;font-size:14.5px">🎯 O que entra na conta</h2>
-      <p class="sub" style="margin:0 0 10px">Toque para incluir ou tirar do total. <b>Atenção:</b> manutenções já estão somadas dentro de Trabalho/Corp/Pessoal (foram rateadas lá), então marcar as duas coisas conta em dobro.</p>
+      <div class="res-cfg-t" style="margin-top:14px">🎯 Fontes
+        <span class="res-cfg-acts">
+          <button onclick="resMarcarTodas('${lado}',true)">todas</button>
+          <button onclick="resMarcarTodas('${lado}',false)">nenhuma</button>
+        </span>
+      </div>
       <div class="per-bar">${chipsFonte}</div>
-      <div class="res-total">
-        <span>Total selecionado</span>
-        <b>${fmt(total)}</b>
-        ${anterior?`<span class="res-total-cmp" style="color:${diff>0?'var(--expense)':'var(--gain)'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}${totalAnt>0?` (${fmtN(Math.abs(pctDiff),0)}%)`:''} vs período anterior</span>`:''}
-      </div>
-    </div>
+      ${lado==='saida'?`<p class="sub" style="margin:2px 0 0;font-size:11px">💡 Manutenções já entram dentro de Trabalho/Corp/Pessoal (foram rateadas lá). Marcar as duas conta em dobro.</p>`:''}
 
-    <div class="res-grid">${cards}</div>`;
+      <div class="res-cfg-t" style="margin-top:14px">📋 Detalhe</div>
+      ${detalhes}
+    </div>
+  </div>`;
+}
+function renderResumoTab(){
+  const el=document.getElementById('resumoBody'); if(!el)return;
+  const itens=resCollect();
+  el.innerHTML=`<div class="res-2col">
+    ${resPainelHtml('entrada',itens)}
+    ${resPainelHtml('saida',itens)}
+  </div>`;
 }
 
 /* ============ Import / Export / Reset ============ */
