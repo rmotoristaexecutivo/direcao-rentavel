@@ -358,6 +358,12 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .d-tag.med{color:var(--gain);border-color:rgba(52,211,153,.3)}
 .d-tag.ped{color:#f97316;border-color:rgba(249,115,22,.3)}
 .d-tag.vazio{font-style:italic;font-weight:600;opacity:.7}
+.d-obs{margin-top:7px;font-size:11.5px;color:var(--txt-dim);line-height:1.4;
+  padding-left:9px;border-left:2px solid var(--line-strong);white-space:pre-wrap;word-break:break-word}
+.m-obs{width:100%;font-family:'Manrope';font-weight:500;font-size:15px;color:var(--txt);
+  background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  padding:10px 12px;resize:vertical;min-height:56px;line-height:1.45}
+.m-obs:focus{outline:none;border-color:var(--electric)}
 
 /* ---------- Painel de gráficos por período ---------- */
 .per-panel{padding:16px 14px;margin-top:12px}
@@ -1684,6 +1690,10 @@ function addMonths(dateStr,m){
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
 }
 function fmtDateBR(s){if(!s)return'';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
+/* escapa texto digitado pelo usuário antes de inserir no HTML (a observação é campo livre) */
+function escHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function daysInMonth(y,m){return new Date(y,m,0).getDate();}
 function toast(msg,actionLabel,actionFn){
   const t=document.getElementById('toast');
@@ -2622,7 +2632,7 @@ function renderUber(){
       const _kmDiaTrab=(r.kmIda||0)+(r.kmVolta||0);
       const _mediaDiaTrab=c.trabLitros>0?_kmDiaTrab/c.trabLitros:0;
       tr.innerHTML=`
-        <td class="data-cell"><button class="row-del" onclick="delUberRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updateCell(${i},'data',this.value)"><span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span></div></td>
+        <td class="data-cell"><button class="row-del" onclick="delUberRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updateCell(${i},'data',this.value)"><span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNota(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button></div></td>
         ${idaCells}
         ${voltaCells}
         <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDiaTrab,fmtN(_kmDiaTrab,1))}</td>
@@ -3025,6 +3035,7 @@ function mobileDayCard(r,i,mod){
       </span>
     </div>
     <div class="d-tags">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
+    ${r.obs?`<div class="d-obs">📝 ${escHtml(r.obs)}</div>`:''}
   </div>`;
 }
 function uMonthStep(dir){
@@ -3135,6 +3146,9 @@ function renderUSheet(){
     <div class="m-field"><label>Data</label><input type="date" id="uSheetData" value="${_uSheetDraft.data}" onchange="_uSheetDraft.data=this.value"></div>
     ${uSheetTrechoHtml('ida')}
     ${uSheetTrechoHtml('volta')}
+    <div class="m-field"><label>📝 OBS</label>
+      <textarea id="uSheetObs" class="m-obs" rows="2" placeholder="anotação sobre esse trajeto…" oninput="_uSheetDraft.obs=this.value">${escHtml(_uSheetDraft.obs||'')}</textarea>
+    </div>
     <div class="sheet-calc" id="uSheetCalc"></div>
     <div class="sheet-foot">
       <button class="cancel" onclick="closeUSheet()">Cancelar</button>
@@ -3776,8 +3790,10 @@ function openObsNota(i,lado){
   _obsRow=i; _obsLado=lado;
   const rows=ensureMonth(state.uber.current);
   const r=rows[i];
-  const campo=lado==='ida'?'obsIda':'obsVolta';
-  document.getElementById('obsModalTitle').textContent=`💬 Observação — ${lado==='ida'?'Ida':'Volta'} · ${fmtDateBR(r.data)}`;
+  // lado 'dia' = observação livre do dia inteiro (campo OBS); ida/volta = nota do trecho
+  const campo=lado==='dia'?'obs':(lado==='ida'?'obsIda':'obsVolta');
+  const titulo=lado==='dia'?'OBS do dia':(lado==='ida'?'Ida':'Volta');
+  document.getElementById('obsModalTitle').textContent=`📝 ${titulo} · ${fmtDateBR(r.data)}`;
   document.getElementById('obsTexto').value=r[campo]||'';
   document.getElementById('obsModal').classList.add('open');
   setTimeout(()=>document.getElementById('obsTexto').focus(),50);
@@ -3785,7 +3801,7 @@ function openObsNota(i,lado){
 function saveObsNota(){
   const rows=ensureMonth(state.uber.current);
   const r=rows[_obsRow];
-  const campo=_obsLado==='ida'?'obsIda':'obsVolta';
+  const campo=_obsLado==='dia'?'obs':(_obsLado==='ida'?'obsIda':'obsVolta');
   r[campo]=document.getElementById('obsTexto').value.trim();
   save(); closeObsNota(); renderUber();
   toast('Observação salva');
@@ -4441,8 +4457,9 @@ function openObsNotaP(i,lado){
   _obsRowP=i; _obsLadoP=lado;
   const rows=ensurePessoalMonth(state.pessoal.current);
   const r=rows[i];
-  const campo=lado==='ida'?'obsIda':'obsVolta';
-  document.getElementById('pObsModalTitle').textContent=`💬 Observação — ${lado==='ida'?'Ida':'Volta'} · ${fmtDateBR(r.data)}`;
+  const campo=lado==='dia'?'obs':(lado==='ida'?'obsIda':'obsVolta');
+  const titulo=lado==='dia'?'OBS do dia':(lado==='ida'?'Ida':'Volta');
+  document.getElementById('pObsModalTitle').textContent=`📝 ${titulo} · ${fmtDateBR(r.data)}`;
   document.getElementById('pObsTexto').value=r[campo]||'';
   document.getElementById('pObsModal').classList.add('open');
   setTimeout(()=>document.getElementById('pObsTexto').focus(),50);
@@ -4450,7 +4467,7 @@ function openObsNotaP(i,lado){
 function saveObsNotaP(){
   const rows=ensurePessoalMonth(state.pessoal.current);
   const r=rows[_obsRowP];
-  const campo=_obsLadoP==='ida'?'obsIda':'obsVolta';
+  const campo=_obsLadoP==='dia'?'obs':(_obsLadoP==='ida'?'obsIda':'obsVolta');
   r[campo]=document.getElementById('pObsTexto').value.trim();
   save(); closeObsNotaP(); renderPessoal();
   toast('Observação salva');
@@ -4512,7 +4529,7 @@ function renderPessoal(){
       const _kmDia=(r.kmIda||0)+(r.kmVolta||0);
       const _mediaDia=c.litros>0?_kmDia/c.litros:0;
       tr.innerHTML=`
-        <td class="data-cell"><button class="row-del" onclick="delPessoalRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updatePessoalCell(${i},'data',this.value)"></div></td>
+        <td class="data-cell"><button class="row-del" onclick="delPessoalRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updatePessoalCell(${i},'data',this.value)"><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNotaP(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button></div></td>
         ${idaCells}
         ${voltaCells}
         <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDia,fmtN(_kmDia,1))}</td>
@@ -4734,6 +4751,9 @@ function renderPSheet(){
     <div class="m-field"><label>Data</label><input type="date" id="pSheetData" value="${_pSheetDraft.data}" onchange="_pSheetDraft.data=this.value"></div>
     ${pSheetTrechoHtml('ida')}
     ${pSheetTrechoHtml('volta')}
+    <div class="m-field"><label>📝 OBS</label>
+      <textarea id="pSheetObs" class="m-obs" rows="2" placeholder="anotação sobre esse trajeto…" oninput="_pSheetDraft.obs=this.value">${escHtml(_pSheetDraft.obs||'')}</textarea>
+    </div>
     <div class="sheet-calc" id="pSheetCalc"></div>
     <div class="sheet-foot">
       <button class="cancel" onclick="closePSheet()">Cancelar</button>
