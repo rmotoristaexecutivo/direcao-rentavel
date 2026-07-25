@@ -366,6 +366,9 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   border-radius:10px;cursor:pointer;transition:.15s}
 .d-add-same:hover{background:rgba(45,212,191,.08);border-color:var(--electric)}
 .d-add-same:active{transform:scale(.98)}
+.row-add{background:transparent;border:none;color:var(--electric);cursor:pointer;font-size:15px;
+  padding:4px 7px;border-radius:7px;transition:.14s;opacity:.7;font-weight:700}
+.row-add:hover{opacity:1;background:rgba(45,212,191,.12)}
 .m-obs{width:100%;font-family:'Manrope';font-weight:500;font-size:15px;color:var(--txt);
   background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
   padding:10px 12px;resize:vertical;min-height:56px;line-height:1.45}
@@ -3037,12 +3040,12 @@ function mobileDayCard(r,i,mod,ord){
       <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span>${ordBadge}</span>
       <span class="d-right">
         <span class="d-val">${fmt(gastoDia)}</span>
+        <button class="row-add" onclick="event.stopPropagation();${addSameFn}" title="Adicionar outro lançamento nesta mesma data">➕</button>
         <button class="row-del" onclick="event.stopPropagation();${delFn}" title="Excluir">✕</button>
       </span>
     </div>
     <div class="d-tags" onclick="${openFn}(${i})" style="cursor:pointer">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
     ${r.obs?`<div class="d-obs" onclick="${openFn}(${i})" style="cursor:pointer">📝 ${escHtml(r.obs)}</div>`:''}
-    <button class="d-add-same" onclick="${addSameFn}" title="Adicionar outro lançamento nesta mesma data">➕ Outro lançamento em ${fmtDateBR(r.data)}</button>
   </div>`;
 }
 /* devolve, pra cada linha, qual é a sua ordem entre os lançamentos da MESMA data (1,2,3…) */
