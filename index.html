@@ -348,6 +348,7 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .d-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .d-date{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .d-wd{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:7px;background:var(--bg2);color:var(--txt-faint)}
+.d-ord{font-size:10px;font-weight:800;padding:2px 6px;border-radius:7px;background:var(--electric);color:#04121a;letter-spacing:.2px}
 .d-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .d-val{font-weight:800;font-size:15px;color:var(--expense);font-variant-numeric:tabular-nums}
 .d-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -2312,15 +2313,11 @@ function confirmAddDate(){
   const monthKey=date.slice(0,7);
   if(monthKey!==state.uber.current){ state.uber.current=monthKey; state.uber.year=Number(monthKey.slice(0,4)); }
   const rows=ensureMonth(monthKey);
-  if(rows.some(r=>r.data===date)){
-    msg.textContent='Já existe um lançamento nesse dia — abra a linha na tabela pra editar.';
-    msg.style.color='var(--expense)';
-    return;
-  }
+  const jaTem=rows.some(r=>r.data===date);
   rows.push(emptyRow(date));
   rows.sort((a,b)=>a.data.localeCompare(b.data));
   save(); closeAddDateModal(); renderUber();
-  toast('Dia '+fmtDateBR(date)+' adicionado');
+  toast(jaTem ? '2º lançamento em '+fmtDateBR(date)+' adicionado' : 'Dia '+fmtDateBR(date)+' adicionado');
 }
 function fillMonth(){
   const k=state.uber.current;const{y,m}=monthKeyParts(k);const rows=ensureMonth(k);
@@ -3003,13 +3000,13 @@ function uRenderDias(){
     <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
   </div>`;
   const cardsHtml=rows.length
-    ? `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber')).join('')}</div>`
+    ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber',ords[i])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
   document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber')+cardsHtml;
 }
 /* Linha compacta de dia (Trabalho e Pessoal): mostra só data, resumo em chips e total.
    Tocar abre o modal completo de edição — a lista fica limpa e rápida de percorrer. */
-function mobileDayCard(r,i,mod){
+function mobileDayCard(r,i,mod,ord){
   const isUber=mod==='uber';
   const c=isUber?rowCalc(r):rowCalcP(r);
   const gastoDia=isUber?c.gastoTrabalho:c.gastoDia;
@@ -3020,6 +3017,7 @@ function mobileDayCard(r,i,mod){
   const fds=_dt&&(_dt.getDay()===0||_dt.getDay()===6);
   const openFn=isUber?'openUSheet':'openPSheet';
   const delFn=isUber?`delUberRow(${i})`:`delPessoalRow(${i})`;
+  const ordBadge=ord>1?`<span class="d-ord">${ord}º</span>`:'';
   const tags=[];
   if(km>0)tags.push(`<span class="d-tag km">🛣️ ${fmtN(km,0)} km</span>`);
   if(litros>0)tags.push(`<span class="d-tag">⛽ ${fmtN(litros,2)} L</span>`);
@@ -3028,7 +3026,7 @@ function mobileDayCard(r,i,mod){
   if(c.pedagioTotal>0)tags.push(`<span class="d-tag ped">🛣️ ${fmt(c.pedagioTotal)}</span>`);
   return `<div class="d-row${fds?' fds':''}" onclick="${openFn}(${i})">
     <div class="d-row-top">
-      <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span></span>
+      <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span>${ordBadge}</span>
       <span class="d-right">
         <span class="d-val">${fmt(gastoDia)}</span>
         <button class="row-del" onclick="event.stopPropagation();${delFn}" title="Excluir">✕</button>
@@ -3037,6 +3035,10 @@ function mobileDayCard(r,i,mod){
     <div class="d-tags">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
     ${r.obs?`<div class="d-obs">📝 ${escHtml(r.obs)}</div>`:''}
   </div>`;
+}
+/* devolve, pra cada linha, qual é a sua ordem entre os lançamentos da MESMA data (1,2,3…) */
+function ordinaisPorData(rows){
+  const cont={}; return rows.map(r=>{ cont[r.data]=(cont[r.data]||0)+1; return cont[r.data]; });
 }
 function uMonthStep(dir){
   const {y,m}=monthKeyParts(state.uber.current);
@@ -3168,8 +3170,7 @@ function saveUSheet(){
   if(monthKey!==state.uber.current){ state.uber.current=monthKey; state.uber.year=Number(monthKey.slice(0,4)); }
   const rows=ensureMonth(monthKey);
   if(_uSheetIdx==null){
-    const ex=rows.findIndex(r=>r.data===date);
-    if(ex>=0) rows[ex]=_uSheetDraft; else rows.push(_uSheetDraft);
+    rows.push(_uSheetDraft);   // sempre adiciona — pode haver mais de um lançamento na mesma data
   } else { rows[_uSheetIdx]=_uSheetDraft; }
   rows.sort((a,b)=>a.data.localeCompare(b.data));
   save(); closeUSheet(); renderUber();
@@ -4352,11 +4353,11 @@ function confirmAddPDate(){
   const monthKey=date.slice(0,7);
   if(monthKey!==state.pessoal.current){ state.pessoal.current=monthKey; state.pessoal.year=Number(monthKey.slice(0,4)); }
   const rows=ensurePessoalMonth(monthKey);
-  if(rows.some(r=>r.data===date)){ msg.textContent='Já existe um lançamento nesse dia — edite a linha na tabela.'; msg.style.color='var(--expense)'; return; }
+  const jaTemP=rows.some(r=>r.data===date);
   rows.push(emptyRowP(date));
   rows.sort((a,b)=>a.data.localeCompare(b.data));
   save(); closePAddDateModal(); renderPessoal();
-  toast('Dia '+fmtDateBR(date)+' adicionado');
+  toast(jaTemP ? '2º lançamento em '+fmtDateBR(date)+' adicionado' : 'Dia '+fmtDateBR(date)+' adicionado');
 }
 function fillMonthP(){
   const k=state.pessoal.current;const{y,m}=pMonthKeyParts(k);const rows=ensurePessoalMonth(k);
@@ -4646,7 +4647,7 @@ function pRenderDias(){
     <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.combVal)}</div><div class="k-sub">${fmtN(tot.litros,1)} L</div></div>
   </div>`;
   const cardsHtml=rows.length
-    ? `<div class="panel" style="padding:4px 0;margin-top:12px" id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal')).join('')}</div>`
+    ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal',ords[i])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum lançamento em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
   document.getElementById('pNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'pessoal')+cardsHtml;
 }
@@ -4773,9 +4774,7 @@ function savePSheet(){
   if(monthKey!==state.pessoal.current){ state.pessoal.current=monthKey; state.pessoal.year=Number(monthKey.slice(0,4)); }
   const rows=ensurePessoalMonth(monthKey);
   if(_pSheetIdx==null){
-    // se já existe um dia com essa data, faz merge/atualiza pra não duplicar
-    const ex=rows.findIndex(r=>r.data===date);
-    if(ex>=0) rows[ex]=_pSheetDraft; else rows.push(_pSheetDraft);
+    rows.push(_pSheetDraft);   // sempre adiciona — pode haver mais de um lançamento na mesma data
   } else {
     rows[_pSheetIdx]=_pSheetDraft;
   }
