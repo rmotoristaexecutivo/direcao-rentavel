@@ -361,6 +361,11 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .d-tag.vazio{font-style:italic;font-weight:600;opacity:.7}
 .d-obs{margin-top:7px;font-size:11.5px;color:var(--txt-dim);line-height:1.4;
   padding-left:9px;border-left:2px solid var(--line-strong);white-space:pre-wrap;word-break:break-word}
+.d-add-same{margin-top:10px;width:100%;background:none;border:1px dashed var(--line-strong);
+  color:var(--electric);font-family:'Manrope';font-weight:700;font-size:12px;padding:8px;
+  border-radius:10px;cursor:pointer;transition:.15s}
+.d-add-same:hover{background:rgba(45,212,191,.08);border-color:var(--electric)}
+.d-add-same:active{transform:scale(.98)}
 .m-obs{width:100%;font-family:'Manrope';font-weight:500;font-size:15px;color:var(--txt);
   background:var(--bg2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
   padding:10px 12px;resize:vertical;min-height:56px;line-height:1.45}
@@ -527,6 +532,8 @@ table.sched{min-width:0}
 .obs-btn{flex-shrink:0;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--bg2);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.45;filter:grayscale(1);transition:.15s}
 .obs-btn:hover{opacity:1;filter:none;border-color:var(--electric)}
 .obs-btn.has-obs{opacity:1;filter:none;border-color:var(--hybrid);background:var(--hybrid-bg)}
+.obs-btn.add-same-btn{opacity:.6;filter:none;color:var(--electric);font-weight:800}
+.obs-btn.add-same-btn:hover{opacity:1;border-color:var(--electric);background:rgba(45,212,191,.1)}
 .uber-table .grp-row th{font-size:14px;font-weight:800;letter-spacing:.6px;padding:10px 6px;text-align:center;text-transform:uppercase;border-bottom:2px solid var(--line)}
 .uber-table .g-trab{background:linear-gradient(rgba(250,204,21,.20),rgba(250,204,21,.20)),var(--panel-solid);color:#ca9a04}
 .uber-table .g-ida{background:linear-gradient(rgba(8,145,178,.20),rgba(8,145,178,.20)),var(--panel-solid);color:#0891b2}
@@ -2629,7 +2636,7 @@ function renderUber(){
       const _kmDiaTrab=(r.kmIda||0)+(r.kmVolta||0);
       const _mediaDiaTrab=c.trabLitros>0?_kmDiaTrab/c.trabLitros:0;
       tr.innerHTML=`
-        <td class="data-cell"><button class="row-del" onclick="delUberRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updateCell(${i},'data',this.value)"><span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNota(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button></div></td>
+        <td class="data-cell"><button class="row-del" onclick="delUberRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updateCell(${i},'data',this.value)"><span class="wd-chip" title="${diaSemanaDe(r.data)}">${diaSemanaCurto(r.data)}</span><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNota(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button><button type="button" class="obs-btn add-same-btn" onclick="addUberRowSameDate('${r.data}')" title="Adicionar outro lançamento nesta mesma data">➕</button></div></td>
         ${idaCells}
         ${voltaCells}
         <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDiaTrab,fmtN(_kmDiaTrab,1))}</td>
@@ -3017,6 +3024,7 @@ function mobileDayCard(r,i,mod,ord){
   const fds=_dt&&(_dt.getDay()===0||_dt.getDay()===6);
   const openFn=isUber?'openUSheet':'openPSheet';
   const delFn=isUber?`delUberRow(${i})`:`delPessoalRow(${i})`;
+  const addSameFn=isUber?`addUberRowSameDate('${r.data}')`:`addPessoalRowSameDate('${r.data}')`;
   const ordBadge=ord>1?`<span class="d-ord">${ord}º</span>`:'';
   const tags=[];
   if(km>0)tags.push(`<span class="d-tag km">🛣️ ${fmtN(km,0)} km</span>`);
@@ -3024,21 +3032,42 @@ function mobileDayCard(r,i,mod,ord){
   if(kwh>0)tags.push(`<span class="d-tag el">⚡ ${fmtN(kwh,2)} kWh</span>`);
   if(km>0&&litros>0)tags.push(`<span class="d-tag med">📊 ${fmtN(km/litros,2)} km/l</span>`);
   if(c.pedagioTotal>0)tags.push(`<span class="d-tag ped">🛣️ ${fmt(c.pedagioTotal)}</span>`);
-  return `<div class="d-row${fds?' fds':''}" onclick="${openFn}(${i})">
-    <div class="d-row-top">
+  return `<div class="d-row${fds?' fds':''}">
+    <div class="d-row-top" onclick="${openFn}(${i})" style="cursor:pointer">
       <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span>${ordBadge}</span>
       <span class="d-right">
         <span class="d-val">${fmt(gastoDia)}</span>
         <button class="row-del" onclick="event.stopPropagation();${delFn}" title="Excluir">✕</button>
       </span>
     </div>
-    <div class="d-tags">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
-    ${r.obs?`<div class="d-obs">📝 ${escHtml(r.obs)}</div>`:''}
+    <div class="d-tags" onclick="${openFn}(${i})" style="cursor:pointer">${tags.length?tags.join(''):'<span class="d-tag vazio">toque para preencher</span>'}</div>
+    ${r.obs?`<div class="d-obs" onclick="${openFn}(${i})" style="cursor:pointer">📝 ${escHtml(r.obs)}</div>`:''}
+    <button class="d-add-same" onclick="${addSameFn}" title="Adicionar outro lançamento nesta mesma data">➕ Outro lançamento em ${fmtDateBR(r.data)}</button>
   </div>`;
 }
 /* devolve, pra cada linha, qual é a sua ordem entre os lançamentos da MESMA data (1,2,3…) */
 function ordinaisPorData(rows){
   const cont={}; return rows.map(r=>{ cont[r.data]=(cont[r.data]||0)+1; return cont[r.data]; });
+}
+/* cria um NOVO lançamento (vazio) na mesma data e já abre pra edição — usado pelo botão ➕
+   de cada dia, pra separar gastos do mesmo dia (ex.: viagem do congresso × ida ao shopping) */
+function addUberRowSameDate(date){
+  const rows=ensureMonth(date.slice(0,7));
+  if(date.slice(0,7)!==state.uber.current){ state.uber.current=date.slice(0,7); state.uber.year=Number(date.slice(0,4)); }
+  const nova=emptyRow(date);
+  rows.push(nova);
+  rows.sort((a,b)=>a.data.localeCompare(b.data));
+  save(); renderUber();
+  openUSheet(rows.indexOf(nova));   // abre o lançamento recém-criado
+}
+function addPessoalRowSameDate(date){
+  const rows=ensurePessoalMonth(date.slice(0,7));
+  if(date.slice(0,7)!==state.pessoal.current){ state.pessoal.current=date.slice(0,7); state.pessoal.year=Number(date.slice(0,4)); }
+  const nova=emptyRowP(date);
+  rows.push(nova);
+  rows.sort((a,b)=>a.data.localeCompare(b.data));
+  save(); renderPessoal();
+  openPSheet(rows.indexOf(nova));
 }
 function uMonthStep(dir){
   const {y,m}=monthKeyParts(state.uber.current);
@@ -4530,7 +4559,7 @@ function renderPessoal(){
       const _kmDia=(r.kmIda||0)+(r.kmVolta||0);
       const _mediaDia=c.litros>0?_kmDia/c.litros:0;
       tr.innerHTML=`
-        <td class="data-cell"><button class="row-del" onclick="delPessoalRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updatePessoalCell(${i},'data',this.value)"><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNotaP(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button></div></td>
+        <td class="data-cell"><button class="row-del" onclick="delPessoalRow(${i})" title="Excluir este dia">✕</button><div class="date-wrap"><input class="cell-in date" type="date" value="${r.data}" onchange="updatePessoalCell(${i},'data',this.value)"><button type="button" class="obs-btn${r.obs?' has-obs':''}" onclick="openObsNotaP(${i},'dia')" title="${r.obs?'OBS: '+escHtml(r.obs):'Adicionar OBS deste dia'}">📝</button><button type="button" class="obs-btn add-same-btn" onclick="addPessoalRowSameDate('${r.data}')" title="Adicionar outro lançamento nesta mesma data">➕</button></div></td>
         ${idaCells}
         ${voltaCells}
         <td class="t-tot calc" style="color:var(--txt)">${blk(_kmDia,fmtN(_kmDia,1))}</td>
