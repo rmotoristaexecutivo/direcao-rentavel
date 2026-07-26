@@ -2208,9 +2208,9 @@ function openFinSheet(){
       <button class="cancel" onclick="closeFinSheet()">Cancelar</button>
       <button class="save" onclick="saveFinSheet()">Salvar</button>
     </div>`;
-  document.getElementById('finSheetOverlay').classList.add('open');
+  document.getElementById('finSheetOverlay').classList.add('open'); navPush(()=>closeFinSheet(true));
 }
-function closeFinSheet(){ document.getElementById('finSheetOverlay').classList.remove('open'); }
+function closeFinSheet(fromBack){ document.getElementById('finSheetOverlay').classList.remove('open'); if(!fromBack)navPop(); }
 function saveFinSheet(){
   const f=state.finance, g=id=>document.getElementById(id).value;
   f.carValue=parseNum(g('fsCar'));
@@ -2313,9 +2313,9 @@ function addUberRowForDate(){
   for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){ day=d; break; } }
   document.getElementById('addDateInput').value=`${y}-${pad(m)}-${pad(day)}`;
   document.getElementById('addDateMsg').textContent='';
-  document.getElementById('addDateModal').classList.add('open');
+  document.getElementById('addDateModal').classList.add('open'); navPush(()=>closeAddDateModal(true));
 }
-function closeAddDateModal(){ document.getElementById('addDateModal').classList.remove('open'); }
+function closeAddDateModal(fromBack){ document.getElementById('addDateModal').classList.remove('open'); if(!fromBack)navPop(); }
 function confirmAddDate(){
   const date=document.getElementById('addDateInput').value;
   const msg=document.getElementById('addDateMsg');
@@ -3083,7 +3083,7 @@ function uMonthPicker(){
   if(v && /^\d{4}-\d{2}$/.test(v)){ state.uber.current=v; state.uber.year=Number(v.slice(0,4)); save(); renderUber(); }
 }
 /* ===== BOTTOM SHEET Trabalho ===== */
-let _uSheetIdx=null,_uSheetDraft=null;
+let _uSheetIdx=null,_uSheetDraft=null,_uSheetOrig=null;
 function openUSheet(i,focoLado){
   const rows=ensureMonth(state.uber.current);
   _uSheetIdx=(i==null?null:i);
@@ -3092,12 +3092,14 @@ function openUSheet(i,focoLado){
     const existing=new Set(rows.map(r=>r.data));
     let day=1; for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){day=d;break;} }
     _uSheetDraft=emptyRow(`${y}-${pad(m)}-${pad(day)}`);
-  } else { _uSheetDraft=JSON.parse(JSON.stringify(rows[i])); }
+    _uSheetOrig=null;
+  } else { _uSheetDraft=JSON.parse(JSON.stringify(rows[i])); _uSheetOrig=JSON.parse(JSON.stringify(rows[i])); }
   renderUSheet();
   document.getElementById('uSheetOverlay').classList.add('open');
   focusSheetTrecho('u',focoLado);
+  navPush(()=>closeUSheet(true), ()=>_draftDirty(_uSheetDraft,_uSheetOrig));
 }
-function closeUSheet(){ document.getElementById('uSheetOverlay').classList.remove('open'); _uSheetIdx=null; _uSheetDraft=null; }
+function closeUSheet(fromBack){ document.getElementById('uSheetOverlay').classList.remove('open'); _uSheetIdx=null; _uSheetDraft=null; _uSheetOrig=null; if(!fromBack)navPop(); }
 function uSheetSetTipo(lado,tipo){ _uSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo; uSheetRecalc(lado); renderUSheet(); }
 /* Atualiza na tela o campo que foi RECALCULADO (o "espelho"), sem tocar no campo
    que o usuário está digitando (pra não perder foco/cursor). prefix: 'u'=Trabalho, 'p'=Pessoal */
@@ -3528,11 +3530,11 @@ function toggleFixas(){
 let _lancTab='entrada';
 function toggleLancamentos(){ openLancamentosModal(); }
 function openLancamentosModal(){
-  document.getElementById('lancamentosModal').classList.add('open');
+  document.getElementById('lancamentosModal').classList.add('open'); navPush(()=>closeLancamentosModal(true));
   const _ll=document.getElementById('lancMesLabel'); if(_ll)_ll.textContent=monthLabel();
   setLancTab(_lancTab);
 }
-function closeLancamentosModal(){ document.getElementById('lancamentosModal').classList.remove('open'); }
+function closeLancamentosModal(fromBack){ document.getElementById('lancamentosModal').classList.remove('open'); if(!fromBack)navPop(); }
 function setLancTab(tab){
   _lancTab=tab;
   document.getElementById('lancTabEntrada').className='lanc-tab'+(tab==='entrada'?' active':'');
@@ -3600,7 +3602,7 @@ function editLancamento(kind,ri,gi){
   if(!it)return;
   _editLanc={kind,ri,gi};
   renderEditLancSheet(kind,it,r.data);
-  document.getElementById('editLancOverlay').classList.add('open');
+  document.getElementById('editLancOverlay').classList.add('open'); navPush(()=>closeEditLanc(true));
 }
 let _editLanc=null;
 function renderEditLancSheet(kind,it,data){
@@ -3714,7 +3716,7 @@ function onEditCombInput(field){
   const valorUnit=parseNum(document.getElementById('elCombValorUnit').value);
   document.getElementById('elCombTotal').value=fmt(qtda*valorUnit);
 }
-function closeEditLanc(){ document.getElementById('editLancOverlay').classList.remove('open'); _editLanc=null; }
+function closeEditLanc(fromBack){ document.getElementById('editLancOverlay').classList.remove('open'); _editLanc=null; if(!fromBack)navPop(); }
 function onEditLancAppChange(){
   const app=document.getElementById('elApp'); if(!app)return;
   const box=document.getElementById('elCatsBox'); if(!box)return;
@@ -3784,7 +3786,7 @@ function gastoDiarioChart(items){
   return`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;max-width:100%;height:${H}px">${grid}${bars}</svg></div>`;
 }
 function openGastoTotalModal(){
-  document.getElementById('gastoTotalModal').classList.add('open');
+  document.getElementById('gastoTotalModal').classList.add('open'); navPush(()=>closeGastoTotalModal(true));
   document.getElementById('gastoTotalMesLabel').textContent=monthLabel();
   const rows=ensureMonth(state.uber.current);
   const items=rows.map(r=>{
@@ -3815,7 +3817,7 @@ function openGastoTotalModal(){
     </div>
     <div style="border-top:1px solid var(--line)">${rowsHtml}</div>`;
 }
-function closeGastoTotalModal(){ document.getElementById('gastoTotalModal').classList.remove('open'); }
+function closeGastoTotalModal(fromBack){ document.getElementById('gastoTotalModal').classList.remove('open'); if(!fromBack)navPop(); }
 
 /* ===== Observação do trecho (ida/volta) ===== */
 let _obsRow=null, _obsLado=null;
@@ -3828,7 +3830,7 @@ function openObsNota(i,lado){
   const titulo=lado==='dia'?'OBS do dia':(lado==='ida'?'Ida':'Volta');
   document.getElementById('obsModalTitle').textContent=`📝 ${titulo} · ${fmtDateBR(r.data)}`;
   document.getElementById('obsTexto').value=r[campo]||'';
-  document.getElementById('obsModal').classList.add('open');
+  document.getElementById('obsModal').classList.add('open'); navPush(()=>closeObsNota(true));
   setTimeout(()=>document.getElementById('obsTexto').focus(),50);
 }
 function saveObsNota(){
@@ -3843,7 +3845,7 @@ function clearObsNota(){
   document.getElementById('obsTexto').value='';
   saveObsNota();
 }
-function closeObsNota(){ document.getElementById('obsModal').classList.remove('open'); _obsRow=null; _obsLado=null; }
+function closeObsNota(fromBack){ document.getElementById('obsModal').classList.remove('open'); _obsRow=null; _obsLado=null; if(!fromBack)navPop(); }
 
 /* ===== MODAL Nova Entrada / Nova Saída — múltiplos itens por data ===== */
 let _modalKind=null;
@@ -3908,7 +3910,7 @@ function openEntrada(){
     <button class="btn" style="width:100%;justify-content:center" onclick="addPendingEntrada()">➕ Adicionar este item e lançar outro</button>
     <div id="pendingList">${pendingListHtml()}</div>`;
   onEntradaAppChange();
-  document.getElementById('lancModal').classList.add('open');
+  document.getElementById('lancModal').classList.add('open'); navPush(()=>closeLancModal(true), ()=>(_pendingItems&&_pendingItems.length>0));
 }
 function onEntradaAppChange(){
   const app=document.getElementById('mApp'); if(!app)return;
@@ -3963,7 +3965,7 @@ function openSaida(){
     <div class="field"><label>Observação</label><input type="text" id="mObs" placeholder="Opcional — o que foi feito"></div>
     <button class="btn" style="width:100%;justify-content:center" onclick="addPendingSaida()">➕ Adicionar este item e lançar outro</button>
     <div id="pendingList">${pendingListHtml()}</div>`;
-  document.getElementById('lancModal').classList.add('open');
+  document.getElementById('lancModal').classList.add('open'); navPush(()=>closeLancModal(true), ()=>(_pendingItems&&_pendingItems.length>0));
   onCategoriaChange();
 }
 function onCategoriaChange(){
@@ -4063,7 +4065,7 @@ function addPendingSaida(){
   document.getElementById('mObs').value='';
   refreshPendingList();
 }
-function closeLancModal(){ document.getElementById('lancModal').classList.remove('open'); _modalKind=null; _pendingItems=[]; }
+function closeLancModal(fromBack){ document.getElementById('lancModal').classList.remove('open'); _modalKind=null; _pendingItems=[]; if(!fromBack)navPop(); }
 function recalcRowFromLists(r){
   // recalcula os agregados por app a partir da lista de ganhos do dia
   const sums={Uber:0,'99':0,InDriver:0,Particular:0,Shopee:0,'Mercado Livre':0,iFood:0};
@@ -4375,9 +4377,9 @@ function addPessoalRowForDate(){
   for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){ day=d; break; } }
   document.getElementById('pAddDateInput').value=`${y}-${pad(m)}-${pad(day)}`;
   document.getElementById('pAddDateMsg').textContent='';
-  document.getElementById('pAddDateModal').classList.add('open');
+  document.getElementById('pAddDateModal').classList.add('open'); navPush(()=>closePAddDateModal(true));
 }
-function closePAddDateModal(){ document.getElementById('pAddDateModal').classList.remove('open'); }
+function closePAddDateModal(fromBack){ document.getElementById('pAddDateModal').classList.remove('open'); if(!fromBack)navPop(); }
 function confirmAddPDate(){
   const date=document.getElementById('pAddDateInput').value;
   const msg=document.getElementById('pAddDateMsg');
@@ -4494,7 +4496,7 @@ function openObsNotaP(i,lado){
   const titulo=lado==='dia'?'OBS do dia':(lado==='ida'?'Ida':'Volta');
   document.getElementById('pObsModalTitle').textContent=`📝 ${titulo} · ${fmtDateBR(r.data)}`;
   document.getElementById('pObsTexto').value=r[campo]||'';
-  document.getElementById('pObsModal').classList.add('open');
+  document.getElementById('pObsModal').classList.add('open'); navPush(()=>closeObsNotaP(true));
   setTimeout(()=>document.getElementById('pObsTexto').focus(),50);
 }
 function saveObsNotaP(){
@@ -4506,7 +4508,7 @@ function saveObsNotaP(){
   toast('Observação salva');
 }
 function clearObsNotaP(){ document.getElementById('pObsTexto').value=''; saveObsNotaP(); }
-function closeObsNotaP(){ document.getElementById('pObsModal').classList.remove('open'); _obsRowP=null; _obsLadoP=null; }
+function closeObsNotaP(fromBack){ document.getElementById('pObsModal').classList.remove('open'); _obsRowP=null; _obsLadoP=null; if(!fromBack)navPop(); }
 
 /* --- render principal (tabela idêntica ao Uber) --- */
 function renderPessoal(){
@@ -4699,7 +4701,7 @@ function pMonthPicker(){
 
 /* ===== BOTTOM SHEET: novo/editar dia ===== */
 let _pSheetIdx=null; // null = novo
-let _pSheetDraft=null;
+let _pSheetDraft=null,_pSheetOrig=null;
 function openPSheet(i,focoLado){
   const rows=ensurePessoalMonth(state.pessoal.current);
   _pSheetIdx = (i==null?null:i);
@@ -4708,14 +4710,17 @@ function openPSheet(i,focoLado){
     const existing=new Set(rows.map(r=>r.data));
     let day=1; for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){day=d;break;} }
     _pSheetDraft=emptyRowP(`${y}-${pad(m)}-${pad(day)}`);
+    _pSheetOrig=null;
   } else {
     _pSheetDraft=JSON.parse(JSON.stringify(rows[i]));
+    _pSheetOrig=JSON.parse(JSON.stringify(rows[i]));
   }
   renderPSheet();
   document.getElementById('pSheetOverlay').classList.add('open');
   focusSheetTrecho('p',focoLado);
+  navPush(()=>closePSheet(true), ()=>_draftDirty(_pSheetDraft,_pSheetOrig));
 }
-function closePSheet(){ document.getElementById('pSheetOverlay').classList.remove('open'); _pSheetIdx=null; _pSheetDraft=null; }
+function closePSheet(fromBack){ document.getElementById('pSheetOverlay').classList.remove('open'); _pSheetIdx=null; _pSheetDraft=null; _pSheetOrig=null; if(!fromBack)navPop(); }
 function pSheetSetTipo(lado,tipo){
   _pSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo;
   pSheetRecalc(lado);
@@ -5096,9 +5101,13 @@ function openAbastModal(i){
     </div>`;
   abUpdateKmRodado();
   abUpdateValorTotal();
-  document.getElementById('abastModal').classList.add('open');
+  const ov=document.getElementById('abastModal');
+  ov.classList.add('open');
+  _modalTyped=false;
+  ov.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',()=>{_modalTyped=true;},{once:true}));
+  navPush(()=>closeAbastModal(true), ()=>_modalTyped);
 }
-function closeAbastModal(){ document.getElementById('abastModal').classList.remove('open'); _abastEditIdx=null; }
+function closeAbastModal(fromBack){ document.getElementById('abastModal').classList.remove('open'); _abastEditIdx=null; if(!fromBack)navPop(); }
 function saveAbastEntry(){
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
@@ -5317,7 +5326,11 @@ function openManutModal(i){
   onManutRateioInput();
   onManutServicoChange();
   onManutGarantiaChange();
-  document.getElementById('manutModal').classList.add('open');
+  const ovM=document.getElementById('manutModal');
+  ovM.classList.add('open');
+  _modalTyped=false;
+  ovM.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',()=>{_modalTyped=true;},{once:true}));
+  navPush(()=>closeManutModal(true), ()=>_modalTyped);
 }
 function onManutGarantiaChange(){
   const chk=document.getElementById('mnGarantia'); if(!chk)return;
@@ -5340,7 +5353,7 @@ function onManutServicoChange(){
   const box=document.getElementById('mnOutroBox'); if(!box)return;
   box.style.display=(sel.value==='Outro')?'':'none';
 }
-function closeManutModal(){ document.getElementById('manutModal').classList.remove('open'); _manutEditIdx=null; }
+function closeManutModal(fromBack){ document.getElementById('manutModal').classList.remove('open'); _manutEditIdx=null; if(!fromBack)navPop(); }
 function onManutValorInput(){ onManutRateioInput(); }
 function onManutDestToggle(key){
   const chk=document.getElementById('mnChk_'+key), val=document.getElementById('mnVal_'+key);
@@ -6165,8 +6178,8 @@ function applyTheme(t){
   localStorage.setItem('cv_theme',t);
 }
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');}
-function toggleHdrMenu(){ const m=document.getElementById('hdrMenu'); m.classList.toggle('open'); }
-function closeHdrMenu(){ document.getElementById('hdrMenu').classList.remove('open'); }
+function toggleHdrMenu(){ const m=document.getElementById('hdrMenu'); const abrindo=!m.classList.contains('open'); m.classList.toggle('open'); if(abrindo)navPush(()=>closeHdrMenu(true)); else navPop(); }
+function closeHdrMenu(fromBack){ document.getElementById('hdrMenu').classList.remove('open'); if(!fromBack&&_navStack.length)navPop(); }
 
 /* mede a altura real do header (sticky) e expõe como --hdrH, pra que a navbar
    de Anos→Meses→Dias (também sticky) fique colada exatamente abaixo dele */
@@ -6176,6 +6189,66 @@ function syncHeaderHeight(){
 }
 window.addEventListener('resize',syncHeaderHeight);
 window.addEventListener('load',syncHeaderHeight);
+
+/* ============================================================
+   BOTÃO / GESTO "VOLTAR" DO ANDROID
+   Sem isso, o voltar (botão ou gesto de borda) minimiza o app inteiro mesmo com um
+   modal aberto. Aqui interceptamos o voltar: se houver algo aberto (modal, menu),
+   ele FECHA só isso; sem nada aberto, deixa o Android sair normalmente.
+   Cada camada que abre empurra uma entrada no histórico; o voltar dispara popstate.
+   ============================================================ */
+const _navStack=[];   // pilha de camadas abertas: {close, isDirty}
+let _navSuppressPop=false;
+let _modalTyped=false; // marca se o usuário digitou algo em modais lidos via DOM (abast/manut)
+
+/* registra uma camada aberta. close() fecha ela; isDirty() (opcional) diz se há
+   alterações não salvas — se tiver, pergunta antes de descartar. */
+function navPush(close,isDirty){
+  _navStack.push({close,isDirty:isDirty||null});
+  history.pushState({navLayer:_navStack.length},'');
+}
+/* remove a camada do topo SEM disparar o voltar de novo (usado quando o próprio
+   botão Cancelar/Salvar/X fecha o modal) */
+function navPop(){
+  if(!_navStack.length)return;
+  _navStack.pop();
+  _navSuppressPop=true;
+  history.back();   // consome a entrada que empurramos; popstate abaixo ignora
+}
+window.addEventListener('popstate',function(){
+  if(_navSuppressPop){ _navSuppressPop=false; return; }
+  if(!_navStack.length)return;   // nada aberto: deixa o Android sair
+  const topo=_navStack[_navStack.length-1];
+  // se há dados não salvos, confirma antes de descartar
+  if(topo.isDirty && topo.isDirty()){
+    if(!confirm('Você fez alterações. Deseja sair sem salvar?')){
+      // usuário quer ficar: re-empurra a entrada pra manter o modal "protegido"
+      history.pushState({navLayer:_navStack.length},'');
+      return;
+    }
+  }
+  _navStack.pop();
+  try{ topo.close(); }catch(e){}
+});
+/* helper: fecha por completo a partir de um botão (Salvar/Cancelar/X) */
+function navClose(){ navPop(); }
+
+/* compara o rascunho atual com o estado original pra saber se houve edição */
+function _draftDirty(draft,original){
+  if(!draft)return false;
+  if(!original)  // lançamento novo: sujo se qualquer número/nota foi preenchido
+    return JSON.stringify(draft)!==JSON.stringify(_emptyLike(draft));
+  return JSON.stringify(draft)!==JSON.stringify(original);
+}
+function _emptyLike(d){
+  const e=JSON.parse(JSON.stringify(d));
+  Object.keys(e).forEach(k=>{
+    if(typeof e[k]==='number')e[k]=0;
+    else if(typeof e[k]==='string' && k!=='data' && !k.startsWith('tipo'))e[k]='';
+    else if(Array.isArray(e[k]))e[k]=[];
+  });
+  return e;
+}
 
 /* ============ Init ============ */
 applyTheme(localStorage.getItem('cv_theme')||'dark');
@@ -6386,9 +6459,9 @@ function openHistoryModal(){
         </div>`;
       }).join('')}`;
   }
-  document.getElementById('historyModal').classList.add('open');
+  document.getElementById('historyModal').classList.add('open'); navPush(()=>closeHistoryModal(true));
 }
-function closeHistoryModal(){ document.getElementById('historyModal').classList.remove('open'); }
+function closeHistoryModal(fromBack){ document.getElementById('historyModal').classList.remove('open'); if(!fromBack)navPop(); }
 
 function applyRemoteState(remoteData,remoteAt){
   // Antes de aplicar a nuvem, guarda um snapshot do estado atual — se por acaso a nuvem
@@ -6645,9 +6718,9 @@ function openSyncKeyModal(){
   const curEl=document.getElementById('syncKeyCurrent'); if(curEl)curEl.value=cur;
   const newEl=document.getElementById('syncKeyNew'); if(newEl)newEl.value='';
   const msg=document.getElementById('syncKeyMsg'); if(msg)msg.textContent='';
-  document.getElementById('syncKeyModal').classList.add('open');
+  document.getElementById('syncKeyModal').classList.add('open'); navPush(()=>closeSyncKeyModal(true));
 }
-function closeSyncKeyModal(){ document.getElementById('syncKeyModal').classList.remove('open'); }
+function closeSyncKeyModal(fromBack){ document.getElementById('syncKeyModal').classList.remove('open'); if(!fromBack)navPop(); }
 function copySyncKey(){
   const el=document.getElementById('syncKeyCurrent');
   el.select(); el.setSelectionRange(0,99999);
