@@ -2342,27 +2342,65 @@ function clearMonth(){
   state.uber.months[state.uber.current]=[];save();renderUber();
 }
 let _lastDeletedRow=null;
+/* campos que pertencem a cada lado (Trabalho e Corp compartilham a mesma linha/dia) */
+const CAMPOS_TRAB=['kmIda','tipoIda','rendIda','pctIda','qtdaIda','valorIda','pedagioIda','obsIda',
+  'kmVolta','tipoVolta','rendVolta','pctVolta','qtdaVolta','valorVolta','pedagioVolta','obsVolta','manutUber','obs'];
+const CAMPOS_CORP=['corridas','kmTotal','horas','qtdaKwh','valorKwh','qtdaComb','valorComb',
+  'alim','manut','uber','g99','indriver','part','ifood','ganhos','gastosExtra'];
+/* diz se o lado Corp de uma linha tem algum dado preenchido */
+function temDadosCorp(r){
+  if((r.ganhos||[]).length || (r.gastosExtra||[]).length)return true;
+  return ['corridas','kmTotal','horas','qtdaKwh','valorKwh','qtdaComb','valorComb','alim','manut','uber','g99','indriver','part','ifood']
+    .some(k=>Number(r[k])>0);
+}
+function temDadosTrab(r){
+  return ['kmIda','qtdaIda','valorIda','pedagioIda','pctIda','kmVolta','qtdaVolta','valorVolta','pedagioVolta','pctVolta','manutUber']
+    .some(k=>Number(r[k])>0) || (r.obsIda||'')!=='' || (r.obsVolta||'')!=='' || (r.obs||'')!=='';
+}
+/* limpa só os campos de um lado, mantendo o outro intacto */
+function limparLado(r,campos){
+  const base=emptyRow(r.data);
+  campos.forEach(k=>{ r[k]=Array.isArray(base[k])?[]:base[k]; });
+}
+
 function delUberRow(i){
   const monthKey=state.uber.current;
   const rows=state.uber.months[monthKey];
   const removed=rows[i];
   const dataLabel=fmtDateBR(removed.data);
+  // Se esse mesmo dia tem dados do Corp, NÃO apaga a linha inteira — só zera o lado Trabalho,
+  // pra não levar junto os ganhos/gastos do Corp. Só remove a linha se o Corp estiver vazio.
+  if(temDadosCorp(removed)){
+    const snapshot=JSON.parse(JSON.stringify(removed));
+    limparLado(removed,CAMPOS_TRAB);
+    save();renderUber();
+    _lastDeletedRow={monthKey,index:i,row:snapshot,soLado:true};
+    toast(`Trabalho de ${dataLabel} excluído (Corp mantido)`,'↺ Desfazer',undoDelUberRow);
+    return;
+  }
   rows.splice(i,1);
   save();renderUber();
-  _lastDeletedRow={monthKey,index:i,row:removed};
+  _lastDeletedRow={monthKey,index:i,row:removed,soLado:false};
   toast(`Dia ${dataLabel} excluído`,'↺ Desfazer',undoDelUberRow);
 }
 function undoDelUberRow(){
   if(!_lastDeletedRow)return;
-  const{monthKey,index,row}=_lastDeletedRow;
+  const{monthKey,index,row,soLado}=_lastDeletedRow;
   if(!state.uber.months[monthKey])state.uber.months[monthKey]=[];
   const rows=state.uber.months[monthKey];
-  const insertAt=Math.min(index,rows.length);
-  rows.splice(insertAt,0,row);
-  rows.sort((a,b)=>a.data.localeCompare(b.data));
+  if(soLado){
+    // restaura os campos de Trabalho na linha que ainda existe (mesma data)
+    const alvo=rows.find(r=>r.data===row.data);
+    if(alvo){ CAMPOS_TRAB.forEach(k=>{ alvo[k]=row[k]; }); }
+    else { rows.push(row); rows.sort((a,b)=>a.data.localeCompare(b.data)); }
+  } else {
+    const insertAt=Math.min(index,rows.length);
+    rows.splice(insertAt,0,row);
+    rows.sort((a,b)=>a.data.localeCompare(b.data));
+  }
   save();
   if(state.uber.current===monthKey)renderUber();
-  toast('Dia restaurado');
+  toast('Restaurado');
   _lastDeletedRow=null;
 }
 function onKingRates(){
@@ -2598,7 +2636,10 @@ function renderUber(){
   const tb=document.getElementById('uberBody');
   if(tb){
     tb.innerHTML='';
-    rows.forEach((r,i)=>{
+    // só dias com dados de Trabalho (ou vazios criados aqui); dias só-Corp não entram
+    const rowsTrab=rows.filter(r=>temDadosTrab(r) || !temDadosCorp(r));
+    rowsTrab.forEach((r)=>{
+      const i=rows.indexOf(r);   // índice na base real, pra editar/excluir a linha certa
       const c=rowCalc(r);
       const tr=document.createElement('tr');
       const _dt=r.data?new Date(r.data+'T00:00:00'):null;
@@ -2998,9 +3039,13 @@ function uStatsPanelHtml(rows,mod){
   </div>`;
 }
 function uRenderDias(){
-  const rows=ensureMonth(state.uber.current);
-  const tot=monthTotals(rows);
+  const allRows=ensureMonth(state.uber.current);
+  const tot=monthTotals(allRows);
   const {y,m}=monthKeyParts(state.uber.current);
+  // Trabalho e Corp compartilham a base de dias, mas cada guia é independente: o Trabalho
+  // só mostra dias que têm dados de Trabalho (ou que ele mesmo criou e ainda estão vazios).
+  // Dias que só têm Corp (ganhos/gastos da operação) NÃO aparecem aqui.
+  const rows=allRows.filter(r=>temDadosTrab(r) || !temDadosCorp(r));
   uNavSetHeader(`${MESES[m-1]} ${y}<div class="mm-sub">${rows.length} dia(s) · ${fmt(tot.gastoTrabalho)}</div>`,true);
 
   const kpisHtml=`<div class="kpis" id="uberKpisMob">
@@ -3009,10 +3054,12 @@ function uRenderDias(){
     <div class="kpi hybrid"><div class="k-label">⚡ Elétrico</div><div class="k-val">${fmt(tot.trabEl)}</div><div class="k-sub">${fmtN(tot.trabKwh,1)} kWh</div></div>
     <div class="kpi"><div class="k-label">⛽ Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
   </div>`;
+  // o índice usado nos cards precisa ser o da base REAL (allRows), não o do array filtrado,
+  // pra editar/excluir a linha certa
   const cardsHtml=rows.length
-    ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,i)=>mobileDayCard(r,i,'uber',ords[i])).join('')}</div>`; })()
+    ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,vi)=>mobileDayCard(r,allRows.indexOf(r),'uber',ords[vi])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(rows)+uStatsPanelHtml(rows,'uber')+cardsHtml;
+  document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(allRows)+uStatsPanelHtml(allRows,'uber')+cardsHtml;
 }
 /* Linha compacta de dia (Trabalho e Pessoal): mostra só data, resumo em chips e total.
    Tocar abre o modal completo de edição — a lista fica limpa e rápida de percorrer. */
@@ -6217,19 +6264,49 @@ function navPop(){
 }
 window.addEventListener('popstate',function(){
   if(_navSuppressPop){ _navSuppressPop=false; return; }
-  if(!_navStack.length)return;   // nada aberto: deixa o Android sair
+  _navHandleBack();
+});
+
+/* trata um "voltar": fecha a camada do topo (com confirmação se sujo).
+   Retorna true se consumiu (havia algo pra fechar), false se não havia nada. */
+function _navHandleBack(){
+  if(!_navStack.length)return false;   // nada aberto
   const topo=_navStack[_navStack.length-1];
-  // se há dados não salvos, confirma antes de descartar
   if(topo.isDirty && topo.isDirty()){
     if(!confirm('Você fez alterações. Deseja sair sem salvar?')){
-      // usuário quer ficar: re-empurra a entrada pra manter o modal "protegido"
-      history.pushState({navLayer:_navStack.length},'');
-      return;
+      history.pushState({navLayer:_navStack.length},'');   // mantém a camada protegida
+      return true;
     }
   }
   _navStack.pop();
   try{ topo.close(); }catch(e){}
-});
+  return true;
+}
+
+/* ===== Integração com o botão/gesto VOLTAR do Android via Capacitor =====
+   O plugin nativo @capacitor/app emite 'backButton' tanto no botão quanto no gesto de
+   borda (One UI/Samsung inclusive). Sem isso, o Capacitor minimiza o app direto.
+   Quando há modal aberto, fechamos ele e NÃO deixamos o app minimizar. */
+function _initCapacitorBack(){
+  try{
+    const Cap = window.Capacitor;
+    if(Cap && Cap.Plugins && Cap.Plugins.App){
+      Cap.Plugins.App.addListener('backButton', (e)=>{
+        if(_navStack.length){
+          _navHandleBack();               // fecha o modal do topo
+        } else if(e && e.canGoBack){
+          window.history.back();          // navega no histórico interno, se houver
+        } else {
+          Cap.Plugins.App.exitApp();      // nada aberto: aí sim sai do app
+        }
+      });
+      return true;
+    }
+  }catch(err){}
+  return false;
+}
+if(document.readyState!=='loading')_initCapacitorBack();
+else document.addEventListener('DOMContentLoaded',_initCapacitorBack);
 /* helper: fecha por completo a partir de um botão (Salvar/Cancelar/X) */
 function navClose(){ navPop(); }
 
