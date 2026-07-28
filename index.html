@@ -662,6 +662,8 @@ tfoot td:first-child{text-align:left;color:var(--txt-dim)}
 .abast-navbar-title{flex:1;text-align:center;font-family:'Sora';font-weight:800;font-size:16px;text-transform:capitalize}
 .abast-navbar-title .sub2{font-size:12px;color:var(--txt-dim);font-weight:500;margin-top:2px;text-transform:none}
 .abast-spacer{width:36px;flex-shrink:0}
+.abast-add-desktop{flex-shrink:0;white-space:nowrap;font-size:13px;padding:9px 16px}
+@media (max-width:768px){ .abast-add-desktop{display:none} }
 
 .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
 @media(max-width:880px){.split{grid-template-columns:1fr}}
@@ -1418,7 +1420,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <div class="abast-navbar" id="abastNavbar">
       <button class="abast-back" id="abastBackBtn" onclick="abNavBack()" aria-label="Voltar">‹</button>
       <div class="abast-navbar-title" id="abastNavTitle">Abastecimentos</div>
-      <span class="abast-spacer"></span>
+      <button class="btn abast-add-desktop" id="abastAddDesktop" onclick="openAbastModal(null)">＋ Novo abastecimento</button>
     </div>
 
     <div id="abastNavBody"></div>
@@ -4917,6 +4919,8 @@ function abNavSetHeader(title,showBack){
   const t=document.getElementById('abastNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('abastBackBtn'); if(b)b.classList.toggle('show',!!showBack);
   const fab=document.getElementById('abastFab'); if(fab)fab.style.display=(_abNavLevel==='lista')?'':'none';
+  // botão desktop aparece tanto na lista de um mês quanto na tela de meses (add direto)
+  const addD=document.getElementById('abastAddDesktop'); if(addD)addD.style.display=(_abNavLevel==='lista'||_abNavLevel==='meses')?'':'none';
 }
 function renderAbastecimento(){
   const body=document.getElementById('abastNavBody');
