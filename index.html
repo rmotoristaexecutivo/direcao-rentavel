@@ -2415,13 +2415,21 @@ function onKingRates(){
   save();
   toast('Padrão atualizado — vale para novos lançamentos ou ao editar KM/Tipo de uma linha');
 }
+/* Converte % de bateria gasto em kWh, arredondando SEMPRE PARA CIMA na 1ª casa decimal (teto).
+   Ex.: 24% × 18,3 = 4,392 → 4,4 ; 4,58 → 4,6 ; 6,04 → 6,1 ; 6,00 → 6,0 (exato fica).
+   O custo (kWh × R$/kWh) passa a usar esse kWh já arredondado. */
+function pctParaKwh(pct,bat){
+  const b=(bat!=null&&bat>0)?bat:((state.uber&&state.uber.config&&state.uber.config.bateriaKwh)||18.3);
+  const bruto=b*((pct||0)/100);
+  return Math.ceil(bruto*10 - 1e-9)/10;   // teto na 1ª decimal (o -1e-9 evita subir um exato tipo 6,0)
+}
 function resyncQtda(i,lado){
   const rows=state.uber.months[state.uber.current];
   const r=rows[i], cf=state.uber.config, bat=cf.bateriaKwh||18.3, r2=x=>Math.round(x*100)/100;
   if(lado==='ida'){
-    r.qtdaIda = r.tipoIda==='el' ? r2(bat*((r.pctIda||0)/100)) : r2((r.rendIda||cf.kmL||20)>0?(r.kmIda||0)/(r.rendIda||cf.kmL||20):0);
+    r.qtdaIda = r.tipoIda==='el' ? pctParaKwh(r.pctIda,bat) : r2((r.rendIda||cf.kmL||20)>0?(r.kmIda||0)/(r.rendIda||cf.kmL||20):0);
   } else {
-    r.qtdaVolta = r.tipoVolta==='el' ? r2(bat*((r.pctVolta||0)/100)) : r2((r.rendVolta||cf.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||cf.kmL||20):0);
+    r.qtdaVolta = r.tipoVolta==='el' ? pctParaKwh(r.pctVolta,bat) : r2((r.rendVolta||cf.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||cf.kmL||20):0);
   }
   save(); renderUber(true);
   toast('Qtda recalculada');
@@ -2439,7 +2447,7 @@ function updateCell(i,field,val){
   // IDA — elétrico: % de bateria → kWh. Combustível: relação km = consumo(km/l) × litros, bidirecional:
   //   editar Qtda(litros) → Consumo = km ÷ litros ; editar Consumo → Qtda = km ÷ consumo ; editar KM → ajusta pelo que já existe
   if(r.tipoIda==='el'){
-    if(field==='kmIda'||field==='tipoIda'||field==='pctIda'){ r.qtdaIda = r2(bat*((r.pctIda||0)/100)); }
+    if(field==='kmIda'||field==='tipoIda'||field==='pctIda'){ r.qtdaIda = pctParaKwh(r.pctIda,bat); }
   } else {
     if(field==='qtdaIda'){
       if((r.kmIda||0)>0 && (r.qtdaIda||0)>0) r.rendIda = r2((r.kmIda||0)/(r.qtdaIda||0));
@@ -2452,7 +2460,7 @@ function updateCell(i,field,val){
   }
   // VOLTA — idem
   if(r.tipoVolta==='el'){
-    if(field==='kmVolta'||field==='tipoVolta'||field==='pctVolta'){ r.qtdaVolta = r2(bat*((r.pctVolta||0)/100)); }
+    if(field==='kmVolta'||field==='tipoVolta'||field==='pctVolta'){ r.qtdaVolta = pctParaKwh(r.pctVolta,bat); }
   } else {
     if(field==='qtdaVolta'){
       if((r.kmVolta||0)>0 && (r.qtdaVolta||0)>0) r.rendVolta = r2((r.kmVolta||0)/(r.qtdaVolta||0));
@@ -2660,7 +2668,7 @@ function renderUber(){
         <td class="t-ida">${_inpBlank(i,'kmIda',r.kmIda)}</td>
         <td class="t-ida"><div class="tipo-wrap"><select class="cell-in mini" onchange="updateCell(${i},'tipoIda',this.value)">${_opt(r.tipoIda)}</select><button type="button" class="obs-btn${r.obsIda?' has-obs':''}" onclick="openObsNota(${i},'ida')" title="${r.obsIda?'Ver/editar observação: '+r.obsIda:'Adicionar observação (ex.: trecho misto elétrico+combustível)'}">💬</button></div></td>
         <td class="t-ida" title="${r.tipoIda==='el'?'% de bateria gasto no trecho':'km por litro'}">${r.tipoIda==='el'?_inpUnit(i,'pctIda',fmtN(r.pctIda||0,1),'%'):_inp(i,'rendIda',fmtN(r.rendIda,2))}</td>
-        <td class="t-ida">${(()=>{ const bat=state.uber.config.bateriaKwh||18.3; const esperado=r.tipoIda==='el'?bat*((r.pctIda||0)/100):((r.rendIda||state.uber.config.kmL||20)>0?(r.kmIda||0)/(r.rendIda||state.uber.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaIda||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qIda,2)}" onchange="updateCell(${i},'qtdaIda',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtda(${i},'ida')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
+        <td class="t-ida">${(()=>{ const bat=state.uber.config.bateriaKwh||18.3; const esperado=r.tipoIda==='el'?pctParaKwh(r.pctIda,bat):((r.rendIda||state.uber.config.kmL||20)>0?(r.kmIda||0)/(r.rendIda||state.uber.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaIda||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qIda,2)}" onchange="updateCell(${i},'qtdaIda',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtda(${i},'ida')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
         <td class="t-ida" title="${r.tipoIda==='el'?'R$ por kWh':'R$ por litro'}">${_inpUnit(i,'valorIda',r.valorIda,r.tipoIda==='el'?'/kWh':'/L')}</td>
         <td class="t-ida calc" style="color:#0891b2;font-weight:700">${blk(c.totalIda,fmt(c.totalIda))}</td>`;
       }
@@ -2674,7 +2682,7 @@ function renderUber(){
         <td class="t-volta">${_inpBlank(i,'kmVolta',r.kmVolta)}</td>
         <td class="t-volta"><div class="tipo-wrap"><select class="cell-in mini" onchange="updateCell(${i},'tipoVolta',this.value)">${_opt(r.tipoVolta)}</select><button type="button" class="obs-btn${r.obsVolta?' has-obs':''}" onclick="openObsNota(${i},'volta')" title="${r.obsVolta?'Ver/editar observação: '+r.obsVolta:'Adicionar observação (ex.: trecho misto elétrico+combustível)'}">💬</button></div></td>
         <td class="t-volta" title="${r.tipoVolta==='el'?'% de bateria gasto no trecho':'km por litro'}">${r.tipoVolta==='el'?_inpUnit(i,'pctVolta',fmtN(r.pctVolta||0,1),'%'):_inp(i,'rendVolta',fmtN(r.rendVolta,2))}</td>
-        <td class="t-volta">${(()=>{ const bat=state.uber.config.bateriaKwh||18.3; const esperado=r.tipoVolta==='el'?bat*((r.pctVolta||0)/100):((r.rendVolta||state.uber.config.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||state.uber.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaVolta||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qVolta,2)}" onchange="updateCell(${i},'qtdaVolta',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtda(${i},'volta')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
+        <td class="t-volta">${(()=>{ const bat=state.uber.config.bateriaKwh||18.3; const esperado=r.tipoVolta==='el'?pctParaKwh(r.pctVolta,bat):((r.rendVolta||state.uber.config.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||state.uber.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaVolta||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qVolta,2)}" onchange="updateCell(${i},'qtdaVolta',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtda(${i},'volta')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
         <td class="t-volta" title="${r.tipoVolta==='el'?'R$ por kWh':'R$ por litro'}">${_inpUnit(i,'valorVolta',r.valorVolta,r.tipoVolta==='el'?'/kWh':'/L')}</td>
         <td class="t-volta">${_inpBlank(i,'pedagioVolta',r.pedagioVolta)}</td>
         <td class="t-volta calc" style="color:#a855f7;font-weight:700">${blk(c.totalVolta,fmt(c.totalVolta))}</td>`;
@@ -3189,7 +3197,7 @@ function uSheetField(lado,campo,val){
 function uSheetRecalc(lado,campoEditado){
   const r=_uSheetDraft, cf=state.uber.config, r2=x=>Math.round(x*100)/100, bat=cf.bateriaKwh||18.3;
   const L=lado==='ida'?{tp:'tipoIda',pct:'pctIda',km:'kmIda',rend:'rendIda',q:'qtdaIda'}:{tp:'tipoVolta',pct:'pctVolta',km:'kmVolta',rend:'rendVolta',q:'qtdaVolta'};
-  if(r[L.tp]==='el'){ r[L.q]=r2(bat*((r[L.pct]||0)/100)); }
+  if(r[L.tp]==='el'){ r[L.q]=pctParaKwh(r[L.pct],bat); }
   else {
     if(campoEditado==='qtda'){ if((r[L.km]||0)>0&&(r[L.q]||0)>0) r[L.rend]=r2(r[L.km]/r[L.q]); }
     else if(campoEditado==='consumo'){ const rend=r[L.rend]||cf.kmL||20; r[L.q]=r2(rend>0?(r[L.km]||0)/rend:0); }
@@ -4490,9 +4498,9 @@ function resyncQtdaP(i,lado){
   const rows=state.pessoal.months[state.pessoal.current];
   const r=rows[i], cf=state.pessoal.config, bat=cf.bateriaKwh||18.3, r2=x=>Math.round(x*100)/100;
   if(lado==='ida'){
-    r.qtdaIda = r.tipoIda==='el' ? r2(bat*((r.pctIda||0)/100)) : r2((r.rendIda||cf.kmL||20)>0?(r.kmIda||0)/(r.rendIda||cf.kmL||20):0);
+    r.qtdaIda = r.tipoIda==='el' ? pctParaKwh(r.pctIda,bat) : r2((r.rendIda||cf.kmL||20)>0?(r.kmIda||0)/(r.rendIda||cf.kmL||20):0);
   } else {
-    r.qtdaVolta = r.tipoVolta==='el' ? r2(bat*((r.pctVolta||0)/100)) : r2((r.rendVolta||cf.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||cf.kmL||20):0);
+    r.qtdaVolta = r.tipoVolta==='el' ? pctParaKwh(r.pctVolta,bat) : r2((r.rendVolta||cf.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||cf.kmL||20):0);
   }
   save(); renderPessoal();
   toast('Qtda recalculada');
@@ -4508,7 +4516,7 @@ function updatePessoalCell(i,field,val){
   if(field==='tipoVolta'){ if(r.tipoVolta==='el'){ if(!r.pctVolta)r.pctVolta=0; } else { r.rendVolta=cf.kmL||20; } }
   // IDA — elétrico: %→kWh. Combustível bidirecional: editar litros→consumo(km/l)=km÷litros; editar consumo→litros; editar km→ajusta
   if(r.tipoIda==='el'){
-    if(field==='kmIda'||field==='tipoIda'||field==='pctIda'){ r.qtdaIda = r2(bat*((r.pctIda||0)/100)); }
+    if(field==='kmIda'||field==='tipoIda'||field==='pctIda'){ r.qtdaIda = pctParaKwh(r.pctIda,bat); }
   } else {
     if(field==='qtdaIda'){
       if((r.kmIda||0)>0 && (r.qtdaIda||0)>0) r.rendIda = r2((r.kmIda||0)/(r.qtdaIda||0));
@@ -4521,7 +4529,7 @@ function updatePessoalCell(i,field,val){
   }
   // VOLTA — idem
   if(r.tipoVolta==='el'){
-    if(field==='kmVolta'||field==='tipoVolta'||field==='pctVolta'){ r.qtdaVolta = r2(bat*((r.pctVolta||0)/100)); }
+    if(field==='kmVolta'||field==='tipoVolta'||field==='pctVolta'){ r.qtdaVolta = pctParaKwh(r.pctVolta,bat); }
   } else {
     if(field==='qtdaVolta'){
       if((r.kmVolta||0)>0 && (r.qtdaVolta||0)>0) r.rendVolta = r2((r.kmVolta||0)/(r.qtdaVolta||0));
@@ -4590,7 +4598,7 @@ function renderPessoal(){
         <td class="t-ida">${_inpBlankP(i,'kmIda',r.kmIda)}</td>
         <td class="t-ida"><div class="tipo-wrap"><select class="cell-in mini" onchange="updatePessoalCell(${i},'tipoIda',this.value)">${_optP(r.tipoIda)}</select><button type="button" class="obs-btn${r.obsIda?' has-obs':''}" onclick="openObsNotaP(${i},'ida')" title="${r.obsIda?'Ver/editar observação: '+r.obsIda:'Adicionar observação'}">💬</button></div></td>
         <td class="t-ida" title="${r.tipoIda==='el'?'% de bateria gasto no trecho':'km por litro'}">${r.tipoIda==='el'?_inpUnitP(i,'pctIda',fmtN(r.pctIda||0,1),'%'):_inpP(i,'rendIda',fmtN(r.rendIda,2))}</td>
-        <td class="t-ida">${(()=>{ const bat=state.pessoal.config.bateriaKwh||18.3; const esperado=r.tipoIda==='el'?bat*((r.pctIda||0)/100):((r.rendIda||state.pessoal.config.kmL||20)>0?(r.kmIda||0)/(r.rendIda||state.pessoal.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaIda||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qIda,2)}" onchange="updatePessoalCell(${i},'qtdaIda',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtdaP(${i},'ida')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
+        <td class="t-ida">${(()=>{ const bat=state.pessoal.config.bateriaKwh||18.3; const esperado=r.tipoIda==='el'?pctParaKwh(r.pctIda,bat):((r.rendIda||state.pessoal.config.kmL||20)>0?(r.kmIda||0)/(r.rendIda||state.pessoal.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaIda||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qIda,2)}" onchange="updatePessoalCell(${i},'qtdaIda',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtdaP(${i},'ida')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
         <td class="t-ida" title="${r.tipoIda==='el'?'R$ por kWh':'R$ por litro'}">${_inpBlankP(i,'valorIda',r.valorIda)}</td>
         <td class="t-ida">${_inpBlankP(i,'pedagioIda',r.pedagioIda)}</td>
         <td class="t-ida calc" style="color:#0891b2;font-weight:700">${blk(c.totalIda,fmt(c.totalIda))}</td>`;
@@ -4605,7 +4613,7 @@ function renderPessoal(){
         <td class="t-volta">${_inpBlankP(i,'kmVolta',r.kmVolta)}</td>
         <td class="t-volta"><div class="tipo-wrap"><select class="cell-in mini" onchange="updatePessoalCell(${i},'tipoVolta',this.value)">${_optP(r.tipoVolta)}</select><button type="button" class="obs-btn${r.obsVolta?' has-obs':''}" onclick="openObsNotaP(${i},'volta')" title="${r.obsVolta?'Ver/editar observação: '+r.obsVolta:'Adicionar observação'}">💬</button></div></td>
         <td class="t-volta" title="${r.tipoVolta==='el'?'% de bateria gasto no trecho':'km por litro'}">${r.tipoVolta==='el'?_inpUnitP(i,'pctVolta',fmtN(r.pctVolta||0,1),'%'):_inpP(i,'rendVolta',fmtN(r.rendVolta,2))}</td>
-        <td class="t-volta">${(()=>{ const bat=state.pessoal.config.bateriaKwh||18.3; const esperado=r.tipoVolta==='el'?bat*((r.pctVolta||0)/100):((r.rendVolta||state.pessoal.config.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||state.pessoal.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaVolta||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qVolta,2)}" onchange="updatePessoalCell(${i},'qtdaVolta',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtdaP(${i},'volta')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
+        <td class="t-volta">${(()=>{ const bat=state.pessoal.config.bateriaKwh||18.3; const esperado=r.tipoVolta==='el'?pctParaKwh(r.pctVolta,bat):((r.rendVolta||state.pessoal.config.kmL||20)>0?(r.kmVolta||0)/(r.rendVolta||state.pessoal.config.kmL||20):0); const dessinc=Math.abs(esperado-(r.qtdaVolta||0))>0.05; return `<div class="inp-unit"><input class="cell-in${dessinc?' qtda-manual':''}" inputmode="decimal" value="${fmtN(c.qVolta,2)}" onchange="updatePessoalCell(${i},'qtdaVolta',this.value)" title="${dessinc?'⚠️ Editado manualmente — não corresponde ao cálculo automático ('+fmtN(esperado,2)+'). Clique ↺ ou mude o KM/% pra recalcular.':'Calculado automaticamente'}">${dessinc?`<button type="button" class="qtda-resync" onclick="resyncQtdaP(${i},'volta')" title="Recalcular pelo KM/% atual">↺</button>`:''}</div>`; })()}</td>
         <td class="t-volta" title="${r.tipoVolta==='el'?'R$ por kWh':'R$ por litro'}">${_inpBlankP(i,'valorVolta',r.valorVolta)}</td>
         <td class="t-volta">${_inpBlankP(i,'pedagioVolta',r.pedagioVolta)}</td>
         <td class="t-volta calc" style="color:#a855f7;font-weight:700">${blk(c.totalVolta,fmt(c.totalVolta))}</td>`;
@@ -4786,14 +4794,14 @@ function pSheetField(lado,campo,val){
 function pSheetRecalc(lado, campoEditado){
   const r=_pSheetDraft, cf=state.pessoal.config, r2=x=>Math.round(x*100)/100, bat=cf.bateriaKwh||18.3;
   if(lado==='ida'){
-    if(r.tipoIda==='el'){ r.qtdaIda=r2(bat*((r.pctIda||0)/100)); }
+    if(r.tipoIda==='el'){ r.qtdaIda=pctParaKwh(r.pctIda,bat); }
     else {
       if(campoEditado==='qtda'){ if((r.kmIda||0)>0&&(r.qtdaIda||0)>0) r.rendIda=r2(r.kmIda/r.qtdaIda); }
       else if(campoEditado==='consumo'){ const rend=r.rendIda||cf.kmL||20; r.qtdaIda=r2(rend>0?(r.kmIda||0)/rend:0); }
       else { if((r.qtdaIda||0)>0&&(r.kmIda||0)>0) r.rendIda=r2(r.kmIda/r.qtdaIda); else { const rend=r.rendIda||cf.kmL||20; r.qtdaIda=r2(rend>0?(r.kmIda||0)/rend:0);} }
     }
   } else {
-    if(r.tipoVolta==='el'){ r.qtdaVolta=r2(bat*((r.pctVolta||0)/100)); }
+    if(r.tipoVolta==='el'){ r.qtdaVolta=pctParaKwh(r.pctVolta,bat); }
     else {
       if(campoEditado==='qtda'){ if((r.kmVolta||0)>0&&(r.qtdaVolta||0)>0) r.rendVolta=r2(r.kmVolta/r.qtdaVolta); }
       else if(campoEditado==='consumo'){ const rend=r.rendVolta||cf.kmL||20; r.qtdaVolta=r2(rend>0?(r.kmVolta||0)/rend:0); }
