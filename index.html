@@ -876,10 +876,17 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   .m-field-row{display:flex;gap:9px}
   .m-field-row .m-field{flex:1}
   .m-toggle{display:flex;gap:8px}
+  .m-toggle.three button{padding:11px 4px;font-size:12.5px}
   .m-toggle button{flex:1;padding:11px;border-radius:11px;border:1px solid var(--line-strong);
     background:rgba(125,125,125,.06);color:var(--txt-faint);font-weight:700;font-size:14px;cursor:pointer}
   .m-toggle button.on{border-color:var(--electric);color:var(--electric);background:var(--electric-bg,rgba(45,212,191,.12))}
   .m-toggle button.on.comb{border-color:var(--hybrid);color:var(--hybrid);background:var(--hybrid-bg,rgba(245,158,11,.12))}
+  .m-toggle button.on.misto{border-color:#a855f7;color:#a855f7;background:rgba(168,85,247,.12)}
+  .misto-bloco{border:1px solid var(--line);border-radius:12px;padding:10px 11px;margin-top:8px;background:rgba(245,158,11,.04)}
+  .misto-bloco.el{background:rgba(45,212,191,.05)}
+  .misto-tag{font-size:12px;font-weight:800;margin-bottom:7px}
+  .misto-tag.comb{color:var(--hybrid)}
+  .misto-tag.el{color:var(--electric)}
   .sheet-foot{display:flex;gap:10px;margin-top:6px}
   .sheet-foot button{flex:1;padding:14px;border-radius:12px;font-weight:700;font-size:15px;border:0;cursor:pointer}
   .sheet-foot .cancel{background:var(--line);color:var(--txt)}
@@ -2597,24 +2604,38 @@ function renderUberCfg(){
   const a=document.getElementById('cfgBateria'), b=document.getElementById('cfgKmL');
   if(a)a.value=fmtN(cf.bateriaKwh,1); if(b)b.value=fmtN(cf.kmL,0);
 }
+/* Calcula um trecho (ida ou volta) considerando os 3 modos: comb, el, misto.
+   No misto: os campos normais (qtda/valor) guardam o COMBUSTÍVEL, e os campos *El guardam
+   o ELÉTRICO em paralelo. O total do trecho é a soma dos dois. Retorna custo, kwh e litros. */
+function trechoCalc(r,lado){
+  const S=lado==='ida'
+    ? {tipo:r.tipoIda,q:r.qtdaIda,v:r.valorIda,qEl:r.qtdaIdaEl,vEl:r.valorIdaEl}
+    : {tipo:r.tipoVolta,q:r.qtdaVolta,v:r.valorVolta,qEl:r.qtdaVoltaEl,vEl:r.valorVoltaEl};
+  const q=Number(S.q)||0, v=Number(S.v)||0, qEl=Number(S.qEl)||0, vEl=Number(S.vEl)||0;
+  if(S.tipo==='el')   return {custo:q*v,        kwh:q,   litros:0};
+  if(S.tipo==='misto')return {custo:q*v+qEl*vEl, kwh:qEl, litros:q};  // q/v=combustível, qEl/vEl=elétrico
+  return {custo:q*v, kwh:0, litros:q};                                 // comb puro
+}
 function rowCalc(r){
-  const qIda=r.qtdaIda||0;       // Qtda do trecho (editável por dia — cidade/estrada variam)
-  const qVolta=r.qtdaVolta||0;
-  const totalIda=qIda*(r.valorIda||0);                      // Qtda × Valor
-  const totalVolta=qVolta*(r.valorVolta||0);
+  const ci=trechoCalc(r,'ida'), cv=trechoCalc(r,'volta');
+  const qIda=r.qtdaIda||0, qVolta=r.qtdaVolta||0;   // mantidos pra compat de exibição
+  const totalIda=ci.custo, totalVolta=cv.custo;
   const pedagioTotal=(r.pedagioIda||0)+(r.pedagioVolta||0);
-  const manutTrab=r.manutUber||0;                           // manutenção marcada como "Trabalho"
-  const gastoTrabalho=totalIda+totalVolta+pedagioTotal+manutTrab;      // ida + volta + pedágio + manut. trabalho
-  const trabKwh=(r.tipoIda==='el'?qIda:0)+(r.tipoVolta==='el'?qVolta:0);   // kWh do trabalho
-  const trabLitros=(r.tipoIda!=='el'?qIda:0)+(r.tipoVolta!=='el'?qVolta:0); // litros do trabalho
-  const trabEl=(r.tipoIda==='el'?totalIda:0)+(r.tipoVolta==='el'?totalVolta:0);
-  const trabComb=(totalIda+totalVolta)-trabEl;              // só combustível, sem pedágio
-  const totalKwh=((r.qtdaKwh||0)*(r.valorKwh||0))+(r.kwhExtra||0);  // Qtda kWh × R$/kWh + lançamentos de energia
-  const totalComb=((r.qtdaComb||0)*(r.valorComb||0))+(r.combExtra||0);  // Qtda comb × R$/litro + lançamentos de combustível
+  const manutTrab=r.manutUber||0;
+  const gastoTrabalho=totalIda+totalVolta+pedagioTotal+manutTrab;
+  const trabKwh=ci.kwh+cv.kwh;
+  const trabLitros=ci.litros+cv.litros;
+  // parte elétrica do custo de cada trecho
+  const elIda=(r.tipoIda==='el')?ci.custo:(r.tipoIda==='misto'?(Number(r.qtdaIdaEl)||0)*(Number(r.valorIdaEl)||0):0);
+  const elVolta=(r.tipoVolta==='el')?cv.custo:(r.tipoVolta==='misto'?(Number(r.qtdaVoltaEl)||0)*(Number(r.valorVoltaEl)||0):0);
+  const trabEl=elIda+elVolta;
+  const trabComb=(totalIda+totalVolta)-trabEl;
+  const totalKwh=((r.qtdaKwh||0)*(r.valorKwh||0))+(r.kwhExtra||0);
+  const totalComb=((r.qtdaComb||0)*(r.valorComb||0))+(r.combExtra||0);
   const gastoUber=totalKwh+totalComb+(r.alim||0)+(r.manut||0);
-  const despesa=gastoTrabalho+gastoUber;                    // Gastos totais
-  const ganho=(r.uber||0)+(r.g99||0)+(r.indriver||0)+(r.part||0)+(r.ifood||0)+(r.shopee||0)+(r.mercadoLivre||0);           // Ganhos totais
-  const lucro=ganho-gastoUber;                             // Resultado da operação Uber (não abate o trabalho)
+  const despesa=gastoTrabalho+gastoUber;
+  const ganho=(r.uber||0)+(r.g99||0)+(r.indriver||0)+(r.part||0)+(r.ifood||0)+(r.shopee||0)+(r.mercadoLivre||0);
+  const lucro=ganho-gastoUber;
   const kmTotal=r.kmTotal||0;
   const custoKm=kmTotal>0?(totalKwh+totalComb)/kmTotal:0;
   return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,manutTrab,gastoTrabalho,trabKwh,trabLitros,trabEl,trabComb,totalKwh,totalComb,gastoUber,despesa,ganho,lucro,kmTotal,custoKm};
@@ -3157,7 +3178,11 @@ function openUSheet(i,focoLado){
   navPush(()=>closeUSheet(true), ()=>_draftDirty(_uSheetDraft,_uSheetOrig));
 }
 function closeUSheet(fromBack){ document.getElementById('uSheetOverlay').classList.remove('open'); _uSheetIdx=null; _uSheetDraft=null; _uSheetOrig=null; if(!fromBack)navPop(); }
-function uSheetSetTipo(lado,tipo){ _uSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo; uSheetRecalc(lado); renderUSheet(); }
+function uSheetSetTipo(lado,tipo){
+  _uSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo;
+  if(tipo!=='misto') uSheetRecalc(lado);   // no misto os dois blocos têm cálculo próprio
+  renderUSheet();
+}
 /* Atualiza na tela o campo que foi RECALCULADO (o "espelho"), sem tocar no campo
    que o usuário está digitando (pra não perder foco/cursor). prefix: 'u'=Trabalho, 'p'=Pessoal */
 /* rola o bottom sheet até o trecho tocado (ida/volta) e dá um destaque rápido */
@@ -3187,12 +3212,30 @@ function syncSheetInputs(prefix,lado,campoEditado){
   if(campoEditado!=='qtda')    set('qtda', qtda);
 }
 function uSheetField(lado,campo,val){
-  const map={km:lado==='ida'?'kmIda':'kmVolta', consumo:lado==='ida'?(_uSheetDraft.tipoIda==='el'?'pctIda':'rendIda'):(_uSheetDraft.tipoVolta==='el'?'pctVolta':'rendVolta'),
-    qtda:lado==='ida'?'qtdaIda':'qtdaVolta', valor:lado==='ida'?'valorIda':'valorVolta', pedagio:lado==='ida'?'pedagioIda':'pedagioVolta'};
+  const isIda=lado==='ida';
+  // campos do lado elétrico no modo misto
+  if(campo==='kmEl'){ _uSheetDraft[isIda?'kmIdaEl':'kmVoltaEl']=parseNum(val); uSheetMistoRecalcEl(lado,'km'); syncSheetInputs('u',lado,campo); updateUSheetCalc(); return; }
+  if(campo==='pctEl'){ _uSheetDraft[isIda?'pctIdaEl':'pctVoltaEl']=parseNum(val); uSheetMistoRecalcEl(lado,'pct'); syncSheetInputs('u',lado,campo); updateUSheetCalc(); return; }
+  if(campo==='qtdaEl'){ _uSheetDraft[isIda?'qtdaIdaEl':'qtdaVoltaEl']=parseNum(val); syncSheetInputs('u',lado,campo); updateUSheetCalc(); return; }
+  if(campo==='valorEl'){ _uSheetDraft[isIda?'valorIdaEl':'valorVoltaEl']=parseNum(val); updateUSheetCalc(); return; }
+  // no misto, o "consumo" do bloco combustível é sempre km/l (rend), nunca %
+  const tipo=isIda?_uSheetDraft.tipoIda:_uSheetDraft.tipoVolta;
+  const consumoField = tipo==='el' ? (isIda?'pctIda':'pctVolta') : (isIda?'rendIda':'rendVolta');
+  const map={km:isIda?'kmIda':'kmVolta', consumo:consumoField,
+    qtda:isIda?'qtdaIda':'qtdaVolta', valor:isIda?'valorIda':'valorVolta', pedagio:isIda?'pedagioIda':'pedagioVolta'};
   _uSheetDraft[map[campo]]=parseNum(val);
   if(campo!=='valor'&&campo!=='pedagio') uSheetRecalc(lado,campo);
   syncSheetInputs('u',lado,campo);
   updateUSheetCalc();
+}
+/* recalcula a qtda de kWh do bloco elétrico no misto (a partir do % de bateria) */
+function uSheetMistoRecalcEl(lado,campoEditado){
+  const r=_uSheetDraft, bat=(state.uber.config.bateriaKwh)||18.3;
+  const isIda=lado==='ida';
+  if(campoEditado==='pct'){
+    const pct=isIda?r.pctIdaEl:r.pctVoltaEl;
+    r[isIda?'qtdaIdaEl':'qtdaVoltaEl']=pctParaKwh(pct,bat);
+  }
 }
 function uSheetRecalc(lado,campoEditado){
   const r=_uSheetDraft, cf=state.uber.config, r2=x=>Math.round(x*100)/100, bat=cf.bateriaKwh||18.3;
@@ -3206,21 +3249,21 @@ function uSheetRecalc(lado,campoEditado){
 }
 function uSheetTrechoHtml(lado){
   const r=_uSheetDraft;
-  const el=lado==='ida'?r.tipoIda==='el':r.tipoVolta==='el';
+  const tipo=lado==='ida'?r.tipoIda:r.tipoVolta;
+  const el=tipo==='el', misto=tipo==='misto';
   const km=lado==='ida'?r.kmIda:r.kmVolta;
   const consumo=lado==='ida'?(el?r.pctIda:r.rendIda):(el?r.pctVolta:r.rendVolta);
   const qtda=lado==='ida'?r.qtdaIda:r.qtdaVolta;
   const valor=lado==='ida'?r.valorIda:r.valorVolta;
   const pedagio=lado==='ida'?r.pedagioIda:r.pedagioVolta;
-  return `
-  <div class="sheet-sec ${lado}">
-    <div class="sheet-sec-h">${lado==='ida'?'🅰️ Ida ao trabalho':'🅱️ Volta do trabalho'}</div>
-    <div class="m-field"><label>Tipo</label>
-      <div class="m-toggle">
-        <button class="${!el?'on comb':''}" onclick="uSheetSetTipo('${lado}','comb')">⛽ Combustível</button>
-        <button class="${el?'on':''}" onclick="uSheetSetTipo('${lado}','el')">⚡ Elétrico</button>
-      </div>
-    </div>
+  // campos do lado elétrico (usados no misto)
+  const pctEl=lado==='ida'?r.pctIdaEl:r.pctVoltaEl;
+  const qtdaEl=lado==='ida'?r.qtdaIdaEl:r.qtdaVoltaEl;
+  const valorEl=lado==='ida'?r.valorIdaEl:r.valorVoltaEl;
+  const kmEl=lado==='ida'?r.kmIdaEl:r.kmVoltaEl;
+
+  // bloco combustível (também usado como "único" nos modos comb/el)
+  const blocoComb=`
     <div class="m-field-row">
       <div class="m-field"><label>KM</label><input id="uf-${lado}-km" inputmode="decimal" value="${km||''}" placeholder="-" oninput="uSheetField('${lado}','km',this.value)"></div>
       <div class="m-field"><label>${el?'% bateria':'km/l'}</label><input id="uf-${lado}-consumo" inputmode="decimal" value="${consumo||''}" placeholder="-" oninput="uSheetField('${lado}','consumo',this.value)"></div>
@@ -3228,7 +3271,44 @@ function uSheetTrechoHtml(lado){
     <div class="m-field-row">
       <div class="m-field"><label>${el?'kWh':'Litros'} (qtda)</label><input id="uf-${lado}-qtda" inputmode="decimal" value="${qtda||''}" placeholder="-" oninput="uSheetField('${lado}','qtda',this.value)"></div>
       <div class="m-field"><label>R$ /${el?'kWh':'L'}</label><input id="uf-${lado}-valor" inputmode="decimal" value="${valor||''}" placeholder="-" oninput="uSheetField('${lado}','valor',this.value)"></div>
+    </div>`;
+
+  // no MISTO: bloco combustível + bloco elétrico, cada um com seus valores
+  const blocoMisto=`
+    <div class="misto-bloco">
+      <div class="misto-tag comb">⛽ Combustível</div>
+      <div class="m-field-row">
+        <div class="m-field"><label>KM</label><input id="uf-${lado}-km" inputmode="decimal" value="${km||''}" placeholder="-" oninput="uSheetField('${lado}','km',this.value)"></div>
+        <div class="m-field"><label>km/l</label><input id="uf-${lado}-consumo" inputmode="decimal" value="${(lado==='ida'?r.rendIda:r.rendVolta)||''}" placeholder="-" oninput="uSheetField('${lado}','consumo',this.value)"></div>
+      </div>
+      <div class="m-field-row">
+        <div class="m-field"><label>Litros (qtda)</label><input id="uf-${lado}-qtda" inputmode="decimal" value="${qtda||''}" placeholder="-" oninput="uSheetField('${lado}','qtda',this.value)"></div>
+        <div class="m-field"><label>R$ /L</label><input id="uf-${lado}-valor" inputmode="decimal" value="${valor||''}" placeholder="-" oninput="uSheetField('${lado}','valor',this.value)"></div>
+      </div>
     </div>
+    <div class="misto-bloco el">
+      <div class="misto-tag el">⚡ Elétrico</div>
+      <div class="m-field-row">
+        <div class="m-field"><label>KM</label><input id="uf-${lado}-kmEl" inputmode="decimal" value="${kmEl||''}" placeholder="-" oninput="uSheetField('${lado}','kmEl',this.value)"></div>
+        <div class="m-field"><label>% bateria</label><input id="uf-${lado}-pctEl" inputmode="decimal" value="${pctEl||''}" placeholder="-" oninput="uSheetField('${lado}','pctEl',this.value)"></div>
+      </div>
+      <div class="m-field-row">
+        <div class="m-field"><label>kWh (qtda)</label><input id="uf-${lado}-qtdaEl" inputmode="decimal" value="${qtdaEl||''}" placeholder="-" oninput="uSheetField('${lado}','qtdaEl',this.value)"></div>
+        <div class="m-field"><label>R$ /kWh</label><input id="uf-${lado}-valorEl" inputmode="decimal" value="${valorEl||''}" placeholder="-" oninput="uSheetField('${lado}','valorEl',this.value)"></div>
+      </div>
+    </div>`;
+
+  return `
+  <div class="sheet-sec ${lado}">
+    <div class="sheet-sec-h">${lado==='ida'?'🅰️ Ida ao trabalho':'🅱️ Volta do trabalho'}</div>
+    <div class="m-field"><label>Tipo</label>
+      <div class="m-toggle three">
+        <button class="${(!el&&!misto)?'on comb':''}" onclick="uSheetSetTipo('${lado}','comb')">⛽ Comb.</button>
+        <button class="${el?'on':''}" onclick="uSheetSetTipo('${lado}','el')">⚡ Elétr.</button>
+        <button class="${misto?'on misto':''}" onclick="uSheetSetTipo('${lado}','misto')">🔀 Misto</button>
+      </div>
+    </div>
+    ${misto?blocoMisto:blocoComb}
     ${lado==='volta'?`<div class="m-field"><label>🛣️ Pedágio (R$)</label><input id="uf-${lado}-pedagio" inputmode="decimal" value="${pedagio||''}" placeholder="-" oninput="uSheetField('${lado}','pedagio',this.value)"></div>`:''}
   </div>`;
 }
@@ -4367,14 +4447,16 @@ function emptyRowP(date){
     kmVolta:0,tipoVolta:'comb',rendVolta:cf.kmL||20,pctVolta:0,qtdaVolta:0,valorVolta:0,pedagioVolta:0,obsVolta:''};
 }
 function rowCalcP(r){
+  const ci=trechoCalc(r,'ida'), cv=trechoCalc(r,'volta');
   const qIda=r.qtdaIda||0, qVolta=r.qtdaVolta||0;
-  const totalIda=qIda*(r.valorIda||0);
-  const totalVolta=qVolta*(r.valorVolta||0);
+  const totalIda=ci.custo, totalVolta=cv.custo;
   const pedagioTotal=(r.pedagioIda||0)+(r.pedagioVolta||0);
   const gastoDia=totalIda+totalVolta+pedagioTotal;
-  const kwh=(r.tipoIda==='el'?qIda:0)+(r.tipoVolta==='el'?qVolta:0);
-  const litros=(r.tipoIda!=='el'?qIda:0)+(r.tipoVolta!=='el'?qVolta:0);
-  const elVal=(r.tipoIda==='el'?totalIda:0)+(r.tipoVolta==='el'?totalVolta:0);
+  const kwh=ci.kwh+cv.kwh;
+  const litros=ci.litros+cv.litros;
+  const elIda=(r.tipoIda==='el')?ci.custo:(r.tipoIda==='misto'?(Number(r.qtdaIdaEl)||0)*(Number(r.valorIdaEl)||0):0);
+  const elVolta=(r.tipoVolta==='el')?cv.custo:(r.tipoVolta==='misto'?(Number(r.qtdaVoltaEl)||0)*(Number(r.valorVoltaEl)||0):0);
+  const elVal=elIda+elVolta;
   const combVal=(totalIda+totalVolta)-elVal;
   return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,gastoDia,kwh,litros,elVal,combVal};
 }
@@ -4780,12 +4862,19 @@ function openPSheet(i,focoLado){
 function closePSheet(fromBack){ document.getElementById('pSheetOverlay').classList.remove('open'); _pSheetIdx=null; _pSheetDraft=null; _pSheetOrig=null; if(!fromBack)navPop(); }
 function pSheetSetTipo(lado,tipo){
   _pSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo;
-  pSheetRecalc(lado);
+  if(tipo!=='misto') pSheetRecalc(lado);
   renderPSheet();
 }
 function pSheetField(lado,campo,val){
-  const map={km:lado==='ida'?'kmIda':'kmVolta', consumo:lado==='ida'?(_pSheetDraft.tipoIda==='el'?'pctIda':'rendIda'):(_pSheetDraft.tipoVolta==='el'?'pctVolta':'rendVolta'),
-    qtda:lado==='ida'?'qtdaIda':'qtdaVolta', valor:lado==='ida'?'valorIda':'valorVolta', pedagio:lado==='ida'?'pedagioIda':'pedagioVolta'};
+  const isIda=lado==='ida';
+  if(campo==='kmEl'){ _pSheetDraft[isIda?'kmIdaEl':'kmVoltaEl']=parseNum(val); syncSheetInputs('p',lado,campo); updatePSheetCalc(); return; }
+  if(campo==='pctEl'){ _pSheetDraft[isIda?'pctIdaEl':'pctVoltaEl']=parseNum(val); const bat=(state.pessoal.config.bateriaKwh)||18.3; _pSheetDraft[isIda?'qtdaIdaEl':'qtdaVoltaEl']=pctParaKwh(isIda?_pSheetDraft.pctIdaEl:_pSheetDraft.pctVoltaEl,bat); syncSheetInputs('p',lado,campo); updatePSheetCalc(); return; }
+  if(campo==='qtdaEl'){ _pSheetDraft[isIda?'qtdaIdaEl':'qtdaVoltaEl']=parseNum(val); syncSheetInputs('p',lado,campo); updatePSheetCalc(); return; }
+  if(campo==='valorEl'){ _pSheetDraft[isIda?'valorIdaEl':'valorVoltaEl']=parseNum(val); updatePSheetCalc(); return; }
+  const tipo=isIda?_pSheetDraft.tipoIda:_pSheetDraft.tipoVolta;
+  const consumoField = tipo==='el' ? (isIda?'pctIda':'pctVolta') : (isIda?'rendIda':'rendVolta');
+  const map={km:isIda?'kmIda':'kmVolta', consumo:consumoField,
+    qtda:isIda?'qtdaIda':'qtdaVolta', valor:isIda?'valorIda':'valorVolta', pedagio:isIda?'pedagioIda':'pedagioVolta'};
   _pSheetDraft[map[campo]]=parseNum(val);
   if(campo!=='valor'&&campo!=='pedagio') pSheetRecalc(lado, campo);
   syncSheetInputs('p',lado,campo);
@@ -4811,22 +4900,17 @@ function pSheetRecalc(lado, campoEditado){
 }
 function pSheetTrechoHtml(lado){
   const r=_pSheetDraft;
-  const el = lado==='ida'?r.tipoIda==='el':r.tipoVolta==='el';
+  const tipo=lado==='ida'?r.tipoIda:r.tipoVolta;
+  const el=tipo==='el', misto=tipo==='misto';
   const km = lado==='ida'?r.kmIda:r.kmVolta;
   const consumo = lado==='ida'?(el?r.pctIda:r.rendIda):(el?r.pctVolta:r.rendVolta);
   const qtda = lado==='ida'?r.qtdaIda:r.qtdaVolta;
   const valor = lado==='ida'?r.valorIda:r.valorVolta;
   const pedagio = lado==='ida'?r.pedagioIda:r.pedagioVolta;
-  return `
-  <div class="sheet-sec ${lado}">
-    <div class="sheet-sec-h">${lado==='ida'?'🅰️ Ida':'🅱️ Volta'}</div>
-    <div class="m-field">
-      <label>Tipo</label>
-      <div class="m-toggle">
-        <button class="${!el?'on comb':''}" onclick="pSheetSetTipo('${lado}','comb')">⛽ Combustível</button>
-        <button class="${el?'on':''}" onclick="pSheetSetTipo('${lado}','el')">⚡ Elétrico</button>
-      </div>
-    </div>
+  const kmEl=lado==='ida'?r.kmIdaEl:r.kmVoltaEl, pctEl=lado==='ida'?r.pctIdaEl:r.pctVoltaEl;
+  const qtdaEl=lado==='ida'?r.qtdaIdaEl:r.qtdaVoltaEl, valorEl=lado==='ida'?r.valorIdaEl:r.valorVoltaEl;
+
+  const blocoUnico=`
     <div class="m-field-row">
       <div class="m-field"><label>KM</label><input id="pf-${lado}-km" inputmode="decimal" value="${km||''}" placeholder="-" oninput="pSheetField('${lado}','km',this.value)"></div>
       <div class="m-field"><label>${el?'% bateria':'km/l'}</label><input id="pf-${lado}-consumo" inputmode="decimal" value="${consumo||''}" placeholder="-" oninput="pSheetField('${lado}','consumo',this.value)"></div>
@@ -4834,7 +4918,42 @@ function pSheetTrechoHtml(lado){
     <div class="m-field-row">
       <div class="m-field"><label>${el?'kWh':'Litros'} (qtda)</label><input id="pf-${lado}-qtda" inputmode="decimal" value="${qtda||''}" placeholder="-" oninput="pSheetField('${lado}','qtda',this.value)"></div>
       <div class="m-field"><label>R$ /${el?'kWh':'L'}</label><input id="pf-${lado}-valor" inputmode="decimal" value="${valor||''}" placeholder="-" oninput="pSheetField('${lado}','valor',this.value)"></div>
+    </div>`;
+  const blocoMisto=`
+    <div class="misto-bloco">
+      <div class="misto-tag comb">⛽ Combustível</div>
+      <div class="m-field-row">
+        <div class="m-field"><label>KM</label><input id="pf-${lado}-km" inputmode="decimal" value="${km||''}" placeholder="-" oninput="pSheetField('${lado}','km',this.value)"></div>
+        <div class="m-field"><label>km/l</label><input id="pf-${lado}-consumo" inputmode="decimal" value="${(lado==='ida'?r.rendIda:r.rendVolta)||''}" placeholder="-" oninput="pSheetField('${lado}','consumo',this.value)"></div>
+      </div>
+      <div class="m-field-row">
+        <div class="m-field"><label>Litros (qtda)</label><input id="pf-${lado}-qtda" inputmode="decimal" value="${qtda||''}" placeholder="-" oninput="pSheetField('${lado}','qtda',this.value)"></div>
+        <div class="m-field"><label>R$ /L</label><input id="pf-${lado}-valor" inputmode="decimal" value="${valor||''}" placeholder="-" oninput="pSheetField('${lado}','valor',this.value)"></div>
+      </div>
     </div>
+    <div class="misto-bloco el">
+      <div class="misto-tag el">⚡ Elétrico</div>
+      <div class="m-field-row">
+        <div class="m-field"><label>KM</label><input id="pf-${lado}-kmEl" inputmode="decimal" value="${kmEl||''}" placeholder="-" oninput="pSheetField('${lado}','kmEl',this.value)"></div>
+        <div class="m-field"><label>% bateria</label><input id="pf-${lado}-pctEl" inputmode="decimal" value="${pctEl||''}" placeholder="-" oninput="pSheetField('${lado}','pctEl',this.value)"></div>
+      </div>
+      <div class="m-field-row">
+        <div class="m-field"><label>kWh (qtda)</label><input id="pf-${lado}-qtdaEl" inputmode="decimal" value="${qtdaEl||''}" placeholder="-" oninput="pSheetField('${lado}','qtdaEl',this.value)"></div>
+        <div class="m-field"><label>R$ /kWh</label><input id="pf-${lado}-valorEl" inputmode="decimal" value="${valorEl||''}" placeholder="-" oninput="pSheetField('${lado}','valorEl',this.value)"></div>
+      </div>
+    </div>`;
+  return `
+  <div class="sheet-sec ${lado}">
+    <div class="sheet-sec-h">${lado==='ida'?'🅰️ Ida':'🅱️ Volta'}</div>
+    <div class="m-field">
+      <label>Tipo</label>
+      <div class="m-toggle three">
+        <button class="${(!el&&!misto)?'on comb':''}" onclick="pSheetSetTipo('${lado}','comb')">⛽ Comb.</button>
+        <button class="${el?'on':''}" onclick="pSheetSetTipo('${lado}','el')">⚡ Elétr.</button>
+        <button class="${misto?'on misto':''}" onclick="pSheetSetTipo('${lado}','misto')">🔀 Misto</button>
+      </div>
+    </div>
+    ${misto?blocoMisto:blocoUnico}
     <div class="m-field"><label>🛣️ Pedágio (R$)</label><input id="pf-${lado}-pedagio" inputmode="decimal" value="${pedagio||''}" placeholder="-" oninput="pSheetField('${lado}','pedagio',this.value)"></div>
   </div>`;
 }
