@@ -3204,12 +3204,15 @@ function syncSheetInputs(prefix,lado,campoEditado){
   const r2=x=>Math.round(x*100)/100;
   const set=(id,v)=>{
     const e=document.getElementById(prefix+'f-'+lado+'-'+id);
-    if(e && e!==document.activeElement){ e.value = v ? String(r2(v)) : ''; }
+    if(e && e!==document.activeElement){ e.value = (v!=null&&v!=='') ? String(r2(v)) : ''; }
   };
   const consumo=lado==='ida'?(el?draft.pctIda:draft.rendIda):(el?draft.pctVolta:draft.rendVolta);
   const qtda=lado==='ida'?draft.qtdaIda:draft.qtdaVolta;
   if(campoEditado!=='consumo') set('consumo', consumo);
   if(campoEditado!=='qtda')    set('qtda', qtda);
+  // no MISTO, mantém o campo kWh (qtdaEl) do bloco elétrico atualizado quando muda o %
+  const qtdaEl=lado==='ida'?draft.qtdaIdaEl:draft.qtdaVoltaEl;
+  if(campoEditado!=='qtdaEl') set('qtdaEl', qtdaEl);
 }
 function uSheetField(lado,campo,val){
   const isIda=lado==='ida';
