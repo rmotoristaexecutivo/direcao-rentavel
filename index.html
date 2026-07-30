@@ -1665,6 +1665,29 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 /* ============ Util ============ */
 const fmt = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const fmtN = (n,d=2)=> (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+/* Horas em formato hh:mm (ex.: "1:30" = 1h30 = 1,5 decimal).
+   parseHoras converte o que o usuário digita ("1:30" ou "1.5" ou "1,5") em decimal.
+   fmtHoras converte o decimal de volta pra "1:30" pra exibir. */
+/* valor pra exibir em input: vazio quando é 0/nulo, pra não obrigar a apagar o zero */
+function vzn(v,casas){ const n=Number(v)||0; return n===0?'':fmtN(n,casas==null?2:casas); }
+function parseHoras(v){
+  if(v==null)return 0;
+  const s=(''+v).trim();
+  if(s==='')return 0;
+  if(s.includes(':')){
+    const [h,m]=s.split(':');
+    const hh=parseInt(h,10)||0, mm=parseInt(m,10)||0;
+    return hh + (mm/60);
+  }
+  return parseNum(s);   // aceita também 1.5 / 1,5 como fallback
+}
+function fmtHoras(dec){
+  const d=Number(dec)||0;
+  const hh=Math.floor(d);
+  const mm=Math.round((d-hh)*60);
+  if(mm===60)return `${hh+1}:00`;
+  return `${hh}:${String(mm).padStart(2,'0')}`;
+}
 function parseNum(v){
   if(typeof v==='number')return v;
   if(!v)return 0;
@@ -2634,19 +2657,19 @@ function rowCalc(r){
   const totalComb=((r.qtdaComb||0)*(r.valorComb||0))+(r.combExtra||0);
   const gastoUber=totalKwh+totalComb+(r.alim||0)+(r.manut||0);
   const despesa=gastoTrabalho+gastoUber;
-  const ganho=(r.uber||0)+(r.g99||0)+(r.indriver||0)+(r.part||0)+(r.ifood||0)+(r.shopee||0)+(r.mercadoLivre||0);
+  const ganho=(r.uber||0)+(r.g99||0)+(r.indriver||0)+(r.part||0)+(r.ifood||0)+(r.shopee||0)+(r.mercadoLivre||0)+(r.lalamove||0);
   const lucro=ganho-gastoUber;
   const kmTotal=r.kmTotal||0;
   const custoKm=kmTotal>0?(totalKwh+totalComb)/kmTotal:0;
   return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,manutTrab,gastoTrabalho,trabKwh,trabLitros,trabEl,trabComb,totalKwh,totalComb,gastoUber,despesa,ganho,lucro,kmTotal,custoKm};
 }
 function monthTotals(rows){
-  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioTotal:0,manutTrab:0,trabKwh:0,trabLitros:0,trabEl:0,trabComb:0,corridas:0,kmTotal:0,horas:0,qtdaKwh:0,totalKwh:0,qtdaComb:0,totalComb:0,combExtra:0,alim:0,manut:0,gastoUber:0,gastoTrabalho:0,uber:0,g99:0,indriver:0,part:0,ifood:0,shopee:0,mercadoLivre:0,despesa:0,ganho:0,lucro:0};
+  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioTotal:0,manutTrab:0,trabKwh:0,trabLitros:0,trabEl:0,trabComb:0,corridas:0,kmTotal:0,horas:0,qtdaKwh:0,totalKwh:0,qtdaComb:0,totalComb:0,combExtra:0,alim:0,manut:0,gastoUber:0,gastoTrabalho:0,uber:0,g99:0,indriver:0,part:0,ifood:0,shopee:0,mercadoLivre:0,lalamove:0,despesa:0,ganho:0,lucro:0};
   rows.forEach(r=>{const c=rowCalc(r);
     tot.kmIda+=r.kmIda||0;tot.kmVolta+=r.kmVolta||0;tot.totalIda+=c.totalIda;tot.totalVolta+=c.totalVolta;tot.pedagioTotal+=c.pedagioTotal;tot.manutTrab+=c.manutTrab;tot.trabEl+=c.trabEl;tot.trabComb+=c.trabComb;tot.trabKwh+=c.trabKwh;tot.trabLitros+=c.trabLitros;
     tot.corridas+=r.corridas||0;tot.kmTotal+=c.kmTotal;tot.horas+=r.horas||0;tot.qtdaKwh+=r.qtdaKwh||0;tot.totalKwh+=c.totalKwh;tot.qtdaComb+=r.qtdaComb||0;tot.totalComb+=c.totalComb;tot.combExtra+=r.combExtra||0;
     tot.alim+=r.alim||0;tot.manut+=r.manut||0;tot.gastoUber+=c.gastoUber;tot.gastoTrabalho+=c.gastoTrabalho;
-    tot.uber+=r.uber||0;tot.g99+=r.g99||0;tot.indriver+=r.indriver||0;tot.part+=r.part||0;tot.ifood+=r.ifood||0;tot.shopee+=r.shopee||0;tot.mercadoLivre+=r.mercadoLivre||0;tot.despesa+=c.despesa;tot.ganho+=c.ganho;tot.lucro+=c.lucro;});
+    tot.uber+=r.uber||0;tot.g99+=r.g99||0;tot.indriver+=r.indriver||0;tot.part+=r.part||0;tot.ifood+=r.ifood||0;tot.shopee+=r.shopee||0;tot.mercadoLivre+=r.mercadoLivre||0;tot.lalamove+=r.lalamove||0;tot.despesa+=c.despesa;tot.ganho+=c.ganho;tot.lucro+=c.lucro;});
   return tot;
 }
 const _opt=(val)=>`<option value="comb"${val!=='el'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option>`;
@@ -3389,7 +3412,7 @@ function renderOperacao(rows,tot){
   const appRowsAEl=document.getElementById('appRowsA'), appRowsBEl=document.getElementById('appRowsB');
   const appPanelEl=document.getElementById('appBreakdownPanel');
   if(appRowsAEl && appRowsBEl){
-    const allApps=[['Uber',tot.uber],['99',tot.g99],['InDriver',tot.indriver],['Particular',tot.part],['Shopee',tot.shopee],['Mercado Livre',tot.mercadoLivre],['iFood',tot.ifood]];
+    const allApps=[['Uber',tot.uber],['99',tot.g99],['InDriver',tot.indriver],['Particular',tot.part],['Shopee',tot.shopee],['Mercado Livre',tot.mercadoLivre],['iFood',tot.ifood],['Lalamove',tot.lalamove]];
     const apps=allApps.filter(a=>a[1]>0);   // só mostra o app se realmente tiver ganho no mês
     if(appPanelEl)appPanelEl.style.display=apps.length?'':'none';
     const maxApp=Math.max(1,...apps.map(a=>a[1]));
@@ -3440,7 +3463,7 @@ function renderOperacao(rows,tot){
     const yearItems=Object.keys(anos).sort().map(yy=>({label:yy,...anos[yy]}));
 
     // pizza: ganhos por app (mês selecionado)
-    const gPie=[['Uber',tot.uber],['99',tot.g99],['InDriver',tot.indriver],['Particular',tot.part],['Shopee',tot.shopee],['Mercado Livre',tot.mercadoLivre],['iFood',tot.ifood]].map(([label,valor])=>({label,valor}));
+    const gPie=[['Uber',tot.uber],['99',tot.g99],['InDriver',tot.indriver],['Particular',tot.part],['Shopee',tot.shopee],['Mercado Livre',tot.mercadoLivre],['iFood',tot.ifood],['Lalamove',tot.lalamove]].map(([label,valor])=>({label,valor}));
 
     // pizza: despesas por categoria (mês selecionado) — a partir dos lançamentos individuais + energia/combustível da operação
     const dCatMap={};
@@ -3483,10 +3506,11 @@ function renderOperacao(rows,tot){
    Faturamento + Lucro líquido em destaque, e grid com os demais
    indicadores (gastos, dias/horas trabalhadas, km, viagens, ganho/km, ganho/hora).
    ============================================================ */
-function categoriasTotais(rows){
-  const cats={}; UBER_CATS.forEach(c=>cats[c.key]=0);
+function categoriasTotais(rows,appNome){
+  const lista = appNome==='99'?NN_CATS:UBER_CATS;
+  const cats={}; lista.forEach(c=>cats[c.key]=0);
   rows.forEach(r=>(r.ganhos||[]).forEach(g=>{
-    if(g.app==='Uber' && g.categorias)UBER_CATS.forEach(c=>{ cats[c.key]+=g.categorias[c.key]||0; });
+    if(g.app===appNome && g.categorias)lista.forEach(c=>{ cats[c.key]+=g.categorias[c.key]||0; });
   }));
   return cats;
 }
@@ -3497,12 +3521,14 @@ function renderOpReportCard(rows,tot){
   const per=(v,base)=>base>0?v/base:0;
   const gpk=per(tot.ganho,tot.kmTotal), gph=per(tot.ganho,tot.horas);
   const hh=Math.floor(tot.horas), mm=Math.round((tot.horas-hh)*60);
-  const cats=categoriasTotais(rows);
-  const catsActive=UBER_CATS.filter(c=>cats[c.key]>0);
-  const catsHtml=catsActive.length?`<div class="panel" style="padding:14px 18px;margin-top:10px">
-    <h2 style="margin:0 0 10px;font-size:14.5px">🚕 Corridas Uber por categoria — ${monthLabel()}</h2>
-    <div class="week-apps" style="margin-top:0">${catsActive.map(c=>`<span class="week-app-chip"><span class="nm">${c.label}</span><span class="vl">${fmtN(cats[c.key],0)}</span></span>`).join('')}</div>
+  const catsU=categoriasTotais(rows,'Uber'), catsN=categoriasTotais(rows,'99');
+  const catsUActive=UBER_CATS.filter(c=>catsU[c.key]>0);
+  const catsNActive=NN_CATS.filter(c=>catsN[c.key]>0);
+  const bloco=(titulo,active,cats)=>active.length?`<div class="panel" style="padding:14px 18px;margin-top:10px">
+    <h2 style="margin:0 0 10px;font-size:14.5px">${titulo} — ${monthLabel()}</h2>
+    <div class="week-apps" style="margin-top:0">${active.map(c=>`<span class="week-app-chip"><span class="nm">${c.label}</span><span class="vl">${fmtN(cats[c.key],0)}</span></span>`).join('')}</div>
   </div>`:'';
+  const catsHtml=bloco('🚕 Corridas Uber por categoria',catsUActive,catsU)+bloco('🚕 Corridas 99 por categoria',catsNActive,catsN);
   el.innerHTML=`
     <div class="op-hero">
       <div class="op-hero-top">
@@ -3581,7 +3607,7 @@ function renderOpWeekly(rows,tot){
   rows.forEach(r=>{ if(!r.data)return; const wk=mondayOf(r.data); (wkMap[wk]=wkMap[wk]||[]).push(r); });
   const weekKeys=Object.keys(wkMap).sort((a,b)=>b.localeCompare(a));
 
-  const APP_MAP=[['Uber','uber'],['99','g99'],['InDriver','indriver'],['Particular','part'],['Shopee','shopee'],['Mercado Livre','mercadoLivre'],['iFood','ifood']];
+  const APP_MAP=[['Uber','uber'],['99','g99'],['InDriver','indriver'],['Particular','part'],['Shopee','shopee'],['Mercado Livre','mercadoLivre'],['iFood','ifood'],['Lalamove','lalamove']];
   const activeApps=APP_MAP.filter(([label,key])=>tot[key]>0);
 
   const cards=weekKeys.map(wk=>{
@@ -3703,12 +3729,12 @@ function renderLancList(){
     if(_lancTab==='entrada'){
       let corridasTxt;
       if(it.categorias){
-        const parts=UBER_CATS.filter(c=>it.categorias[c.key]>0).map(c=>`${c.label} ${it.categorias[c.key]}`);
+        const parts=(catsDoApp(it.app)||UBER_CATS).filter(c=>it.categorias[c.key]>0).map(c=>`${c.label} ${it.categorias[c.key]}`);
         corridasTxt=parts.join(' · ');
       } else if(it.corridas){
         corridasTxt=`${fmtN(it.corridas,0)} corridas`;
       }
-      const mid=[corridasTxt, it.km?`${fmtN(it.km,0)} km`:null, it.horas?`${fmtN(it.horas,1)}h`:null].filter(Boolean).join(' · ');
+      const mid=[corridasTxt, it.km?`${fmtN(it.km,0)} km`:null, it.horas?`${fmtHoras(it.horas)}h`:null].filter(Boolean).join(' · ');
       return `<div class="lanc-row lanc-clickable" onclick="editLancamento('entrada',${it.ri},${it.gi})">
         <span class="lanc-date">${dataBR}${wdChip}</span>
         <span class="lanc-mid"><b style="color:var(--txt)">${it.app}</b>${mid?' · '+mid:''}</span>
@@ -3755,17 +3781,17 @@ function renderEditLancSheet(kind,it,data){
       <div class="m-field"><label>App / Origem</label>
         <select id="elApp" onchange="onEditLancAppChange()">${APP_LIST.map(a=>`<option value="${a}"${a===it.app?' selected':''}>${a}</option>`).join('')}</select></div>
       <div class="m-field-row">
-        <div class="m-field"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" value="${fmtN(it.valor||0,2)}"></div>
-        <div class="m-field"><label>Horas</label><input id="elHoras" inputmode="decimal" value="${fmtN(it.horas||0,2)}"></div>
+        <div class="m-field"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" placeholder="0,00" value="${vzn(it.valor,2)}"></div>
+        <div class="m-field"><label>Horas (h:mm)</label><input id="elHoras" inputmode="text" placeholder="0:00" value="${it.horas?fmtHoras(it.horas):''}"></div>
       </div>
       <div class="m-field-row">
-        <div class="m-field"><label>Corridas</label><input id="elCorridas" inputmode="decimal" value="${fmtN(it.corridas||0,0)}"></div>
-        <div class="m-field"><label>KM total</label><input id="elKm" inputmode="decimal" value="${fmtN(it.km||0,2)}"></div>
+        <div class="m-field"><label>Corridas</label><input id="elCorridas" inputmode="decimal" placeholder="0" value="${vzn(it.corridas,0)}"></div>
+        <div class="m-field"><label>KM total</label><input id="elKm" inputmode="decimal" placeholder="0" value="${vzn(it.km,2)}"></div>
       </div>
-      <div id="elCatsBox" style="display:${it.app==='Uber'?'':'none'}">
+      <div id="elCatsBox" style="display:${catsDoApp(it.app)?'':'none'}">
         <div class="sheet-sec-h" style="margin-top:6px">🚕 Corridas por categoria (opcional)</div>
-        <div class="m-field-row" style="flex-wrap:wrap">
-          ${UBER_CATS.map(c=>`<div class="m-field" style="min-width:90px;flex:1"><label>${c.label}</label><input id="elCat_${c.key}" inputmode="decimal" value="${cats[c.key]||0}" oninput="onEditLancCatInput()"></div>`).join('')}
+        <div class="m-field-row" style="flex-wrap:wrap" id="elCatsGrid">
+          ${(catsDoApp(it.app)||[]).map(c=>`<div class="m-field" style="min-width:90px;flex:1"><label>${c.label}</label><input id="elCat_${c.key}" inputmode="decimal" value="${cats[c.key]||''}" oninput="onEditLancCatInput()"></div>`).join('')}
         </div>
       </div>
       <div class="sheet-foot">
@@ -3790,16 +3816,16 @@ function renderEditLancSheet(kind,it,data){
               <option value="el"${tipo==='el'?' selected':''}>⚡ Elétrico</option>
             </select>
           </div>
-          <div class="m-field"><label>KM</label><input id="elCombKm" inputmode="decimal" value="${fmtN(it.km||0,2)}" oninput="onEditCombInput('km')"></div>
+          <div class="m-field"><label>KM</label><input id="elCombKm" inputmode="decimal" placeholder="0" value="${vzn(it.km,2)}" oninput="onEditCombInput('km')"></div>
         </div>
         <div class="m-field-row">
           <div class="m-field" id="elCombRendLabel"><label>${tipo==='el'?'% de bateria gasto':'Rendimento (km/l)'}</label><input id="elCombRend" inputmode="decimal" value="${fmtN(it.rend||cf.kmL,2)}" oninput="onEditCombInput('rend')"></div>
-          <div class="m-field"><label id="elCombQtdaLabel">${tipo==='el'?'Qtda (kWh)':'Qtda (litros)'}</label><input id="elCombQtda" inputmode="decimal" value="${fmtN(it.qtda||0,2)}" oninput="onEditCombInput('qtda')"></div>
+          <div class="m-field"><label id="elCombQtdaLabel">${tipo==='el'?'Qtda (kWh)':'Qtda (litros)'}</label><input id="elCombQtda" inputmode="decimal" placeholder="0" value="${vzn(it.qtda,2)}" oninput="onEditCombInput('qtda')"></div>
         </div>
         <div class="m-field"><label id="elCombValorLabel">${tipo==='el'?'Valor por kWh (R$)':'Valor por litro (R$)'}</label><input id="elCombValorUnit" inputmode="decimal" value="${fmtN(it.valorUnit||(tipo==='el'?(cf.tarifa||0.95):(cf.preco||6)),2)}" oninput="onEditCombInput('valor')"></div>
         <div class="m-field"><label>Total (automático)</label><input id="elCombTotal" readonly tabindex="-1" value="${fmt(it.valor||0)}" style="opacity:.85"></div>
       </div>
-      <div class="m-field" id="elValorBox" style="display:${isComb?'none':''}"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" value="${fmtN(it.valor||0,2)}"></div>
+      <div class="m-field" id="elValorBox" style="display:${isComb?'none':''}"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" placeholder="0,00" value="${vzn(it.valor,2)}"></div>
       <div class="m-field"><label>Forma de pagamento</label>
         <select id="elForma">${FORMA_PGTO.map(c=>`<option value="${c}"${c===it.forma?' selected':''}>${c}</option>`).join('')}</select></div>
       <div class="m-field"><label>Observação</label><input id="elObs" type="text" value="${it.obs||''}"></div>
@@ -3835,9 +3861,15 @@ function onEditCombInput(field){
   else { rendLabel.textContent='Rendimento (km/l)'; qtdaLabel.textContent='Qtda (litros)'; valorLabel.textContent='Valor por litro (R$)'; }
 
   if(tipo==='el'){
-    if(field!=='valor'){
+    if(field==='qtda'){
+      // usuário editou o kWh diretamente: respeita o valor e recalcula o % de bateria equivalente
+      const qtda=parseNum(document.getElementById('elCombQtda').value);
+      const bat=cf.bateriaKwh||18.3;
+      if(qtda>0 && bat>0) document.getElementById('elCombRend').value=fmtN(r2(qtda/bat*100),2);
+    } else if(field!=='valor'){
+      // editou o % (ou km/tipo): calcula o kWh com arredondamento por teto na 1ª decimal
       const pct=parseNum(document.getElementById('elCombRend').value);
-      document.getElementById('elCombQtda').value=fmtN(r2((cf.bateriaKwh||18.3)*(pct/100)),2);
+      document.getElementById('elCombQtda').value=fmtN(pctParaKwh(pct,cf.bateriaKwh||18.3),2);
     }
   } else if(field!=='valor'){
     let rend=parseNum(document.getElementById('elCombRend').value);
@@ -3860,11 +3892,16 @@ function closeEditLanc(fromBack){ document.getElementById('editLancOverlay').cla
 function onEditLancAppChange(){
   const app=document.getElementById('elApp'); if(!app)return;
   const box=document.getElementById('elCatsBox'); if(!box)return;
-  box.style.display=(app.value==='Uber')?'':'none';
+  const cats=catsDoApp(app.value);
+  box.style.display=cats?'':'none';
+  const grid=document.getElementById('elCatsGrid');
+  if(grid&&cats){ grid.innerHTML=cats.map(c=>`<div class="m-field" style="min-width:90px;flex:1"><label>${c.label}</label><input id="elCat_${c.key}" inputmode="decimal" placeholder="0" oninput="onEditLancCatInput()"></div>`).join(''); }
 }
 function onEditLancCatInput(){
-  const sum=UBER_CATS.reduce((s,c)=>{const e=document.getElementById('elCat_'+c.key);return s+(e?parseNum(e.value):0);},0);
-  const corridasEl=document.getElementById('elCorridas'); if(corridasEl)corridasEl.value=sum;
+  const app=document.getElementById('elApp').value;
+  const cats=catsDoApp(app)||[];
+  const sum=cats.reduce((s,c)=>{const e=document.getElementById('elCat_'+c.key);return s+(e?parseNum(e.value):0);},0);
+  const corridasEl=document.getElementById('elCorridas'); if(corridasEl)corridasEl.value=sum||'';
 }
 function saveEditLanc(){
   if(!_editLanc)return;
@@ -3875,11 +3912,12 @@ function saveEditLanc(){
   const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
   if(kind==='entrada'){
     const it=r.ganhos[gi]; if(!it){ closeEditLanc(); return; }
-    it.app=g('elApp'); it.valor=v('elValor'); it.horas=v('elHoras'); it.km=v('elKm');
-    if(it.app==='Uber'){
-      const cats={}; let sum=0;
-      UBER_CATS.forEach(c=>{ const val=v('elCat_'+c.key); cats[c.key]=val; sum+=val; });
-      if(sum>0){ it.categorias=cats; it.corridas=sum; }
+    it.app=g('elApp'); it.valor=v('elValor'); it.horas=parseHoras(g('elHoras')); it.km=v('elKm');
+    const cats=catsDoApp(it.app);
+    if(cats){
+      const obj={}; let sum=0;
+      cats.forEach(c=>{ const val=v('elCat_'+c.key); obj[c.key]=val; sum+=val; });
+      if(sum>0){ it.categorias=obj; it.corridas=sum; }
       else { delete it.categorias; it.corridas=v('elCorridas'); }
     } else {
       delete it.categorias; it.corridas=v('elCorridas');
@@ -3999,7 +4037,7 @@ function pendingListHtml(){
     if(_modalKind==='entrada'){
       mid=it.app;
       if(it.categorias){
-        const parts=UBER_CATS.filter(c=>it.categorias[c.key]>0).map(c=>`${c.label} ${it.categorias[c.key]}`);
+        const parts=(catsDoApp(it.app)||UBER_CATS).filter(c=>it.categorias[c.key]>0).map(c=>`${c.label} ${it.categorias[c.key]}`);
         if(parts.length)mid+=` · ${parts.join(' · ')}`;
       } else if(it.corridas>0){
         mid+=` · ${fmtN(it.corridas,0)} corrida(s)`;
@@ -4033,18 +4071,16 @@ function openEntrada(){
       <select id="mApp" onchange="onEntradaAppChange()">${APP_LIST.map(a=>`<option value="${a}">${a}</option>`).join('')}</select>
     </div>
     <div class="field-row">
-      <div class="field"><label>Valor (R$)</label><input id="mValor" inputmode="decimal" value="0"></div>
-      <div class="field"><label>Horas trabalhadas</label><input id="mHoras" inputmode="decimal" value="0"></div>
+      <div class="field"><label>Valor (R$)</label><input id="mValor" inputmode="decimal" placeholder="0" value=""></div>
+      <div class="field"><label>Horas trabalhadas (h:mm)</label><input id="mHoras" inputmode="text" placeholder="0:00" value=""></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Corridas</label><input id="mCorridas" inputmode="decimal" value="0"></div>
-      <div class="field"><label>KM total</label><input id="mKmTotal" inputmode="decimal" value="0"></div>
+      <div class="field"><label>Corridas</label><input id="mCorridas" inputmode="decimal" placeholder="0" value=""></div>
+      <div class="field"><label>KM total</label><input id="mKmTotal" inputmode="decimal" placeholder="0" value=""></div>
     </div>
     <div id="mCatsBox">
       <div class="modal-section-title">🚕 Corridas por categoria (opcional)</div>
-      <div class="cfg-grid" style="margin-top:8px">
-        ${UBER_CATS.map(c=>`<div class="field"><label>${c.label}</label><input id="mCat_${c.key}" inputmode="decimal" value="0" oninput="onEntradaCatInput()"></div>`).join('')}
-      </div>
+      <div class="cfg-grid" style="margin-top:8px" id="mCatsGrid"></div>
       <p class="sub" style="margin:6px 0 0">Preenchendo aqui, o total de <b>Corridas</b> acima é somado automaticamente.</p>
     </div>
     <button class="btn" style="width:100%;justify-content:center" onclick="addPendingEntrada()">➕ Adicionar este item e lançar outro</button>
@@ -4052,14 +4088,21 @@ function openEntrada(){
   onEntradaAppChange();
   document.getElementById('lancModal').classList.add('open'); navPush(()=>closeLancModal(true), ()=>(_pendingItems&&_pendingItems.length>0));
 }
+/* categorias de cada app (só Uber e 99 têm; os demais não têm categoria) */
+function catsDoApp(app){ return app==='Uber'?UBER_CATS : app==='99'?NN_CATS : null; }
 function onEntradaAppChange(){
   const app=document.getElementById('mApp'); if(!app)return;
   const box=document.getElementById('mCatsBox'); if(!box)return;
-  box.style.display=(app.value==='Uber')?'':'none';
+  const cats=catsDoApp(app.value);
+  box.style.display=cats?'':'none';
+  const grid=document.getElementById('mCatsGrid');
+  if(grid&&cats){ grid.innerHTML=cats.map(c=>`<div class="field"><label>${c.label}</label><input id="mCat_${c.key}" inputmode="decimal" placeholder="0" oninput="onEntradaCatInput()"></div>`).join(''); }
 }
 function onEntradaCatInput(){
-  const sum=UBER_CATS.reduce((s,c)=>{const e=document.getElementById('mCat_'+c.key);return s+(e?parseNum(e.value):0);},0);
-  const corridasEl=document.getElementById('mCorridas'); if(corridasEl)corridasEl.value=sum;
+  const app=document.getElementById('mApp').value;
+  const cats=catsDoApp(app)||[];
+  const sum=cats.reduce((s,c)=>{const e=document.getElementById('mCat_'+c.key);return s+(e?parseNum(e.value):0);},0);
+  const corridasEl=document.getElementById('mCorridas'); if(corridasEl)corridasEl.value=sum||'';
 }
 function addPendingEntrada(){
   const v=id=>parseNum(document.getElementById(id).value);
@@ -4067,17 +4110,18 @@ function addPendingEntrada(){
   if(valor<=0){ alert('Informe o valor do ganho.'); return; }
   const app=document.getElementById('mApp').value;
   let categorias=null, corridas=v('mCorridas');
-  if(app==='Uber'){
-    const cats={}; let sum=0;
-    UBER_CATS.forEach(c=>{ const el=document.getElementById('mCat_'+c.key); const val=el?parseNum(el.value):0; cats[c.key]=val; sum+=val; });
-    if(sum>0){ categorias=cats; corridas=sum; }
+  const cats=catsDoApp(app);
+  if(cats){
+    const obj={}; let sum=0;
+    cats.forEach(c=>{ const el=document.getElementById('mCat_'+c.key); const val=el?parseNum(el.value):0; obj[c.key]=val; sum+=val; });
+    if(sum>0){ categorias=obj; corridas=sum; }
   }
-  const item={ app, valor, horas:v('mHoras'), corridas, km:v('mKmTotal') };
+  const item={ app, valor, horas:parseHoras(document.getElementById('mHoras').value), corridas, km:v('mKmTotal') };
   if(categorias)item.categorias=categorias;
   _pendingItems.push(item);
   // limpa os campos pra lançar o próximo, mantendo a data
   document.getElementById('mValor').value='0';
-  document.getElementById('mHoras').value='0';
+  document.getElementById('mHoras').value='';
   document.getElementById('mCorridas').value='0';
   document.getElementById('mKmTotal').value='0';
   UBER_CATS.forEach(c=>{ const el=document.getElementById('mCat_'+c.key); if(el)el.value='0'; });
@@ -4101,7 +4145,7 @@ function openSaida(){
     <div class="field"><label>Forma de pagamento</label>
       <select id="mForma">${FORMA_PGTO.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
     </div>
-    <div class="field" id="valorSaidaField"><label>Valor (R$)</label><input id="mValorSaida" inputmode="decimal" value="0"></div>
+    <div class="field" id="valorSaidaField"><label>Valor (R$)</label><input id="mValorSaida" inputmode="decimal" placeholder="0" value=""></div>
     <div class="field"><label>Observação</label><input type="text" id="mObs" placeholder="Opcional — o que foi feito"></div>
     <button class="btn" style="width:100%;justify-content:center" onclick="addPendingSaida()">➕ Adicionar este item e lançar outro</button>
     <div id="pendingList">${pendingListHtml()}</div>`;
@@ -4124,11 +4168,11 @@ function onCategoriaChange(){
           <option value="el">⚡ Elétrico</option>
         </select>
       </div>
-      <div class="field"><label>KM rodado</label><input id="mCombKm" inputmode="decimal" value="0" oninput="onCombFieldsInput('km')"></div>
+      <div class="field"><label>KM rodado</label><input id="mCombKm" inputmode="decimal" placeholder="0" value="" oninput="onCombFieldsInput('km')"></div>
     </div>
     <div class="field-row">
       <div class="field" id="mCombRendLabel"><label>Rendimento (km/l)</label><input id="mCombRend" inputmode="decimal" value="${fmtN(cf.kmL,2)}" oninput="onCombFieldsInput('rend')"></div>
-      <div class="field"><label id="mCombQtdaLabel">Qtda (litros)</label><input id="mCombQtda" inputmode="decimal" value="0" oninput="onCombFieldsInput('qtda')"></div>
+      <div class="field"><label id="mCombQtdaLabel">Qtda (litros)</label><input id="mCombQtda" inputmode="decimal" placeholder="0" value="" oninput="onCombFieldsInput('qtda')"></div>
     </div>
     <div class="field"><label id="mCombValorLabel">Valor por litro (R$)</label><input id="mCombValorUnit" inputmode="decimal" value="${fmtN(cf.preco||6.0,2)}" oninput="onCombFieldsInput('valor')"></div>
     <div class="field"><label>Total (automático)</label><input id="mCombTotal" readonly tabindex="-1" value="R$ 0,00" style="color:var(--electric);font-weight:700"></div>`;
@@ -4208,10 +4252,10 @@ function addPendingSaida(){
 function closeLancModal(fromBack){ document.getElementById('lancModal').classList.remove('open'); _modalKind=null; _pendingItems=[]; if(!fromBack)navPop(); }
 function recalcRowFromLists(r){
   // recalcula os agregados por app a partir da lista de ganhos do dia
-  const sums={Uber:0,'99':0,InDriver:0,Particular:0,Shopee:0,'Mercado Livre':0,iFood:0};
+  const sums={Uber:0,'99':0,InDriver:0,Particular:0,Shopee:0,'Mercado Livre':0,iFood:0,Lalamove:0};
   (r.ganhos||[]).forEach(g=>{ if(sums[g.app]==null)sums[g.app]=0; sums[g.app]+=g.valor||0; });
   r.uber=sums.Uber; r.g99=sums['99']; r.indriver=sums.InDriver; r.part=sums.Particular; r.ifood=sums.iFood;
-  r.shopee=sums.Shopee; r.mercadoLivre=sums['Mercado Livre'];
+  r.shopee=sums.Shopee; r.mercadoLivre=sums['Mercado Livre']; r.lalamove=sums.Lalamove;
   r.corridas=(r.ganhos||[]).reduce((s,g)=>s+(g.corridas||0),0);
   r.kmTotal=(r.ganhos||[]).reduce((s,g)=>s+(g.km||0),0);
   r.horas=(r.ganhos||[]).reduce((s,g)=>s+(g.horas||0),0);
@@ -4268,8 +4312,9 @@ function saveLancamento(){
   toast(_modalKind==='entrada'?'Entrada salva':'Saída salva');
 }
 
-const APP_LIST=['Uber','99','InDriver','Particular','Shopee','Mercado Livre','iFood'];
-const UBER_CATS=[{key:'x',label:'X'},{key:'black',label:'Black'},{key:'blackBag',label:'Black Bag'},{key:'bag',label:'Bag'},{key:'conforto',label:'Comfort'}];
+const APP_LIST=['Uber','99','InDriver','Particular','Shopee','Mercado Livre','iFood','Lalamove'];
+const UBER_CATS=[{key:'black',label:'Black'},{key:'conforto',label:'Comfort'},{key:'x',label:'X'},{key:'bag',label:'Bag'},{key:'blackBag',label:'Black Bag'}];
+const NN_CATS=[{key:'pop',label:'POP'},{key:'eletric',label:'Eletric'}];
 const GASTO_CATS=['Alimentação','Borracharia','Combustível','DAS MEI','Funilaria','Internet','IPVA','Lavagem','Licenciamento','Manutenção','Mecânico','Multas','Outro','Prestação','Reserva','Revisão','Seguro','TAG','Troca de Óleo'];
 const MANUT_SERVICOS=['Alinhamento/balanceamento','Ar condicionado','Bateria','Bomba de combustível','Correia/Corrente','Direção Hidráulica/Elétrica','Embreagem','Filtro de Ar','Filtro de Ar da Cabine','Filtro de Combustível','Fluido da Embreagem','Fluido de Freio','Fluido da Transmissão','Funilaria','Inspeção Técnica','Lâmpada/Farol','Limpador do Para-brisa','Mão de Obra','Óleo (troca)','Óleo (completar)','Orçamento','Pastilha de freio','Pneu (troca)','Pneu (reparo)','Pneu (rodízio)','Radiador','Revisão','Suspensão/Amortecedor','Vela de Ignição','Vidro/Espelho','Outro'];
 const MANUT_FORMAS=['Cartão de Crédito','Cartão de Débito','Pix','Boleto','Dinheiro','Outros'];
