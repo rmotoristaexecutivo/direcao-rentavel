@@ -5279,20 +5279,28 @@ function abUpdateKmL(){
 }
 function abUpdateValorTotal(){
   const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
-  const total=g('abValorComb')+g('abValorEl');
-  const el=document.getElementById('abValorTotal'); if(el)el.value=fmt(total);
+  const subComb=g('abLitros')*g('abPrecoComb');   // litros × R$/L
+  const subEl=g('abKwh')*g('abPrecoKwh');          // kWh × R$/kWh
+  const total=subComb+subEl;
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=fmt(v); };
+  set('abSubComb',subComb); set('abSubEl',subEl); set('abValorTotal',total);
 }
 function openAbastModal(i){
   _abastEditIdx=(i==null?null:i);
   const key=state.abastecimentos.current;
   const rows=ensureAbastMonth(key);
   const r=(i!=null)?rows[i]:{data:todayStr(),forma:'Pix'};
-  // compatibilidade com formato antigo (tipo/qtda/valor únicos): converte para os campos separados
-  let litros=r.litros, valorComb=r.valorComb, kwh=r.kwh, valorEl=r.valorEl;
+  // compatibilidade: registros antigos guardavam o valor TOTAL de cada tipo (valorComb/valorEl).
+  // Agora usamos preço unitário (precoComb=R$/L, precoKwh=R$/kWh). Deriva o unitário do total antigo.
+  let litros=r.litros, kwh=r.kwh;
+  let precoComb=r.precoComb, precoKwh=r.precoKwh;
+  let valorComb=r.valorComb, valorEl=r.valorEl;
   if(litros==null && kwh==null && r.qtda!=null){
     if(r.tipo==='el'){ kwh=r.qtda; valorEl=r.valor; }
     else { litros=r.qtda; valorComb=r.valor; }
   }
+  if(precoComb==null && litros>0 && valorComb>0) precoComb=Math.round(valorComb/litros*1000)/1000;
+  if(precoKwh==null && kwh>0 && valorEl>0) precoKwh=Math.round(valorEl/kwh*1000)/1000;
   document.getElementById('abastModalTitle').textContent=(i!=null)?'✏️ Editar abastecimento':'⛽ Novo abastecimento';
   document.getElementById('abastDelBtn').style.display=(i!=null)?'':'none';
   document.getElementById('abastModalBody').innerHTML=`
@@ -5310,17 +5318,19 @@ function openAbastModal(i){
 
     <div class="modal-section-title">⛽ Combustível</div>
     <div class="field-row" style="margin-top:6px">
-      <div class="field"><label>Litros</label><input inputmode="decimal" id="abLitros" value="${litros||''}" placeholder="0" oninput="abUpdateKmL()"></div>
-      <div class="field"><label>Valor gasolina (R$)</label><input inputmode="decimal" id="abValorComb" value="${valorComb||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
+      <div class="field"><label>Litros</label><input inputmode="decimal" id="abLitros" value="${litros||''}" placeholder="0" oninput="abUpdateValorTotal();abUpdateKmL()"></div>
+      <div class="field"><label>R$ /L</label><input inputmode="decimal" id="abPrecoComb" value="${precoComb||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
     </div>
+    <div class="field"><label>Subtotal combustível (automático)</label><input id="abSubComb" readonly tabindex="-1" value="R$ 0,00" style="font-weight:700;color:var(--hybrid)"></div>
 
     <div class="modal-section-title">⚡ Elétrico</div>
     <div class="field-row" style="margin-top:6px">
-      <div class="field"><label>kWh</label><input inputmode="decimal" id="abKwh" value="${kwh||''}" placeholder="0"></div>
-      <div class="field"><label>Valor elétrico (R$)</label><input inputmode="decimal" id="abValorEl" value="${valorEl||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
+      <div class="field"><label>kWh</label><input inputmode="decimal" id="abKwh" value="${kwh||''}" placeholder="0" oninput="abUpdateValorTotal()"></div>
+      <div class="field"><label>R$ /kWh</label><input inputmode="decimal" id="abPrecoKwh" value="${precoKwh||''}" placeholder="0,00" oninput="abUpdateValorTotal()"></div>
     </div>
+    <div class="field"><label>Subtotal elétrico (automático)</label><input id="abSubEl" readonly tabindex="-1" value="R$ 0,00" style="font-weight:700;color:var(--electric)"></div>
 
-    <div class="field"><label>Valor total do abastecimento (automático)</label><input id="abValorTotal" readonly tabindex="-1" value="R$ 0,00" style="font-weight:800;color:var(--electric)"></div>
+    <div class="field"><label>Valor total do abastecimento (automático)</label><input id="abValorTotal" readonly tabindex="-1" value="R$ 0,00" style="font-weight:800;color:var(--gain)"></div>
     <div class="field" id="abKmLBox" style="display:none"><label>Média km/l (automático)</label><input id="abKmL" readonly tabindex="-1" value="" style="font-weight:800;color:var(--gain)"></div>
     <div class="field"><label>Forma de pagamento</label>
       <select id="abForma">${FORMA_PGTO.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
@@ -5338,11 +5348,14 @@ function saveAbastEntry(){
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
   const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
-  const litros=g('abLitros'), valorComb=g('abValorComb'), kwh=g('abKwh'), valorEl=g('abValorEl');
-  const valorTotal=(valorComb||0)+(valorEl||0);
-  if(valorTotal<=0){ alert('Informe o valor de gasolina e/ou elétrico.'); return; }
+  const litros=g('abLitros'), precoComb=g('abPrecoComb'), kwh=g('abKwh'), precoKwh=g('abPrecoKwh');
+  const valorComb=(litros||0)*(precoComb||0);   // litros × R$/L
+  const valorEl=(kwh||0)*(precoKwh||0);          // kWh × R$/kWh
+  const valorTotal=valorComb+valorEl;
+  if(valorTotal<=0){ alert('Informe litros e R$/L e/ou kWh e R$/kWh.'); return; }
   const entry={ data, forma:document.getElementById('abForma').value,
-    litros:litros||0, valorComb:valorComb||0, kwh:kwh||0, valorEl:valorEl||0, valor:valorTotal };
+    litros:litros||0, precoComb:precoComb||0, valorComb:valorComb,
+    kwh:kwh||0, precoKwh:precoKwh||0, valorEl:valorEl, valor:valorTotal };
   const kmIniComb=g('abKmIniComb'), kmFimComb=g('abKmFimComb'), kmIniEl=g('abKmIniEl'), kmFimEl=g('abKmFimEl');
   if(kmIniComb!=null)entry.kmIniComb=kmIniComb;
   if(kmFimComb!=null)entry.kmFimComb=kmFimComb;
