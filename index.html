@@ -3272,9 +3272,11 @@ function openUSheet(i,focoLado){
   _uSheetIdx=(i==null?null:i);
   if(i==null){
     const {y,m}=monthKeyParts(state.uber.current);
-    const existing=new Set(rows.map(r=>r.data));
-    let day=1; for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){day=d;break;} }
-    _uSheetDraft=emptyRow(`${y}-${pad(m)}-${pad(day)}`);
+    // sugere HOJE se estivermos no mês atual; senão, o dia 1 do mês que está aberto
+    const hoje=new Date();
+    const noMesAtual=(hoje.getFullYear()===y && (hoje.getMonth()+1)===m);
+    const dataPadrao=noMesAtual ? todayStr() : `${y}-${pad(m)}-01`;
+    _uSheetDraft=emptyRow(dataPadrao);
     _uSheetOrig=null;
   } else { _uSheetDraft=JSON.parse(JSON.stringify(rows[i])); _uSheetOrig=JSON.parse(JSON.stringify(rows[i])); }
   renderUSheet();
@@ -5002,9 +5004,10 @@ function openPSheet(i,focoLado){
   _pSheetIdx = (i==null?null:i);
   if(i==null){
     const {y,m}=pMonthKeyParts(state.pessoal.current);
-    const existing=new Set(rows.map(r=>r.data));
-    let day=1; for(let d=1;d<=daysInMonth(y,m);d++){ if(!existing.has(`${y}-${pad(m)}-${pad(d)}`)){day=d;break;} }
-    _pSheetDraft=emptyRowP(`${y}-${pad(m)}-${pad(day)}`);
+    const hoje=new Date();
+    const noMesAtual=(hoje.getFullYear()===y && (hoje.getMonth()+1)===m);
+    const dataPadrao=noMesAtual ? todayStr() : `${y}-${pad(m)}-01`;
+    _pSheetDraft=emptyRowP(dataPadrao);
     _pSheetOrig=null;
   } else {
     _pSheetDraft=JSON.parse(JSON.stringify(rows[i]));
