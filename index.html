@@ -400,6 +400,14 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   background:linear-gradient(135deg,rgba(45,212,191,.06),transparent)}
 .mo-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
   color:var(--electric);background:rgba(45,212,191,.14);padding:2px 8px;border-radius:8px;vertical-align:middle}
+.mo-atual-top{display:flex;align-items:stretch;gap:10px}
+.mo-atual-info{flex:1;min-width:0;cursor:pointer}
+.mo-add-btn{flex-shrink:0;width:52px;border:none;border-radius:14px;cursor:pointer;
+  background:linear-gradient(135deg,var(--electric),#12b76a);color:#fff;
+  font-size:26px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(45,212,191,.32);transition:.16s}
+.mo-add-btn:hover{transform:scale(1.05)}
+.mo-add-btn:active{transform:scale(.96)}
 /* lista compacta dos demais meses/anos — uma linha por item, empilhada */
 .mo-lista{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .mo-listrow{display:flex;align-items:center;gap:10px;background:var(--panel);padding:13px 15px;cursor:pointer;transition:.14s}
@@ -2883,9 +2891,15 @@ function uRenderMeses(){
     const tot=monthTotals(rows).gastoTrabalho;
     const ehAtual=(y===anoAtual && m===mesAtual);
     if(ehAtual){
-      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}" onclick="uNavGoDias('${key}')">
-        <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
-        ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+      // mês atual fica FORA da seção, sempre visível, com botão + pra lançar direto
+      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}">
+        <div class="mo-atual-top">
+          <div class="mo-atual-info" onclick="uNavGoDias('${key}')">
+            <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
+            ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+          </div>
+          <button class="mo-add-btn" onclick="event.stopPropagation();uAddHoje('${key}')" title="Lançar dia de hoje">＋</button>
+        </div>
       </div>`;
     } else {
       lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="uNavGoDias('${key}')">
@@ -2895,11 +2909,17 @@ function uRenderMeses(){
       </div>`;
     }
   }
-  const mesesHtml=(destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')+(lista?`<div class="mo-lista">${lista}</div>`:'');
   document.getElementById('uNavBody').innerHTML=
-    secWrap('u-meses','📅 Meses',mesesHtml)
+    (destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')
+    +(lista?secWrap('u-meses','📅 Outros meses',`<div class="mo-lista">${lista}</div>`):'')
     +secWrap('u-evolucao','📈 Evolução',`<div id="perPanel-uber-m"></div>`);
   renderPeriodPanel('uber');
+}
+/* entra no mês e abre direto o "Novo dia" com a data de hoje */
+function uAddHoje(key){
+  state.uber.current=key; state.uber.year=Number(key.slice(0,4));
+  resetSecoes(); _uNavLevel='dias'; save(); renderUberMobile();
+  openUSheet(null);
 }
 /* Médias/estatísticas do mês — serve as guias Trabalho e Pessoal (mesma estrutura ida/volta).
    Só conta trechos realmente preenchidos — um dia sem volta não puxa a média da volta pra baixo. */
@@ -4945,9 +4965,14 @@ function pRenderMeses(){
     const tot=monthTotalsP(rows).gastoDia;
     const ehAtual=(y===anoAtual && m===mesAtual);
     if(ehAtual){
-      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}" onclick="pNavGoDias('${key}')">
-        <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
-        ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}">
+        <div class="mo-atual-top">
+          <div class="mo-atual-info" onclick="pNavGoDias('${key}')">
+            <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
+            ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+          </div>
+          <button class="mo-add-btn" onclick="event.stopPropagation();pAddHoje('${key}')" title="Lançar dia de hoje">＋</button>
+        </div>
       </div>`;
     } else {
       lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="pNavGoDias('${key}')">
@@ -4957,11 +4982,16 @@ function pRenderMeses(){
       </div>`;
     }
   }
-  const mesesHtml=(destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')+(lista?`<div class="mo-lista">${lista}</div>`:'');
   document.getElementById('pNavBody').innerHTML=
-    secWrap('p-meses','📅 Meses',mesesHtml)
+    (destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')
+    +(lista?secWrap('p-meses','📅 Outros meses',`<div class="mo-lista">${lista}</div>`):'')
     +secWrap('p-evolucao','📈 Evolução',`<div id="perPanel-pessoal-m"></div>`);
   renderPeriodPanel('pessoal');
+}
+function pAddHoje(key){
+  state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4));
+  resetSecoes(); _pNavLevel='dias'; save(); renderPessoalMobile();
+  openPSheet(null);
 }
 function pRenderDias(){
   const rows=ensurePessoalMonth(state.pessoal.current);
