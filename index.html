@@ -1132,6 +1132,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button onclick="document.getElementById('imp').click();closeHdrMenu()">⬆ Importar backup (JSON)</button>
       <button onclick="openHistoryModal();closeHdrMenu()">🕘 Histórico de versões (recuperar dados)</button>
       <button onclick="openSyncKeyModal();closeHdrMenu()">🔑 Código de sincronização</button>
+      <button id="btnGoogleAuth" onclick="googleAuthMenuClick()">🔒 Entrar com Google</button>
       <button class="danger" onclick="resetAll()">↺ Zerar tudo</button>
       <button class="cancel" onclick="closeHdrMenu()">Fechar</button>
     </div>
@@ -7048,8 +7049,12 @@ function startCloudPull(){
   // puxa a cada 12s enquanto o app estiver visível
   _pullTimer=setInterval(()=>{ if(!document.hidden) pullFromCloud(false); }, 12000);
   // e sempre que o app voltar ao foco (trocar de aba/abrir o app)
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pullFromCloud(false); });
-  window.addEventListener('focus',()=>pullFromCloud(false));
+  // (só anexa uma vez — startCloudPull roda de novo ao trocar de código/entrar com Google)
+  if(!window._pullListenersAttached){
+    window._pullListenersAttached=true;
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pullFromCloud(false); });
+    window.addEventListener('focus',()=>pullFromCloud(false));
+  }
   // primeira sincronização após logar: reconcilia com segurança (nunca descarta local pendente)
   setTimeout(()=>reconcileWithCloud(),1500);
 }
@@ -7163,6 +7168,85 @@ function genDeviceKey(){
   try{ if(window.crypto && crypto.randomUUID) return 'u-'+crypto.randomUUID(); }catch(e){}
   return 'u-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10)+'-'+Math.random().toString(36).slice(2,10);
 }
+/* ============ LOGIN COM GOOGLE (Supabase Auth) ============
+   Como funciona, em uma frase: entrar com o Google apenas TROCA o código de
+   sincronização deste aparelho por um código derivado da sua conta Google.
+   Nada é apagado. O código de aparelho antigo continua existindo na nuvem —
+   se algo der errado, basta sair e o app volta a usá-lo.
+   Reaproveita o doLogin() que já existe (que faz backup antes de trocar). */
+let _authUser=null;
+
+function authKeyFor(user){ return 'gauth-'+user.id; }
+
+function updateAuthUI(){
+  const b=document.getElementById('btnGoogleAuth'); if(!b)return;
+  if(_authUser){
+    const email=(_authUser.email||'conta Google');
+    b.textContent='🔓 Sair ('+email+')';
+    b.title='Você está conectado. Seus dados sincronizam pela conta Google.';
+  } else {
+    b.textContent='🔒 Entrar com Google';
+    b.title='Entrar faz seus dados seguirem sua conta Google em qualquer aparelho.';
+  }
+}
+
+async function signInWithGoogle(){
+  const sb=getSb();
+  if(!sb){ toast('Sem conexão com a nuvem — tente de novo em instantes'); return; }
+  try{
+    const redirectTo=location.origin+location.pathname;
+    const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo}});
+    if(error) throw error;
+  }catch(e){ toast('Não foi possível abrir o login do Google'); }
+}
+
+async function signOutGoogle(){
+  if(!confirm('Sair da conta Google? Este aparelho volta a usar o código de sincronização anterior. Nenhum dado é apagado.'))return;
+  const sb=getSb();
+  try{ if(sb) await sb.auth.signOut(); }catch(e){}
+  try{
+    const prev=localStorage.getItem('cv_synckey_prev');
+    if(prev) localStorage.setItem('cv_synckey_raw',prev);
+  }catch(e){}
+  location.reload();
+}
+
+function googleAuthMenuClick(){
+  closeHdrMenu();
+  if(_authUser) signOutGoogle(); else signInWithGoogle();
+}
+
+/* Depois que o Google devolve o usuário pro app, adota a conta como código de sync. */
+async function adoptAuthSyncKey(user){
+  _authUser=user;
+  updateAuthUI();
+  const newRaw=authKeyFor(user);
+  let cur=null;
+  try{ cur=localStorage.getItem('cv_synckey_raw'); }catch(e){}
+  if(cur===newRaw) return;              // já está usando a conta — nada a fazer
+  try{ if(cur) localStorage.setItem('cv_synckey_prev',cur); }catch(e){}
+  const inp=document.getElementById('loginKey');
+  if(inp) inp.value=newRaw;
+  await doLogin();                      // já faz backup local antes de qualquer troca
+  toast('Conectado como '+(user.email||'conta Google'));
+}
+
+(function googleAuthBootstrap(){
+  function go(){
+    if(!window.supabase) return setTimeout(go,150);
+    const sb=getSb(); if(!sb) return setTimeout(go,150);
+    sb.auth.onAuthStateChange((_evt,session)=>{
+      if(session && session.user) adoptAuthSyncKey(session.user);
+      else { _authUser=null; updateAuthUI(); }
+    });
+    sb.auth.getSession().then(({data})=>{
+      if(data && data.session && data.session.user) adoptAuthSyncKey(data.session.user);
+      else updateAuthUI();
+    }).catch(()=>updateAuthUI());
+  }
+  setTimeout(go,200);
+})();
+
 (function autoEnter(){
   let key=null;
   try{ key=localStorage.getItem('cv_synckey_raw'); }catch(e){}
