@@ -7256,6 +7256,8 @@ function traduzErroAuth(e){
     return 'Esse e-mail não parece válido. Confira se digitou certo.';
   if(cod==='weak_password'||m.includes('password should be')||m.includes('password is too short')||m.includes('weak'))
     return 'Senha fraca demais. Use pelo menos 6 caracteres.';
+  if(cod==='email_provider_disabled'||m.includes('email signups are disabled')||m.includes('email logins are disabled'))
+    return 'O cadastro por e-mail está desligado no servidor. Use "Entrar com Google" por enquanto.';
   if(cod==='signup_disabled'||m.includes('signups not allowed')||m.includes('signup is disabled'))
     return 'O cadastro está desativado no servidor. (Supabase → Authentication → "Allow new users to sign up")';
   if(cod==='over_email_send_rate_limit'||m.includes('rate limit')||m.includes('only request this after')||m.includes('too many'))
