@@ -383,6 +383,17 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .per-chip.active{background:var(--electric);border-color:var(--electric);color:#04121a}
 .per-sum{display:flex;flex-wrap:wrap;gap:14px;margin:2px 0 10px;font-size:12px;color:var(--txt-dim)}
 .per-sum b{font-size:14px;font-variant-numeric:tabular-nums}
+.sec-collapse{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.sec-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:none;border:0;cursor:pointer;padding:14px 16px;font-family:'Sora';font-weight:700;
+  font-size:14.5px;color:var(--txt);text-align:left}
+.sec-title{display:flex;align-items:center;gap:6px}
+.sec-arrow{font-size:13px;color:var(--txt-faint);transition:transform .2s}
+.sec-collapse.open .sec-arrow{transform:rotate(180deg)}
+.sec-body{display:none;padding:0 12px 12px}
+.sec-collapse.open .sec-body{display:block}
+.sec-body .panel{border:0;margin:0;padding:0;background:none}
+.sec-body .month-cards{margin-top:0}
 .per-bloco{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .per-bloco:first-of-type{margin-top:6px;padding-top:0;border-top:0}
 .per-bloco-h{font-size:12.5px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
@@ -811,11 +822,22 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     backdrop-filter:blur(14px);padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
   #mobileNav button{flex:1;background:none;border:0;color:var(--txt-faint);
     display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 1px;
-    font-size:9.5px;font-weight:600;cursor:pointer;border-radius:10px;transition:.15s;
-    min-width:0;overflow:hidden;white-space:nowrap}
-  #mobileNav button .ic{font-size:18px;line-height:1}
-  #mobileNav button.active{color:var(--accent,#22c55e)}
-  #mobileNav button.active .ic{transform:translateY(-1px)}
+    font-size:9.5px;font-weight:600;cursor:pointer;border-radius:12px;transition:.22s cubic-bezier(.2,.8,.3,1.2);
+    min-width:0;overflow:hidden;white-space:nowrap;position:relative}
+  #mobileNav button .ic{font-size:18px;line-height:1;transition:.22s cubic-bezier(.2,.8,.3,1.2)}
+  #mobileNav button.active{color:var(--accent,#22c55e);font-weight:800}
+  #mobileNav button.active .ic{
+    transform:translateY(-6px) scale(1.45);
+    filter:drop-shadow(0 4px 8px rgba(34,197,94,.4));
+  }
+  /* pílula de fundo que "eleva" a aba ativa, dando o efeito de saltar pra frente */
+  #mobileNav button.active::before{
+    content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+    width:46px;height:46px;border-radius:50%;
+    background:radial-gradient(circle,rgba(34,197,94,.18),rgba(34,197,94,.05) 70%,transparent);
+    z-index:-1;animation:navPop .28s cubic-bezier(.2,.8,.3,1.3);
+  }
+  @keyframes navPop{0%{transform:translateX(-50%) scale(.6);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
 
   /* ===== CARDS POR DIA (substituem a tabela) ===== */
   .m-daycard{background:var(--panel);border:1px solid var(--line);border-radius:14px;
@@ -1881,6 +1903,7 @@ function activateTab(tab){
   const v=document.getElementById('view-'+tab); if(v)v.classList.add('active');
   document.querySelectorAll('#mobileNav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
   // ao ABRIR a aba Trabalho/Pessoal/Abastecimentos, a navegação sempre começa no nível inicial
+  resetSecoes();
   if(tab==='uber'){ _uNavLevel='anos'; _uNavYear=null; }
   if(tab==='pessoal'){ _pNavLevel='anos'; _pNavYear=null; }
   if(tab==='abastecimento'){ _abNavLevel='meses'; _abNavYear=null; }
@@ -2789,12 +2812,13 @@ function uberYearTotal(y){
   return tot;
 }
 function uNavBack(){
+  resetSecoes();
   if(_uNavLevel==='dias')_uNavLevel='meses';
   else if(_uNavLevel==='meses')_uNavLevel='anos';
   renderUberMobile();
 }
-function uNavGoMeses(y){ _uNavYear=y; _uNavLevel='meses'; renderUberMobile(); }
-function uNavGoDias(key){ state.uber.current=key; state.uber.year=Number(key.slice(0,4)); _uNavLevel='dias'; save(); renderUberMobile(); }
+function uNavGoMeses(y){ resetSecoes(); _uNavYear=y; _uNavLevel='meses'; renderUberMobile(); }
+function uNavGoDias(key){ resetSecoes(); state.uber.current=key; state.uber.year=Number(key.slice(0,4)); _uNavLevel='dias'; save(); renderUberMobile(); }
 function uNavSetHeader(title,showBack){
   const t=document.getElementById('uNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('uBackBtn'); if(b)b.classList.toggle('show',!!showBack);
@@ -2832,7 +2856,9 @@ function uRenderMeses(){
       ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
   }
-  document.getElementById('uNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div><div id="perPanel-uber-m"></div>`;
+  document.getElementById('uNavBody').innerHTML=
+    secWrap('u-meses','📅 Meses',`<div class="month-cards mo-nav">${cards}</div>`)
+    +secWrap('u-evolucao','📈 Evolução',`<div id="perPanel-uber-m"></div>`);
   renderPeriodPanel('uber');
 }
 /* Médias/estatísticas do mês — serve as guias Trabalho e Pessoal (mesma estrutura ida/volta).
@@ -3049,8 +3075,7 @@ function perPanelInner(mod){
       </div>`).join('');
     }
   }
-  return `<div class="panel per-panel">
-    <h2 style="margin:0 0 10px;font-size:14.5px">📈 Evolução</h2>
+  return `<div class="per-panel" style="padding:0">
     <div class="per-bar">${chipsP}</div>
     <div class="per-bar">${chipsM}
       <span class="res-cfg-acts" style="margin-left:auto">
@@ -3092,6 +3117,21 @@ function uStatsPanelHtml(rows,mod){
     </div>
   </div>`;
 }
+/* ===== Seções colapsáveis (Trabalho/Pessoal) — começam RECOLHIDAS ao abrir/voltar ===== */
+const _secAberta={};   // guarda quais seções o usuário abriu NESTA visita; zera ao trocar de tela
+function resetSecoes(){ for(const k in _secAberta) delete _secAberta[k]; }
+function toggleSec(id){ _secAberta[id]=!_secAberta[id]; const el=document.getElementById('sec-'+id); if(el){ el.classList.toggle('open',_secAberta[id]); } }
+/* embrulha um conteúdo numa seção que começa fechada. id único por seção. */
+function secWrap(id,titulo,innerHtml){
+  const aberta=!!_secAberta[id];
+  return `<div class="sec-collapse${aberta?' open':''}" id="sec-${id}">
+    <button class="sec-head" onclick="toggleSec('${id}')">
+      <span class="sec-title">${titulo}</span>
+      <span class="sec-arrow">▾</span>
+    </button>
+    <div class="sec-body">${innerHtml}</div>
+  </div>`;
+}
 function uRenderDias(){
   const allRows=ensureMonth(state.uber.current);
   const tot=monthTotals(allRows);
@@ -3113,7 +3153,9 @@ function uRenderDias(){
   const cardsHtml=rows.length
     ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,vi)=>mobileDayCard(r,allRows.indexOf(r),'uber',ords[vi])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(allRows)+uStatsPanelHtml(allRows,'uber')+cardsHtml;
+  document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(allRows)
+    +(uStatsPanelHtml(allRows,'uber')?secWrap('u-medias','📊 Médias do mês',uStatsPanelHtml(allRows,'uber')):'')
+    +cardsHtml;
 }
 /* Linha compacta de dia (Trabalho e Pessoal): mostra só data, resumo em chips e total.
    Tocar abre o modal completo de edição — a lista fica limpa e rápida de percorrer. */
@@ -4809,12 +4851,13 @@ function pessoalYearTotal(y){
   return tot;
 }
 function pNavBack(){
+  resetSecoes();
   if(_pNavLevel==='dias')_pNavLevel='meses';
   else if(_pNavLevel==='meses')_pNavLevel='anos';
   renderPessoalMobile();
 }
-function pNavGoMeses(y){ _pNavYear=y; _pNavLevel='meses'; renderPessoalMobile(); }
-function pNavGoDias(key){ state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4)); _pNavLevel='dias'; save(); renderPessoalMobile(); }
+function pNavGoMeses(y){ resetSecoes(); _pNavYear=y; _pNavLevel='meses'; renderPessoalMobile(); }
+function pNavGoDias(key){ resetSecoes(); state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4)); _pNavLevel='dias'; save(); renderPessoalMobile(); }
 function pNavSetHeader(title,showBack){
   const t=document.getElementById('pNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('pBackBtn'); if(b)b.classList.toggle('show',!!showBack);
@@ -4852,7 +4895,9 @@ function pRenderMeses(){
       ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
   }
-  document.getElementById('pNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div><div id="perPanel-pessoal-m"></div>`;
+  document.getElementById('pNavBody').innerHTML=
+    secWrap('p-meses','📅 Meses',`<div class="month-cards mo-nav">${cards}</div>`)
+    +secWrap('p-evolucao','📈 Evolução',`<div id="perPanel-pessoal-m"></div>`);
   renderPeriodPanel('pessoal');
 }
 function pRenderDias(){
@@ -4870,7 +4915,9 @@ function pRenderDias(){
   const cardsHtml=rows.length
     ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal',ords[i])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum lançamento em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
-  document.getElementById('pNavBody').innerHTML=kpisHtml+uStatsPanelHtml(rows,'pessoal')+cardsHtml;
+  document.getElementById('pNavBody').innerHTML=kpisHtml
+    +(uStatsPanelHtml(rows,'pessoal')?secWrap('p-medias','📊 Médias do mês',uStatsPanelHtml(rows,'pessoal')):'')
+    +cardsHtml;
 }
 
 /* navegação de mês mobile (mantida para compatibilidade — não usada pela navbar de 3 níveis) */
