@@ -1117,6 +1117,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
       <button class="btn" onclick="openHistoryModal()">🕘 Histórico</button>
       <button class="btn" onclick="openSyncKeyModal()">🔑 Código de sincronização</button>
+      <button class="btn" id="btnGoogleAuthTop" onclick="googleAuthMenuClick()">🔒 Entrar com Google</button>
       <button class="btn danger" onclick="resetAll()">↺ Zerar</button>
       <!-- botão de menu compacto (só mobile) -->
       <button class="btn" id="hdrMenuBtn" onclick="toggleHdrMenu()" aria-label="Menu">⋯</button>
@@ -7185,15 +7186,19 @@ let _authToken=null;   // token da sessão — usado no envio pra que o banco sa
 function authKeyFor(user){ return 'gauth-'+user.id; }
 
 function updateAuthUI(){
-  const b=document.getElementById('btnGoogleAuth'); if(!b)return;
-  if(_authUser){
-    const email=(_authUser.email||'conta Google');
-    b.textContent='🔓 Sair ('+email+')';
-    b.title='Você está conectado. Seus dados sincronizam pela conta Google.';
-  } else {
-    b.textContent='🔒 Entrar com Google';
-    b.title='Entrar faz seus dados seguirem sua conta Google em qualquer aparelho.';
-  }
+  // dois lugares: o cabeçalho (desktop) e o menu ⋯ (mobile)
+  const alvos=[document.getElementById('btnGoogleAuth'),document.getElementById('btnGoogleAuthTop')];
+  alvos.forEach(b=>{
+    if(!b)return;
+    if(_authUser){
+      const email=(_authUser.email||'conta Google');
+      b.textContent=(b.id==='btnGoogleAuthTop')?'🔓 Sair':'🔓 Sair ('+email+')';
+      b.title='Conectado como '+email+'. Seus dados sincronizam por essa conta.';
+    } else {
+      b.textContent='🔒 Entrar com Google';
+      b.title='Entrar faz seus dados seguirem sua conta Google em qualquer aparelho.';
+    }
+  });
 }
 
 async function signInWithGoogle(){
