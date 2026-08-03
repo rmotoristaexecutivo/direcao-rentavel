@@ -394,6 +394,21 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .sec-collapse.open .sec-body{display:block}
 .sec-body .panel{border:0;margin:0;padding:0;background:none}
 .sec-body .month-cards{margin-top:0}
+/* card em destaque (ano/mês atual) — grande e com realce */
+.mo-destaque-wrap{margin-bottom:12px}
+.mo-card.destaque{border:1.5px solid var(--electric);box-shadow:0 4px 16px rgba(45,212,191,.15);
+  background:linear-gradient(135deg,rgba(45,212,191,.06),transparent)}
+.mo-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--electric);background:rgba(45,212,191,.14);padding:2px 8px;border-radius:8px;vertical-align:middle}
+/* lista compacta dos demais meses/anos — uma linha por item, empilhada */
+.mo-lista{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.mo-listrow{display:flex;align-items:center;gap:10px;background:var(--panel);padding:13px 15px;cursor:pointer;transition:.14s}
+.mo-listrow:hover{background:var(--bg2)}
+.mo-listrow-nome{font-family:'Sora';font-weight:700;font-size:14px;color:var(--txt);flex:1}
+.mo-listrow-val{font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.mo-listrow-sub{font-size:12px;color:var(--txt-faint);font-style:italic}
+.mo-listrow-arrow{font-size:17px;color:var(--txt-faint);font-weight:700}
+.mo-listrow.empty .mo-listrow-nome{color:var(--txt-faint)}
 .per-bloco{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .per-bloco:first-of-type{margin-top:6px;padding-top:0;border-top:0}
 .per-bloco-h{font-size:12.5px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
@@ -2839,29 +2854,50 @@ function renderUberMobile(){
 function uRenderAnos(){
   uNavSetHeader('Trabalho',false);
   const years=uberYears();
-  const cards=years.map(y=>`<div class="mo-card mo-pick year-card" onclick="uNavGoMeses(${y})">
-      <div class="mo-h">${y}</div>
+  const anoAtual=new Date().getFullYear();
+  const destaque=years.filter(y=>y===anoAtual);
+  const resto=years.filter(y=>y!==anoAtual);
+  const cardGrande=destaque.map(y=>`<div class="mo-card mo-pick year-card destaque" onclick="uNavGoMeses(${y})">
+      <div class="mo-h">${y} <span class="mo-badge">atual</span></div>
       <div class="mo-row tot"><span>💸 Total gasto</span><b style="color:var(--expense)">${fmt(uberYearTotal(y))}</b></div>
     </div>`).join('');
-  document.getElementById('uNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div>`;
+  const lista=resto.map(y=>`<div class="mo-listrow" onclick="uNavGoMeses(${y})">
+      <span class="mo-listrow-nome">${y}</span>
+      <span class="mo-listrow-val" style="color:var(--expense)">${fmt(uberYearTotal(y))}</span>
+      <span class="mo-listrow-arrow">›</span>
+    </div>`).join('');
+  document.getElementById('uNavBody').innerHTML=
+    (cardGrande?`<div class="mo-destaque-wrap">${cardGrande}</div>`:'')
+    +(lista?`<div class="mo-lista">${lista}</div>`:'');
 }
 function uRenderMeses(){
   const y=_uNavYear;
   uNavSetHeader(String(y),true);
   const mStart=y===2026?7:1;
-  let cards='';
+  const hoje=new Date(), mesAtual=hoje.getMonth()+1, anoAtual=hoje.getFullYear();
+  let destaque='', lista='';
   for(let m=mStart;m<=12;m++){
     const key=`${y}-${pad(m)}`;
     const rows=state.uber.months[key]||[];
     const has=rows.length>0;
     const tot=monthTotals(rows).gastoTrabalho;
-    cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="uNavGoDias('${key}')">
-      <div class="mo-h">${MESES[m-1]}</div>
-      ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
-    </div>`;
+    const ehAtual=(y===anoAtual && m===mesAtual);
+    if(ehAtual){
+      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}" onclick="uNavGoDias('${key}')">
+        <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
+        ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+      </div>`;
+    } else {
+      lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="uNavGoDias('${key}')">
+        <span class="mo-listrow-nome">${MESES[m-1]}</span>
+        ${has?`<span class="mo-listrow-val" style="color:var(--expense)">${fmt(tot)}</span>`:`<span class="mo-listrow-sub">sem lançamentos</span>`}
+        <span class="mo-listrow-arrow">›</span>
+      </div>`;
+    }
   }
+  const mesesHtml=(destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')+(lista?`<div class="mo-lista">${lista}</div>`:'');
   document.getElementById('uNavBody').innerHTML=
-    secWrap('u-meses','📅 Meses',`<div class="month-cards mo-nav">${cards}</div>`)
+    secWrap('u-meses','📅 Meses',mesesHtml)
     +secWrap('u-evolucao','📈 Evolução',`<div id="perPanel-uber-m"></div>`);
   renderPeriodPanel('uber');
 }
@@ -4878,29 +4914,50 @@ function renderPessoalMobile(){
 function pRenderAnos(){
   pNavSetHeader('Pessoal',false);
   const years=pessoalYears();
-  const cards=years.map(y=>`<div class="mo-card mo-pick year-card" onclick="pNavGoMeses(${y})">
-      <div class="mo-h">${y}</div>
+  const anoAtual=new Date().getFullYear();
+  const destaque=years.filter(y=>y===anoAtual);
+  const resto=years.filter(y=>y!==anoAtual);
+  const cardGrande=destaque.map(y=>`<div class="mo-card mo-pick year-card destaque" onclick="pNavGoMeses(${y})">
+      <div class="mo-h">${y} <span class="mo-badge">atual</span></div>
       <div class="mo-row tot"><span>💸 Total gasto</span><b style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</b></div>
     </div>`).join('');
-  document.getElementById('pNavBody').innerHTML=`<div class="month-cards mo-nav">${cards}</div>`;
+  const lista=resto.map(y=>`<div class="mo-listrow" onclick="pNavGoMeses(${y})">
+      <span class="mo-listrow-nome">${y}</span>
+      <span class="mo-listrow-val" style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</span>
+      <span class="mo-listrow-arrow">›</span>
+    </div>`).join('');
+  document.getElementById('pNavBody').innerHTML=
+    (cardGrande?`<div class="mo-destaque-wrap">${cardGrande}</div>`:'')
+    +(lista?`<div class="mo-lista">${lista}</div>`:'');
 }
 function pRenderMeses(){
   const y=_pNavYear;
   pNavSetHeader(String(y),true);
   const mStart=y===2026?7:1;
-  let cards='';
+  const hoje=new Date(), mesAtual=hoje.getMonth()+1, anoAtual=hoje.getFullYear();
+  let destaque='', lista='';
   for(let m=mStart;m<=12;m++){
     const key=`${y}-${pad(m)}`;
     const rows=state.pessoal.months[key]||[];
     const has=rows.length>0;
     const tot=monthTotalsP(rows).gastoDia;
-    cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="pNavGoDias('${key}')">
-      <div class="mo-h">${MESES[m-1]}</div>
-      ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
-    </div>`;
+    const ehAtual=(y===anoAtual && m===mesAtual);
+    if(ehAtual){
+      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}" onclick="pNavGoDias('${key}')">
+        <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
+        ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
+      </div>`;
+    } else {
+      lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="pNavGoDias('${key}')">
+        <span class="mo-listrow-nome">${MESES[m-1]}</span>
+        ${has?`<span class="mo-listrow-val" style="color:var(--expense)">${fmt(tot)}</span>`:`<span class="mo-listrow-sub">sem lançamentos</span>`}
+        <span class="mo-listrow-arrow">›</span>
+      </div>`;
+    }
   }
+  const mesesHtml=(destaque?`<div class="mo-destaque-wrap">${destaque}</div>`:'')+(lista?`<div class="mo-lista">${lista}</div>`:'');
   document.getElementById('pNavBody').innerHTML=
-    secWrap('p-meses','📅 Meses',`<div class="month-cards mo-nav">${cards}</div>`)
+    secWrap('p-meses','📅 Meses',mesesHtml)
     +secWrap('p-evolucao','📈 Evolução',`<div id="perPanel-pessoal-m"></div>`);
   renderPeriodPanel('pessoal');
 }
