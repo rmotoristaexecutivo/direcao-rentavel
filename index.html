@@ -7212,6 +7212,40 @@ let _authToken=null;   // token da sessão — usado no envio pra que o banco sa
 
 function authKeyFor(user){ return 'gauth-'+user.id; }
 
+/* ===== ESTADO DE CONTA NOVA =====
+   O defaultState do app tem os números do carro do autor (150 mil, entrada de 30 mil...).
+   Isso serve de exemplo pra quem está desenvolvendo, mas um usuário novo precisa
+   abrir o app zerado. Aqui zeramos VALORES EM DINHEIRO e datas, mas mantemos os
+   parâmetros técnicos (consumo, tarifa, km/l) — zerar esses causaria divisão por zero
+   nos cálculos e o app mostraria "Infinity" em vez de números. */
+function estadoContaNova(){
+  const s=JSON.parse(JSON.stringify(defaultState));
+  const hoje=new Date();
+  const mesAtual=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  const diaHoje=mesAtual+'-'+String(hoje.getDate()).padStart(2,'0');
+
+  s.finance.carValue=0;
+  s.finance.entrada={valor:0,parcelas:0,parcelaValor:0,inicio:diaHoje,pagos:[]};
+  s.finance.fin={valor:0,parcelas:0,parcelaValor:0,taxa:0,inicio:diaHoje,pagos:[],parcelaManual:false,adiantados:{},descontos:{}};
+
+  // comparativo: zera só o que é dinheiro/quantidade pessoal
+  ['gastoCapMes','kmParticular','transporteMes','pedagioMes','viagemKm','viagemMeses',
+   'capParcela','capParcelasTotal','capPagas','capSeguro','bydSeguro','bydEntrada',
+   'bydUberBruto','bydUberDespesa'].forEach(k=>{ if(k in s.compare) s.compare[k]=0; });
+  s.compare.capInicio=diaHoje;
+
+  // meses correntes apontam para o mês de hoje, não para 2026-07
+  ['uber','pessoal','abastecimentos','manutencao','daily'].forEach(bloco=>{
+    if(s[bloco]){
+      if('current' in s[bloco]) s[bloco].current=mesAtual;
+      if('year' in s[bloco]) s[bloco].year=hoje.getFullYear();
+      if('months' in s[bloco]) s[bloco].months={};
+    }
+  });
+  s.despesas={};
+  return s;
+}
+
 function updateAuthUI(){
   // dois lugares: o cabeçalho (desktop) e o menu ⋯ (mobile)
   const alvos=[document.getElementById('btnGoogleAuth'),document.getElementById('btnGoogleAuthTop')];
@@ -7347,7 +7381,7 @@ async function signInWithGoogle(){
 }
 
 async function signOutGoogle(){
-  if(!confirm('Sair da conta Google? Este aparelho volta a usar o código de sincronização anterior. Nenhum dado é apagado.'))return;
+  if(!confirm('Sair da sua conta? Seus dados continuam salvos na nuvem e voltam quando você entrar de novo.'))return;
   const sb=getSb();
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
   try{
@@ -7410,11 +7444,19 @@ async function adoptAuthSyncKey(user){
     _syncKey=newId; _dirty=true; markLocalDirty();
     await flushToCloud(false);
     toast('Dados unidos: nuvem + este aparelho');
-  } else {
-    // conta nova (ou nuvem vazia): este aparelho vira o ponto de partida
+  } else if(localCount>0){
+    // conta nova, mas este aparelho já tinha lançamentos: eles viram o ponto de partida
     _syncKey=newId; _dirty=true; markLocalDirty();
     await flushToCloud(false);
-    toast(localCount>0?('Conta criada com seus '+localCount+' lançamentos'):'Conta conectada');
+    toast('Conta criada com seus '+localCount+' lançamentos');
+  } else {
+    // conta realmente nova e aparelho sem nada: começa ZERADO.
+    // (sem isso, a pessoa herdaria os números de exemplo que vêm no defaultState)
+    state=hydrate(estadoContaNova())||estadoContaNova();
+    try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
+    _syncKey=newId; _dirty=true; markLocalDirty();
+    await flushToCloud(false);
+    toast('Tudo pronto! É só começar a lançar.');
   }
 
   try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
