@@ -276,6 +276,11 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .login-msg{font-size:12.5px;margin-top:10px;min-height:18px;color:var(--expense)}
 .login-msg.ok{color:var(--gain)}
 .login-foot{font-size:11.5px;color:var(--txt-faint);margin-top:16px;line-height:1.5}
+.auth-sep{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--txt-faint);font-size:12px}
+.auth-sep:before,.auth-sep:after{content:'';flex:1;height:1px;background:var(--line-strong)}
+.login-box .field{margin-bottom:10px}
+.login-box .field label{font-size:12px;color:var(--txt-faint);display:block;margin-bottom:4px}
+.login-box .field input{width:100%}
 
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);z-index:200;align-items:center;justify-content:center;padding:16px}
 .modal-overlay.open{display:flex}
@@ -1089,14 +1094,36 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <div class="login-box">
     <div class="login-logo">🚗</div>
     <h1>Direção Rentável</h1>
-    <p class="login-sub">Digite sua chave de acesso para sincronizar seus dados entre dispositivos. Use sempre a mesma chave em todos os aparelhos.</p>
+    <p class="login-sub">Entre na sua conta para seus dados acompanharem você em qualquer aparelho.</p>
+
     <div class="field">
-      <label>Sua chave de acesso</label>
-      <input type="password" id="loginKey" placeholder="ex.: uma senha só sua" autocomplete="off">
+      <label>E-mail</label>
+      <input type="email" id="authEmail" placeholder="seu@email.com" autocomplete="email" inputmode="email">
     </div>
-    <button class="btn primary" id="loginBtn" style="width:100%;justify-content:center;margin-top:6px" onclick="doLogin()">Entrar / Criar acesso</button>
-    <p class="login-msg" id="loginMsg"></p>
-    <p class="login-foot">Não tem conta? É só escolher uma chave nova — ela cria seu espaço automaticamente. Guarde-a bem, é o que liga seus dados entre celular, notebook etc.</p>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="authPass" placeholder="mínimo 6 caracteres" autocomplete="current-password" onkeydown="if(event.key==='Enter')emailSignIn()">
+    </div>
+
+    <button class="btn primary" id="authEntrarBtn" style="width:100%;justify-content:center;margin-top:6px" onclick="emailSignIn()">Entrar</button>
+    <button class="btn" id="authCriarBtn" style="width:100%;justify-content:center;margin-top:8px" onclick="emailSignUp()">Criar conta</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:4px;font-size:13px;opacity:.85" onclick="emailReset()">Esqueci minha senha</button>
+
+    <div class="auth-sep"><span>ou</span></div>
+
+    <button class="btn" id="authGoogleBtn" style="width:100%;justify-content:center" onclick="signInWithGoogle()">
+      <span style="font-weight:700">G</span>&nbsp; Entrar com Google
+    </button>
+
+    <p class="login-msg" id="authMsg"></p>
+
+    <!-- campo antigo da chave de aparelho: continua existindo (usado internamente
+         pelo doLogin e pelo modal "Código de sincronização"), mas some da tela -->
+    <input type="password" id="loginKey" style="display:none" autocomplete="off">
+    <button id="loginBtn" style="display:none" onclick="doLogin()"></button>
+    <p class="login-msg" id="loginMsg" style="display:none"></p>
+
+    <p class="login-foot">Seus dados ficam ligados à sua conta. Você pode entrar no celular e no computador com o mesmo e-mail.</p>
   </div>
 </div>
 
@@ -7201,6 +7228,81 @@ function updateAuthUI(){
   });
 }
 
+/* ===== TELA DE ENTRADA: e-mail/senha + Google ===== */
+function authMsg(txt,ok){
+  const el=document.getElementById('authMsg'); if(!el)return;
+  el.textContent=txt||''; el.className='login-msg'+(ok?' ok':'');
+}
+function authBusy(on,btnId){
+  ['authEntrarBtn','authCriarBtn','authGoogleBtn'].forEach(id=>{
+    const b=document.getElementById(id); if(b)b.disabled=!!on;
+  });
+  const b=document.getElementById(btnId);
+  if(b){ b.dataset.lbl=b.dataset.lbl||b.textContent; b.textContent=on?'Aguarde…':b.dataset.lbl; }
+}
+function authCampos(){
+  const email=(document.getElementById('authEmail')||{}).value||'';
+  const pass=(document.getElementById('authPass')||{}).value||'';
+  return {email:email.trim(),pass:pass};
+}
+function mostrarTelaLogin(){
+  const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='';
+  const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='none';
+}
+function entrarNoApp(){
+  const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='none';
+  const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='block';
+  if(!window._appIniciado){ window._appIniciado=true; try{ initApp(); }catch(e){} }
+}
+
+async function emailSignIn(){
+  const {email,pass}=authCampos();
+  if(!email||!pass){ authMsg('Preencha e-mail e senha.'); return; }
+  const sb=getSb(); if(!sb){ authMsg('Sem conexão. Tente novamente em instantes.'); return; }
+  authBusy(true,'authEntrarBtn'); authMsg('');
+  try{
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error) throw error;
+    authMsg('Entrando…',true);   // o onAuthStateChange cuida do resto
+  }catch(e){
+    const m=(e&&e.message||'').toLowerCase();
+    if(m.includes('invalid login')) authMsg('E-mail ou senha incorretos.');
+    else if(m.includes('not confirmed')) authMsg('Confirme seu e-mail antes de entrar — veja sua caixa de entrada.');
+    else authMsg('Não foi possível entrar. Confira os dados e a conexão.');
+    authBusy(false,'authEntrarBtn');
+  }
+}
+
+async function emailSignUp(){
+  const {email,pass}=authCampos();
+  if(!email){ authMsg('Digite seu e-mail.'); return; }
+  if(pass.length<6){ authMsg('A senha precisa ter pelo menos 6 caracteres.'); return; }
+  const sb=getSb(); if(!sb){ authMsg('Sem conexão. Tente novamente em instantes.'); return; }
+  authBusy(true,'authCriarBtn'); authMsg('');
+  try{
+    const {data,error}=await sb.auth.signUp({email,password:pass,options:{emailRedirectTo:location.origin+location.pathname}});
+    if(error) throw error;
+    if(data && data.session) authMsg('Conta criada! Entrando…',true);
+    else authMsg('Conta criada. Confirme o e-mail que enviamos e depois volte aqui para entrar.',true);
+  }catch(e){
+    const m=(e&&e.message||'').toLowerCase();
+    if(m.includes('already registered')||m.includes('already been')) authMsg('Esse e-mail já tem conta. Use "Entrar".');
+    else authMsg('Não foi possível criar a conta. Tente outro e-mail.');
+  }
+  authBusy(false,'authCriarBtn');
+}
+
+async function emailReset(){
+  const {email}=authCampos();
+  if(!email){ authMsg('Digite seu e-mail acima e clique de novo.'); return; }
+  const sb=getSb(); if(!sb){ authMsg('Sem conexão.'); return; }
+  try{
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    if(error) throw error;
+    authMsg('Enviamos um link de redefinição para '+email,true);
+  }catch(e){ authMsg('Não foi possível enviar o e-mail de redefinição.'); }
+}
+
 async function signInWithGoogle(){
   const sb=getSb();
   if(!sb){ toast('Sem conexão com a nuvem — tente de novo em instantes'); return; }
@@ -7285,10 +7387,23 @@ async function adoptAuthSyncKey(user){
   try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
   const inp=document.getElementById('loginKey');
   if(inp) inp.value=newRaw;
+  entrarNoApp();
   if(typeof _reRenderAll==='function') _reRenderAll();
   updateAuthUI();
   startCloudPull();
-  toast('Conectado como '+(user.email||'conta Google'));
+  toast('Conectado como '+(user.email||'sua conta'));
+}
+
+/* Existe sessão guardada neste navegador? (checagem síncrona, só pra evitar
+   piscar a tela de login em quem já está logado) */
+function temSessaoGuardada(){
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && k.startsWith('sb-') && k.includes('auth-token')) return true;
+    }
+  }catch(e){}
+  return false;
 }
 
 (function googleAuthBootstrap(){
@@ -7303,8 +7418,8 @@ async function adoptAuthSyncKey(user){
       if(data && data.session && data.session.user){
         _authToken=data.session.access_token||null;
         adoptAuthSyncKey(data.session.user);
-      } else updateAuthUI();
-    }).catch(()=>updateAuthUI());
+      } else { updateAuthUI(); mostrarTelaLogin(); }
+    }).catch(()=>{ updateAuthUI(); mostrarTelaLogin(); });
   }
   setTimeout(go,200);
 })();
@@ -7313,13 +7428,19 @@ async function adoptAuthSyncKey(user){
   let key=null;
   try{ key=localStorage.getItem('cv_synckey_raw'); }catch(e){}
   if(!key){ key=genDeviceKey(); try{ localStorage.setItem('cv_synckey_raw',key); }catch(e){} }
-  // esconde a tela de login e MOSTRA o app imediatamente (não espera o login/nuvem).
-  // Assim, mesmo se a nuvem/hash falhar, o app abre — a sincronização acontece em background.
-  const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='none';
-  const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='block';
   const inp=document.getElementById('loginKey'); if(inp)inp.value=key;
-  // abre o app localmente já (render imediato)
-  try{ initApp(); }catch(e){}
+
+  /* AGORA O APP EXIGE CONTA.
+     - Já tem sessão guardada neste aparelho? Abre direto (sem piscar a tela de login);
+       quem assume a sincronização é o adoptAuthSyncKey(), com a chave da conta.
+     - Não tem sessão? Mostra a tela de entrada e não sincroniza nada por enquanto.
+       Os dados locais continuam intactos e sobem assim que a pessoa entrar. */
+  if(!temSessaoGuardada()){
+    mostrarTelaLogin();
+    return;
+  }
+  entrarNoApp();
+  return;
   // conecta e sincroniza em background assim que possível — sem travar a tela
   function connect(){
     if(!window.supabase){ return setTimeout(connect,150); }
