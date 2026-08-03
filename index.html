@@ -276,6 +276,10 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .login-msg{font-size:12.5px;margin-top:10px;min-height:18px;color:var(--expense)}
 .login-msg.ok{color:var(--gain)}
 .login-foot{font-size:11.5px;color:var(--txt-faint);margin-top:16px;line-height:1.5}
+.auth-opts{text-align:left;margin:8px 0 4px;display:flex;flex-direction:column;gap:6px}
+.auth-opts label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-dim);cursor:pointer}
+.auth-opts input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent,#2e90fa);cursor:pointer;flex:none}
+.auth-warn{cursor:help}
 .auth-sep{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--txt-faint);font-size:12px}
 .auth-sep:before,.auth-sep:after{content:'';flex:1;height:1px;background:var(--line-strong)}
 .login-box .field{margin-bottom:10px}
@@ -1094,6 +1098,23 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <div class="login-box">
     <div class="login-logo">🚗</div>
     <h1>Direção Rentável</h1>
+    <!-- ===== bloco: redefinir senha (só aparece ao voltar do link do e-mail) ===== -->
+    <div id="novaSenhaBox" style="display:none">
+      <p class="login-sub">Escolha sua nova senha.</p>
+      <div class="field">
+        <label>Nova senha</label>
+        <input type="password" id="novaSenha1" placeholder="mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Repita a nova senha</label>
+        <input type="password" id="novaSenha2" placeholder="digite de novo" autocomplete="new-password" onkeydown="if(event.key==='Enter')salvarNovaSenha()">
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:6px" onclick="salvarNovaSenha()">Salvar nova senha</button>
+      <p class="login-msg" id="novaSenhaMsg"></p>
+    </div>
+
+    <!-- ===== bloco: entrar / criar conta ===== -->
+    <div id="authFormBox">
     <p class="login-sub">Entre na sua conta para seus dados acompanharem você em qualquer aparelho.</p>
 
     <div class="field">
@@ -1103,6 +1124,11 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <div class="field">
       <label>Senha</label>
       <input type="password" id="authPass" placeholder="mínimo 6 caracteres" autocomplete="current-password" onkeydown="if(event.key==='Enter')emailSignIn()">
+    </div>
+
+    <div class="auth-opts">
+      <label><input type="checkbox" id="lembrarEmail" onchange="salvarPrefsLogin()"> Lembrar meu e-mail</label>
+      <label><input type="checkbox" id="lembrarSenha" onchange="aoMarcarSenha()"> Lembrar e-mail e senha <span class="auth-warn" title="A senha fica gravada neste aparelho. Só marque em um aparelho pessoal.">⚠️</span></label>
     </div>
 
     <button class="btn primary" id="authEntrarBtn" style="width:100%;justify-content:center;margin-top:6px" onclick="emailSignIn()">Entrar</button>
@@ -1116,6 +1142,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     </button>
 
     <p class="login-msg" id="authMsg"></p>
+    </div><!-- /authFormBox -->
 
     <!-- campo antigo da chave de aparelho: continua existindo (usado internamente
          pelo doLogin e pelo modal "Código de sincronização"), mas some da tela -->
@@ -7209,6 +7236,7 @@ function genDeviceKey(){
    Reaproveita o doLogin() que já existe (que faz backup antes de trocar). */
 let _authUser=null;
 let _authToken=null;   // token da sessão — usado no envio pra que o banco saiba quem é você
+let _emRecuperacao=false; // true enquanto a pessoa está trocando a senha pelo link do e-mail
 
 function authKeyFor(user){ return 'gauth-'+user.id; }
 
@@ -7318,6 +7346,75 @@ function entrarNoApp(){
   const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='none';
   const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='block';
   if(!window._appIniciado){ window._appIniciado=true; try{ initApp(); }catch(e){} }
+}
+
+/* ===== LEMBRAR E-MAIL / SENHA =====
+   Guardado só neste aparelho. A senha fica em texto no navegador — por isso o aviso
+   na tela e a confirmação ao marcar. Quem não marcar nada não deixa rastro nenhum. */
+const PREF_EMAIL='cv_login_email', PREF_SENHA='cv_login_senha', PREF_FLAGS='cv_login_flags';
+
+function salvarPrefsLogin(){
+  const {email,pass}=authCampos();
+  const cE=document.getElementById('lembrarEmail'), cS=document.getElementById('lembrarSenha');
+  const guardaEmail=!!(cE&&cE.checked), guardaSenha=!!(cS&&cS.checked);
+  try{
+    localStorage.setItem(PREF_FLAGS,JSON.stringify({email:guardaEmail,senha:guardaSenha}));
+    if(guardaEmail||guardaSenha) localStorage.setItem(PREF_EMAIL,email); else localStorage.removeItem(PREF_EMAIL);
+    if(guardaSenha) localStorage.setItem(PREF_SENHA,pass); else localStorage.removeItem(PREF_SENHA);
+  }catch(e){}
+}
+
+function aoMarcarSenha(){
+  const cS=document.getElementById('lembrarSenha'), cE=document.getElementById('lembrarEmail');
+  if(cS && cS.checked){
+    const ok=confirm('Salvar a senha faz o app guardá-la neste aparelho. Qualquer pessoa que use este aparelho poderá entrar na sua conta.\n\nMarque apenas se este celular/computador for só seu. Continuar?');
+    if(!ok){ cS.checked=false; }
+    else if(cE) cE.checked=true;   // salvar senha implica salvar e-mail
+  }
+  salvarPrefsLogin();
+}
+
+function carregarPrefsLogin(){
+  try{
+    const flags=JSON.parse(localStorage.getItem(PREF_FLAGS)||'{}');
+    const cE=document.getElementById('lembrarEmail'), cS=document.getElementById('lembrarSenha');
+    if(cE) cE.checked=!!flags.email;
+    if(cS) cS.checked=!!flags.senha;
+    const e=localStorage.getItem(PREF_EMAIL), s=localStorage.getItem(PREF_SENHA);
+    const iE=document.getElementById('authEmail'), iS=document.getElementById('authPass');
+    if(iE && e) iE.value=e;
+    if(iS && s && flags.senha) iS.value=s;
+  }catch(e){}
+}
+
+/* ===== REDEFINIR SENHA =====
+   O link do e-mail traz a pessoa de volta ao app já com uma sessão especial de
+   recuperação. Aí mostramos o campo de senha nova. Sem esta parte, o link levaria
+   a pessoa de volta pra tela de login sem nunca conseguir trocar a senha. */
+function abrirTelaNovaSenha(){
+  mostrarTelaLogin();
+  const box=document.getElementById('novaSenhaBox'), form=document.getElementById('authFormBox');
+  if(box) box.style.display='';
+  if(form) form.style.display='none';
+}
+async function salvarNovaSenha(){
+  const p1=(document.getElementById('novaSenha1')||{}).value||'';
+  const p2=(document.getElementById('novaSenha2')||{}).value||'';
+  const msg=document.getElementById('novaSenhaMsg');
+  const diz=(t,ok)=>{ if(msg){ msg.textContent=t; msg.className='login-msg'+(ok?' ok':''); } };
+  if(p1.length<6){ diz('A nova senha precisa ter pelo menos 6 caracteres.'); return; }
+  if(p1!==p2){ diz('As duas senhas não são iguais.'); return; }
+  const sb=getSb(); if(!sb){ diz('Sem conexão. Tente de novo.'); return; }
+  try{
+    const {error}=await sb.auth.updateUser({password:p1});
+    if(error) throw error;
+    diz('Senha alterada! Entrando…',true);
+    try{ if(localStorage.getItem(PREF_SENHA)!==null) localStorage.setItem(PREF_SENHA,p1); }catch(e){}
+    _emRecuperacao=false;
+    setTimeout(()=>{ const b=document.getElementById('novaSenhaBox'); if(b)b.style.display='none';
+                     const f=document.getElementById('authFormBox'); if(f)f.style.display='';
+                     if(_authUser) adoptAuthSyncKey(_authUser); },800);
+  }catch(e){ diz(traduzErroAuth(e)); }
 }
 
 async function emailSignIn(){
@@ -7485,11 +7582,21 @@ function temSessaoGuardada(){
   function go(){
     if(!window.supabase) return setTimeout(go,150);
     const sb=getSb(); if(!sb) return setTimeout(go,150);
-    sb.auth.onAuthStateChange((_evt,session)=>{
-      if(session && session.user){ _authToken=session.access_token||null; adoptAuthSyncKey(session.user); }
+    carregarPrefsLogin();
+    sb.auth.onAuthStateChange((evt,session)=>{
+      if(evt==='PASSWORD_RECOVERY'){
+        // veio do link do e-mail: não entra no app, mostra a troca de senha
+        _emRecuperacao=true;
+        if(session && session.user){ _authUser=session.user; _authToken=session.access_token||null; }
+        abrirTelaNovaSenha();
+        return;
+      }
+      if(_emRecuperacao) return;   // enquanto troca a senha, ignora os outros eventos
+      if(session && session.user){ _authToken=session.access_token||null; salvarPrefsLogin(); adoptAuthSyncKey(session.user); }
       else { _authUser=null; _authToken=null; updateAuthUI(); }
     });
     sb.auth.getSession().then(({data})=>{
+      if(_emRecuperacao) return;
       if(data && data.session && data.session.user){
         _authToken=data.session.access_token||null;
         adoptAuthSyncKey(data.session.user);
@@ -7510,6 +7617,10 @@ function temSessaoGuardada(){
        quem assume a sincronização é o adoptAuthSyncKey(), com a chave da conta.
      - Não tem sessão? Mostra a tela de entrada e não sincroniza nada por enquanto.
        Os dados locais continuam intactos e sobem assim que a pessoa entrar. */
+  // veio do link "esqueci minha senha"? não abre o app: vai direto pra troca de senha
+  const veioDeRecuperacao=(location.hash||'').indexOf('type=recovery')>=0;
+  if(veioDeRecuperacao){ _emRecuperacao=true; mostrarTelaLogin(); return; }
+
   if(!temSessaoGuardada()){
     mostrarTelaLogin();
     return;
