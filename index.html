@@ -6914,7 +6914,12 @@ async function flushToCloud(useKeepalive){
   if(!_syncKey || !_dirty) return;
   _syncing=true; setSyncBadge('pending');
   const nowIso=new Date().toISOString();
-  const payload=[{id:_syncKey,data:state,updated_at:nowIso}];
+  // Quando há login, carimba o dono do registro e envia com o token da sessão.
+  // É isso que permite ligar o RLS depois: o banco passa a saber de quem é cada linha.
+  // Sem login, continua exatamente como antes (chave anônima) — nada quebra.
+  const row={id:_syncKey,data:state,updated_at:nowIso};
+  if(_authUser && _authUser.id) row.user_id=_authUser.id;
+  const payload=[row];
   try{
     const res=await fetch(`${SUPABASE_URL}/rest/v1/app_state`,{
       method:'POST',
@@ -6922,7 +6927,7 @@ async function flushToCloud(useKeepalive){
       headers:{
         'Content-Type':'application/json',
         'apikey':SUPABASE_ANON_KEY,
-        'Authorization':'Bearer '+SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+(_authToken||SUPABASE_ANON_KEY),
         'Prefer':'resolution=merge-duplicates,return=minimal'
       },
       body:JSON.stringify(payload)
@@ -7175,6 +7180,7 @@ function genDeviceKey(){
    se algo der errado, basta sair e o app volta a usá-lo.
    Reaproveita o doLogin() que já existe (que faz backup antes de trocar). */
 let _authUser=null;
+let _authToken=null;   // token da sessão — usado no envio pra que o banco saiba quem é você
 
 function authKeyFor(user){ return 'gauth-'+user.id; }
 
@@ -7225,9 +7231,58 @@ async function adoptAuthSyncKey(user){
   try{ cur=localStorage.getItem('cv_synckey_raw'); }catch(e){}
   if(cur===newRaw) return;              // já está usando a conta — nada a fazer
   try{ if(cur) localStorage.setItem('cv_synckey_prev',cur); }catch(e){}
+
+  /* ===== PROTEÇÃO CONTRA "CONTA VAZIA COME OS DADOS" =====
+     Cenário real: você loga primeiro num aparelho zerado (PC novo). A conta nasce
+     vazia na nuvem. Depois loga no celular, que TEM os dados — e o app veria
+     "já existe registro nessa conta" e traria o vazio por cima.
+     Solução: aqui a gente NUNCA sobrescreve cegamente. Junta os dois lados com o
+     mergeStates() que já existe no app, e o resultado (que contém tudo) sobe.
+     Se um dos lados estiver vazio, o merge simplesmente devolve o outro. */
+  const sb=getSb();
+  const newId=await hashKey(newRaw);
+  let remote=null;
+  try{
+    if(sb){
+      const {data}=await sb.from('app_state').select('data,updated_at').eq('id',newId).maybeSingle();
+      if(data && data.data) remote=data.data;
+    }
+  }catch(e){}
+
+  backupLocalState('entrar-com-google');
+  pushSnapshot('antes-de-entrar-com-google');
+
+  const localCount=countEntries(state);
+  const remoteCount=remote?countEntries(remote):0;
+
+  if(remote && localCount===0){
+    // aparelho zerado entrando numa conta que já tem dados: só baixa
+    state=hydrate(remote)||remote;
+    try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
+    _syncKey=newId; _dirty=false;
+    markLocalClean(new Date().toISOString());
+    toast('Dados da sua conta carregados ('+remoteCount+' lançamentos)');
+  } else if(remote && remoteCount>0){
+    // os dois lados têm coisa: une, nunca descarta
+    const merged=mergeStates(remote,state);
+    state=hydrate(merged)||merged;
+    try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
+    _syncKey=newId; _dirty=true; markLocalDirty();
+    await flushToCloud(false);
+    toast('Dados unidos: nuvem + este aparelho');
+  } else {
+    // conta nova (ou nuvem vazia): este aparelho vira o ponto de partida
+    _syncKey=newId; _dirty=true; markLocalDirty();
+    await flushToCloud(false);
+    toast(localCount>0?('Conta criada com seus '+localCount+' lançamentos'):'Conta conectada');
+  }
+
+  try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
   const inp=document.getElementById('loginKey');
   if(inp) inp.value=newRaw;
-  await doLogin();                      // já faz backup local antes de qualquer troca
+  if(typeof _reRenderAll==='function') _reRenderAll();
+  updateAuthUI();
+  startCloudPull();
   toast('Conectado como '+(user.email||'conta Google'));
 }
 
@@ -7236,12 +7291,14 @@ async function adoptAuthSyncKey(user){
     if(!window.supabase) return setTimeout(go,150);
     const sb=getSb(); if(!sb) return setTimeout(go,150);
     sb.auth.onAuthStateChange((_evt,session)=>{
-      if(session && session.user) adoptAuthSyncKey(session.user);
-      else { _authUser=null; updateAuthUI(); }
+      if(session && session.user){ _authToken=session.access_token||null; adoptAuthSyncKey(session.user); }
+      else { _authUser=null; _authToken=null; updateAuthUI(); }
     });
     sb.auth.getSession().then(({data})=>{
-      if(data && data.session && data.session.user) adoptAuthSyncKey(data.session.user);
-      else updateAuthUI();
+      if(data && data.session && data.session.user){
+        _authToken=data.session.access_token||null;
+        adoptAuthSyncKey(data.session.user);
+      } else updateAuthUI();
     }).catch(()=>updateAuthUI());
   }
   setTimeout(go,200);
