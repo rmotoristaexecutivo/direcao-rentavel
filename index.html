@@ -7340,7 +7340,7 @@ let _emRecuperacao=false; // true enquanto a pessoa está trocando a senha pelo 
 
 /* Marca de versão visível na tela — serve pra saber, em 1 segundo, se o aparelho
    está mesmo rodando o arquivo que você acabou de publicar (e não uma cópia em cache). */
-const APP_VERSION='v17';
+const APP_VERSION='v18';
 (function marcarVersao(){
   function pinta(){
     ['verTagLogin','verTagMenu'].forEach(id=>{
@@ -7995,7 +7995,7 @@ function temSessaoGuardada(){
   // favicon + apple touch
   const setLink=(rel,href,extra)=>{const l=document.createElement('link');l.rel=rel;l.href=href;if(extra)Object.assign(l,extra);document.head.appendChild(l);};
   setLink('icon',iconURL,{type:'image/svg+xml'});
-  setLink('apple-touch-icon','/icons/icon-192.png');
+  setLink('apple-touch-icon','icons/icon-192.png');
 
   /* ---- manifest: ARQUIVO FIXO, não mais gerado em Blob ----
      O manifest em Blob permitia instalar como PWA, mas gerava
@@ -8003,7 +8003,7 @@ function temSessaoGuardada(){
      (PWABuilder/Bubblewrap) não conseguem lê-lo, porque ele só existe em
      memória. Agora o manifest é um arquivo de verdade em /manifest.json,
      com ícones PNG em /icons/. É esse arquivo que o TWA vai usar. */
-  setLink('manifest','/manifest.json');
+  setLink('manifest','manifest.json');
 
   // ---- SEM service worker (desativado de propósito) ----
   // Um service worker anterior aqui causava telas presas em versões antigas depois de
