@@ -276,6 +276,9 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .login-msg{font-size:12.5px;margin-top:10px;min-height:18px;color:var(--expense)}
 .login-msg.ok{color:var(--gain)}
 .login-foot{font-size:11.5px;color:var(--txt-faint);margin-top:16px;line-height:1.5}
+.lock-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt-dim);cursor:pointer;margin:4px 0}
+.lock-check input{width:16px;height:16px;accent-color:var(--accent,#2e90fa);cursor:pointer;flex:none}
+#lockPin{letter-spacing:.35em;text-align:center;font-size:20px}
 .auth-opts{text-align:left;margin:8px 0 4px;display:flex;flex-direction:column;gap:6px}
 .auth-opts label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt-dim);cursor:pointer}
 .auth-opts input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent,#2e90fa);cursor:pointer;flex:none}
@@ -1093,6 +1096,57 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   </div>
 </div>
 
+<!-- ===== TRANCA DO APP (biometria / PIN) — bloqueio local, não é login ===== -->
+<div id="lockScreen" class="login-screen" style="display:none;z-index:400">
+  <div class="login-box">
+    <div class="login-logo">🔒</div>
+    <h1>App bloqueado</h1>
+    <p class="login-sub" id="lockSub">Use sua digital ou o PIN para continuar.</p>
+
+    <button class="btn primary" id="lockBioBtn" style="width:100%;justify-content:center;display:none" onclick="destravarComBiometria()">👆 Usar biometria</button>
+
+    <div class="field" style="margin-top:12px">
+      <label>PIN</label>
+      <input type="password" id="lockPin" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="••••" onkeydown="if(event.key==='Enter')destravarComPin()">
+    </div>
+    <button class="btn" style="width:100%;justify-content:center" onclick="destravarComPin()">Desbloquear</button>
+
+    <p class="login-msg" id="lockMsg"></p>
+    <p class="login-foot">Esqueceu o PIN? Toque em <a href="#" onclick="sairPelaTranca();return false">sair da conta</a> e entre novamente.</p>
+  </div>
+</div>
+
+<!-- ===== CONFIGURAR A TRANCA ===== -->
+<div class="modal-overlay" id="lockCfgModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>🔒 Bloqueio do app</h3><button class="modal-close" onclick="fecharLockCfg()">✕</button></div>
+    <div class="modal-body">
+      <p class="login-sub" style="margin-bottom:14px">Pede biometria ou PIN toda vez que o app for aberto. É uma tranca <b>deste aparelho</b> — não muda nada na sua conta.</p>
+
+      <div id="lockCfgOn" style="display:none">
+        <p class="login-msg ok" style="margin-bottom:12px">✅ Bloqueio ativado neste aparelho.</p>
+        <button class="btn danger" style="width:100%;justify-content:center" onclick="desativarTranca()">Desativar bloqueio</button>
+      </div>
+
+      <div id="lockCfgOff">
+        <div class="field">
+          <label>Crie um PIN (4 a 8 números)</label>
+          <input type="password" id="cfgPin1" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Repita o PIN</label>
+          <input type="password" id="cfgPin2" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+        </div>
+        <label class="lock-check"><input type="checkbox" id="cfgBio"> Também usar biometria do aparelho</label>
+        <p class="login-foot" style="margin:6px 0 14px">O PIN é obrigatório: serve de reserva quando a biometria falha ou o aparelho não tem leitor.</p>
+        <button class="btn primary" style="width:100%;justify-content:center" onclick="ativarTranca()">Ativar bloqueio</button>
+      </div>
+
+      <p class="login-msg" id="lockCfgMsg"></p>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TELA DE LOGIN (sincronização entre dispositivos) ===== -->
 <div id="loginScreen" class="login-screen">
   <div class="login-box">
@@ -1171,6 +1225,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
       <button class="btn" onclick="openHistoryModal()">🕘 Histórico</button>
       <button class="btn" onclick="openSyncKeyModal()">🔑 Código de sincronização</button>
+      <button class="btn" onclick="abrirLockCfg()" title="Bloqueio do app com PIN ou biometria">🔒 Bloqueio</button>
       <button class="btn" id="btnGoogleAuthTop" onclick="googleAuthMenuClick()">🔒 Entrar com Google</button>
       <button class="btn danger" onclick="resetAll()">↺ Zerar</button>
       <!-- botão de menu compacto (só mobile) -->
@@ -1187,6 +1242,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button onclick="document.getElementById('imp').click();closeHdrMenu()">⬆ Importar backup (JSON)</button>
       <button onclick="openHistoryModal();closeHdrMenu()">🕘 Histórico de versões (recuperar dados)</button>
       <button onclick="openSyncKeyModal();closeHdrMenu()">🔑 Código de sincronização</button>
+      <button onclick="abrirLockCfg()">🔒 Bloqueio do app (PIN / biometria)</button>
       <button id="btnGoogleAuth" onclick="googleAuthMenuClick()">🔒 Entrar com Google</button>
       <button class="danger" onclick="resetAll()">↺ Zerar tudo</button>
       <button class="cancel" onclick="closeHdrMenu()">Fechar</button>
@@ -6802,7 +6858,12 @@ let _lastSyncedAt=null;   // updated_at (ISO) do estado que temos localmente vin
 let _pullTimer=null;      // timer do pull periódico
 let _applyingRemote=false;// evita loop de push enquanto aplicamos dados remotos
 function getSb(){
-  if(!_sb && window.supabase) _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  /* persistSession + autoRefreshToken: a pessoa só sai quando clicar em "Sair".
+     A sessão fica guardada no aparelho e o token se renova sozinho antes de expirar —
+     sem isso, o app deslogaria sozinho depois de algumas horas. */
+  if(!_sb && window.supabase) _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
+    auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage:window.localStorage }
+  });
   return _sb;
 }
 async function hashKey(raw){
@@ -7279,7 +7340,7 @@ let _emRecuperacao=false; // true enquanto a pessoa está trocando a senha pelo 
 
 /* Marca de versão visível na tela — serve pra saber, em 1 segundo, se o aparelho
    está mesmo rodando o arquivo que você acabou de publicar (e não uma cópia em cache). */
-const APP_VERSION='v14';
+const APP_VERSION='v17';
 (function marcarVersao(){
   function pinta(){
     ['verTagLogin','verTagMenu'].forEach(id=>{
@@ -7343,6 +7404,184 @@ function updateAuthUI(){
   });
 }
 
+/* ==================================================================
+   TRANCA DO APP (biometria + PIN)
+   ------------------------------------------------------------------
+   Isto NÃO é login. A sessão da conta continua ativa o tempo todo.
+   Isto é uma tranca local: impede que alguém que pegue o aparelho
+   desbloqueado abra o app e veja suas finanças.
+
+   Honestidade técnica sobre a biometria: em código que roda no
+   navegador, a digital não é verificada por um servidor. Quem confere
+   é o próprio aparelho, e nós apenas confiamos na resposta dele.
+   Isso é adequado para uma tranca de conveniência — não seria
+   suficiente para proteger dinheiro de verdade. Por isso o PIN é
+   obrigatório e a biometria é opcional.
+   ================================================================== */
+const LOCK_KEY='cv_lock_cfg';
+let _appDestravado=false;
+
+function lockCfg(){
+  try{ return JSON.parse(localStorage.getItem(LOCK_KEY)||'null'); }catch(e){ return null; }
+}
+function trancaAtiva(){ const c=lockCfg(); return !!(c && c.pinHash); }
+
+async function hashPin(pin,salt){
+  const txt=salt+'|'+pin+'|direcao-rentavel';
+  if(window.crypto && crypto.subtle){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(txt));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  return jsHash(txt); // reserva para navegadores sem crypto.subtle
+}
+function novoSalt(){
+  try{ if(crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return String(Date.now())+Math.random().toString(36).slice(2);
+}
+
+/* ---------- configurar ---------- */
+function abrirLockCfg(){
+  closeHdrMenu();
+  const on=trancaAtiva();
+  const a=document.getElementById('lockCfgOn'), b=document.getElementById('lockCfgOff');
+  if(a) a.style.display=on?'':'none';
+  if(b) b.style.display=on?'none':'';
+  const m=document.getElementById('lockCfgMsg'); if(m) m.textContent='';
+  ['cfgPin1','cfgPin2'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  // esconde a opção de biometria em aparelho que não tem leitor
+  bioDisponivel().then(ok=>{
+    const lb=document.querySelector('.lock-check'); if(lb) lb.style.display=ok?'':'none';
+  });
+  document.getElementById('lockCfgModal').classList.add('open'); navPush(()=>fecharLockCfg(true));
+}
+function fecharLockCfg(fromBack){
+  document.getElementById('lockCfgModal').classList.remove('open');
+  if(!fromBack && _navStack.length) navPop();
+}
+
+async function bioDisponivel(){
+  try{
+    if(!window.PublicKeyCredential) return false;
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  }catch(e){ return false; }
+}
+
+async function registrarBiometria(){
+  const id=new Uint8Array(16); crypto.getRandomValues(id);
+  const desafio=new Uint8Array(32); crypto.getRandomValues(desafio);
+  const cred=await navigator.credentials.create({publicKey:{
+    challenge:desafio,
+    rp:{name:'Direção Rentável'},
+    user:{id, name:(_authUser&&_authUser.email)||'usuario', displayName:'Direção Rentável'},
+    pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+    authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
+    timeout:60000, attestation:'none'
+  }});
+  if(!cred) throw new Error('sem credencial');
+  return btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+}
+
+async function ativarTranca(){
+  const p1=(document.getElementById('cfgPin1')||{}).value||'';
+  const p2=(document.getElementById('cfgPin2')||{}).value||'';
+  const querBio=!!(document.getElementById('cfgBio')||{}).checked;
+  const msg=document.getElementById('lockCfgMsg');
+  const diz=(t,ok)=>{ if(msg){ msg.textContent=t; msg.className='login-msg'+(ok?' ok':''); } };
+
+  if(!/^\d{4,8}$/.test(p1)){ diz('O PIN deve ter de 4 a 8 números.'); return; }
+  if(p1!==p2){ diz('Os dois PINs não são iguais.'); return; }
+
+  const salt=novoSalt();
+  const cfg={salt, pinHash:await hashPin(p1,salt), bio:false, credId:null};
+
+  if(querBio){
+    try{
+      cfg.credId=await registrarBiometria();
+      cfg.bio=true;
+    }catch(e){
+      diz('PIN ativado, mas não foi possível registrar a biometria. Você pode tentar de novo depois.');
+      localStorage.setItem(LOCK_KEY,JSON.stringify(cfg));
+      setTimeout(()=>{ fecharLockCfg(); toast('Bloqueio ativado (somente PIN)'); },1800);
+      return;
+    }
+  }
+  localStorage.setItem(LOCK_KEY,JSON.stringify(cfg));
+  _appDestravado=true;
+  fecharLockCfg();
+  toast(cfg.bio?'Bloqueio ativado (biometria + PIN)':'Bloqueio ativado (PIN)');
+}
+
+function desativarTranca(){
+  if(!confirm('Desativar o bloqueio? O app abrirá direto, sem pedir PIN nem biometria.'))return;
+  try{ localStorage.removeItem(LOCK_KEY); }catch(e){}
+  _appDestravado=true;
+  fecharLockCfg();
+  toast('Bloqueio desativado');
+}
+
+/* ---------- destravar ---------- */
+function mostrarTranca(){
+  const el=document.getElementById('lockScreen'); if(!el)return;
+  const cfg=lockCfg();
+  const bio=document.getElementById('lockBioBtn');
+  if(bio) bio.style.display=(cfg&&cfg.bio)?'':'none';
+  const pin=document.getElementById('lockPin'); if(pin) pin.value='';
+  const m=document.getElementById('lockMsg'); if(m) m.textContent='';
+  el.style.display='';
+  if(cfg&&cfg.bio) setTimeout(()=>destravarComBiometria(true),350); // tenta sozinho
+}
+function esconderTranca(){
+  const el=document.getElementById('lockScreen'); if(el) el.style.display='none';
+  _appDestravado=true;
+}
+function lockMsg(t){ const m=document.getElementById('lockMsg'); if(m){ m.textContent=t; m.className='login-msg'; } }
+
+async function destravarComPin(){
+  const cfg=lockCfg(); if(!cfg){ esconderTranca(); return; }
+  const pin=(document.getElementById('lockPin')||{}).value||'';
+  if(!pin){ lockMsg('Digite seu PIN.'); return; }
+  const h=await hashPin(pin,cfg.salt);
+  if(h===cfg.pinHash){ esconderTranca(); }
+  else lockMsg('PIN incorreto.');
+}
+
+async function destravarComBiometria(silencioso){
+  const cfg=lockCfg(); if(!cfg||!cfg.bio){ return; }
+  try{
+    const desafio=new Uint8Array(32); crypto.getRandomValues(desafio);
+    const raw=Uint8Array.from(atob(cfg.credId),c=>c.charCodeAt(0));
+    const r=await navigator.credentials.get({publicKey:{
+      challenge:desafio,
+      allowCredentials:[{type:'public-key',id:raw}],
+      userVerification:'required', timeout:60000
+    }});
+    if(r) esconderTranca();
+  }catch(e){
+    if(!silencioso) lockMsg('Biometria não reconhecida. Use o PIN.');
+  }
+}
+
+function sairPelaTranca(){
+  if(!confirm('Sair da conta? Seus dados continuam salvos na nuvem.'))return;
+  try{ localStorage.removeItem(LOCK_KEY); }catch(e){}
+  signOutGoogle();
+}
+
+/* ---------- quando trancar ---------- */
+/* Ao abrir o app, e ao voltar do segundo plano depois de um tempo parado.
+   30 segundos de tolerância pra não pedir PIN quando a pessoa só trocou
+   de app rapidinho pra conferir um endereço. */
+let _saiuEm=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ _saiuEm=Date.now(); return; }
+  if(!trancaAtiva()) return;
+  if(_saiuEm && (Date.now()-_saiuEm)>30000){ _appDestravado=false; mostrarTranca(); }
+});
+
+function aplicarTrancaSeNecessario(){
+  if(trancaAtiva() && !_appDestravado) mostrarTranca();
+}
+
 /* ===== TELA DE ENTRADA: e-mail/senha + Google ===== */
 function authMsg(txt,ok){
   const el=document.getElementById('authMsg'); if(!el)return;
@@ -7399,6 +7638,7 @@ function entrarNoApp(){
   const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='none';
   const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='block';
   if(!window._appIniciado){ window._appIniciado=true; try{ initApp(); }catch(e){} }
+  try{ aplicarTrancaSeNecessario(); }catch(e){}
 }
 
 /* ===== LEMBRAR E-MAIL / SENHA =====
@@ -7755,21 +7995,15 @@ function temSessaoGuardada(){
   // favicon + apple touch
   const setLink=(rel,href,extra)=>{const l=document.createElement('link');l.rel=rel;l.href=href;if(extra)Object.assign(l,extra);document.head.appendChild(l);};
   setLink('icon',iconURL,{type:'image/svg+xml'});
-  setLink('apple-touch-icon',iconURL);
+  setLink('apple-touch-icon','/icons/icon-192.png');
 
-  // ---- manifest (Blob) ----
-  const manifest={
-    name:'Direção Rentável', short_name:'Direção Rentável',
-    description:'Controle de gastos do carro: Corp, Pessoal, Uber e Financiamento.',
-    start_url:'.', scope:'.', display:'standalone', orientation:'portrait',
-    background_color:'#2e90fa', theme_color:'#2e90fa',
-    icons:[
-      {src:iconURL,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},
-      {src:iconURL,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}
-    ]
-  };
-  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-  setLink('manifest',URL.createObjectURL(mBlob));
+  /* ---- manifest: ARQUIVO FIXO, não mais gerado em Blob ----
+     O manifest em Blob permitia instalar como PWA, mas gerava
+     "start_url ignored, URL is invalid" no console — e empacotadores de APK
+     (PWABuilder/Bubblewrap) não conseguem lê-lo, porque ele só existe em
+     memória. Agora o manifest é um arquivo de verdade em /manifest.json,
+     com ícones PNG em /icons/. É esse arquivo que o TWA vai usar. */
+  setLink('manifest','/manifest.json');
 
   // ---- SEM service worker (desativado de propósito) ----
   // Um service worker anterior aqui causava telas presas em versões antigas depois de
