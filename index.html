@@ -8171,6 +8171,15 @@ function traduzErroAuth(e){
     return 'Falta confirmar seu e-mail. Procure a mensagem na caixa de entrada e no spam.';
   if(cod==='email_address_invalid'||m.includes('unable to validate email')||m.includes('invalid format')||m.includes('email address')&&m.includes('invalid'))
     return 'Esse e-mail não parece válido. Confira se digitou certo.';
+  /* ATENÇÃO À ORDEM: o Supabase devolve "New password should be different from the
+     old password" quando a pessoa repete a senha atual. Essa frase contém
+     "password should be", que é o mesmo trecho testado na regra de senha fraca
+     logo abaixo — se esta checagem vier depois, a pessoa lê "senha fraca demais"
+     e vai inventar senhas cada vez mais complexas sem nunca resolver. */
+  if(cod==='same_password'||m.includes('should be different'))
+    return 'Essa já é a sua senha atual. Escolha uma diferente.';
+  if(cod==='otp_expired'||m.includes('token has expired')||m.includes('expired or is invalid')||m.includes('invalid or has expired'))
+    return 'Esse link de recuperação expirou ou já foi usado. Peça um novo em "Esqueci minha senha".';
   if(cod==='weak_password'||m.includes('password should be')||m.includes('password is too short')||m.includes('weak'))
     return 'Senha fraca demais. Use pelo menos 6 caracteres.';
   if(cod==='email_provider_disabled'||m.includes('email signups are disabled')||m.includes('email logins are disabled'))
