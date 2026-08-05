@@ -622,6 +622,11 @@ table.sched{min-width:0}
 .yr-btn.active{background:var(--electric);color:#04211d;border-color:var(--electric)}
 .yr-btn.yr-add{border-style:dashed;color:var(--txt-faint);font-weight:600;padding:8px 14px}
 .yr-btn.yr-add:hover{color:var(--electric);border-color:var(--electric)}
+.yr-btn.yr-del{border-style:dashed;color:var(--expense);border-color:var(--expense);font-weight:600;padding:8px 14px;opacity:.8}
+.yr-btn.yr-del:hover{opacity:1;background:var(--expense-bg)}
+.mo-listrow-del{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;color:var(--expense);background:var(--expense-bg);font-size:14px;font-weight:700;
+  margin-left:8px;flex-shrink:0}
 .yr-tot{font-size:12.5px;color:var(--txt-dim);margin-left:auto}
 .mo-nav .mo-pick{cursor:pointer;transition:border-color .15s,transform .1s}
 .mo-nav .mo-pick:hover{border-color:var(--electric);transform:translateY(-2px)}
@@ -2763,6 +2768,55 @@ const _ANO_APLICA={
   manut: y=>{ _mNavYear=y;  state.manutencao.year=y;    save(); renderManutencao(); }
 };
 
+/* --- remover ano adicionado por engano ---
+   Só some da lista o ano que: (a) foi adicionado à mão, (b) não é o ano corrente
+   e (c) não tem NENHUM lançamento em nenhuma guia. Ano com dado nunca desaparece,
+   mesmo que o usuário insista — o dado teria que ser apagado antes, na própria guia. */
+function anoTemDados(y){
+  const blocos=[state.uber,state.pessoal,state.abastecimentos,state.manutencao];
+  return blocos.some(b=>{
+    const ms=(b&&b.months)||{};
+    return Object.keys(ms).some(k=>String(k).slice(0,4)===String(y) && ms[k] && ms[k].length);
+  });
+}
+function anoRemovivel(y){
+  return y!==new Date().getFullYear()
+      && (state.anosExtras||[]).includes(Number(y))
+      && !anoTemDados(y);
+}
+function removerAno(y,secao){
+  y=Number(y);
+  if(anoTemDados(y)){
+    alert(`${y} tem lançamentos e por isso não pode ser removido daqui.\nApague os lançamentos desse ano primeiro.`);
+    return;
+  }
+  state.anosExtras=(state.anosExtras||[]).filter(a=>Number(a)!==y);
+  // se a guia estava parada nesse ano, volta para o ano de hoje
+  const atual=new Date().getFullYear();
+  ['uber','pessoal','abastecimentos','manutencao'].forEach(b=>{
+    if(state[b] && Number(state[b].year)===y) state[b].year=atual;
+  });
+  if(typeof _uNavYear!=='undefined' && _uNavYear===y)_uNavYear=null;
+  if(typeof _pNavYear!=='undefined' && _pNavYear===y)_pNavYear=null;
+  if(typeof _abNavYear!=='undefined' && _abNavYear===y)_abNavYear=atual;
+  if(typeof _mNavYear!=='undefined' && _mNavYear===y)_mNavYear=atual;
+  save();
+  const aplica=_ANO_APLICA[secao];
+  if(aplica)aplica(atual);
+  toast(`Ano ${y} removido`);
+}
+/* botão ✕ do desktop — aparece só quando o ano selecionado é removível */
+function _btnRemoveAno(y,secao){
+  if(!anoRemovivel(y))return '';
+  return `<button class="yr-btn yr-del" onclick="removerAno(${y},'${secao}')" title="Remover o ano ${y}">✕ ${y}</button>`;
+}
+/* ✕ das listas do mobile */
+function _delAnoMob(y,secao){
+  if(!anoRemovivel(y))return '';
+  return `<span class="mo-listrow-del" title="Remover ${y}"
+    onclick="event.stopPropagation();removerAno(${y},'${secao}')">✕</span>`;
+}
+
 function _btnAddAno(secao){
   return `<button class="yr-btn yr-add" onclick="abrirAddAno('${secao}')" title="Adicionar outro ano">+ ano</button>`;
 }
@@ -2829,7 +2883,7 @@ function renderUberNav(){
   if(!document.getElementById('uberNav') && !document.getElementById('opNav'))return;
   const selYear=state.uber.year||Number(state.uber.current.slice(0,4));
   const years=uberYears();
-  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectUberYear(${y})">${y}</button>`).join('')+_btnAddAno('uber');
+  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectUberYear(${y})">${y}</button>`).join('')+_btnAddAno('uber')+_btnRemoveAno(selYear,'uber');
   const mStart=1, mEnd=12;
   let totY={trab:0,uber:0,ganho:0,lucro:0,gasto:0};
   // dois conjuntos de cards: TRABALHO (só gasto de deslocamento) e CORP (ganhos/lucro)
@@ -3132,6 +3186,7 @@ function uRenderAnos(){
   const lista=resto.map(y=>`<div class="mo-listrow" onclick="uNavGoMeses(${y})">
       <span class="mo-listrow-nome">${y}</span>
       <span class="mo-listrow-val" style="color:var(--expense)">${fmt(uberYearTotal(y))}</span>
+      ${_delAnoMob(y,'uber')}
       <span class="mo-listrow-arrow">›</span>
     </div>`).join('');
   document.getElementById('uNavBody').innerHTML=
@@ -4896,7 +4951,7 @@ function renderPessoalNav(){
   const el=document.getElementById('pessoalNav'); if(!el)return;
   const selYear=state.pessoal.year||Number(state.pessoal.current.slice(0,4));
   const years=pessoalYears();
-  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectPessoalYear(${y})">${y}</button>`).join('')+_btnAddAno('pessoal');
+  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectPessoalYear(${y})">${y}</button>`).join('')+_btnAddAno('pessoal')+_btnRemoveAno(selYear,'pessoal');
   const mStart=1, mEnd=12;
   let totY=0, cards='';
   for(let m=mStart;m<=mEnd;m++){
@@ -5202,6 +5257,7 @@ function pRenderAnos(){
   const lista=resto.map(y=>`<div class="mo-listrow" onclick="pNavGoMeses(${y})">
       <span class="mo-listrow-nome">${y}</span>
       <span class="mo-listrow-val" style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</span>
+      ${_delAnoMob(y,'pessoal')}
       <span class="mo-listrow-arrow">›</span>
     </div>`).join('');
   document.getElementById('pNavBody').innerHTML=
@@ -5563,7 +5619,7 @@ function abRenderMeses(){
   const years=abastYears();
   const y=_abNavYear;
   abNavSetHeader('Abastecimentos',false);
-  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_abNavYear=${yy};renderAbastecimento()">${yy}</button>`).join('')+_btnAddAno('abast');
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_abNavYear=${yy};renderAbastecimento()">${yy}</button>`).join('')+_btnAddAno('abast')+_btnRemoveAno(y,'abast');
   const mStart=1;
   let cards='';
   const kmSeries=abMonthlyKmSeries(y);
@@ -5861,7 +5917,7 @@ function mRenderMeses(){
   const years=manutYears();
   const y=_mNavYear;
   mNavSetHeader('Manutenção',false);
-  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('')+_btnAddAno('manut');
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('')+_btnAddAno('manut')+_btnRemoveAno(y,'manut');
   const mStart=1;
   let cards='';
   for(let m=mStart;m<=12;m++){
