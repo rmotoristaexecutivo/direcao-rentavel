@@ -6262,6 +6262,189 @@ function resTotalDe(lado,itens){
   Object.keys(resFontesDe(lado)).forEach(f=>{ if(cfg.fontes[f]){ total+=dados[f].valor; nFontes++; } });
   return {total,dados,lista,nFontes};
 }
+/* ============================================================
+   COMPARATIVO LIVRE DE PERÍODOS
+   Antes o Resumo mostrava um período por vez. Aqui o usuário escolhe quantos
+   períodos quiser, em qualquer ordem e de anos diferentes — jan a mar/2026,
+   janeiro de três anos seguidos, ou jan/jul/dez avulsos. Reaproveita resAgrega()
+   e os filtros de fonte já existentes: o comparativo respeita o que está marcado.
+   Funciona nas granularidades Mês, Trimestre, Semestre e Ano; nas demais
+   (dia/semana/quinzena) a seleção sai da lista de períodos com lançamento.
+   ============================================================ */
+const _resCmp={ entrada:{ativo:false,chaves:[]}, saida:{ativo:false,chaves:[]} };
+
+/* monta a lista de períodos oferecidos no seletor, mesmo os ainda sem lançamento */
+function resPeriodosOferecidos(gran,itens){
+  const anos=new Set((state.anosExtras||[]).map(Number));
+  itens.forEach(x=>{ if(x.data)anos.add(Number(String(x.data).slice(0,4))); });
+  anos.add(new Date().getFullYear());
+  const lista=[...anos].filter(y=>Number.isFinite(y)).sort((a,b)=>b-a);
+  const out=[];
+  lista.forEach(y=>{
+    if(gran==='ano')       out.push({key:`A:${y}`,label:String(y),ano:y});
+    else if(gran==='mes')  for(let m=1;m<=12;m++) out.push({key:`M:${y}-${pad(m)}`,label:`${MESES[m-1]}/${y}`,ano:y});
+    else if(gran==='trimestre') for(let t=1;t<=4;t++) out.push({key:`T:${y}-${t}`,label:`${t}º tri/${y}`,ano:y});
+    else if(gran==='semestre')  for(let sm=1;sm<=2;sm++) out.push({key:`S:${y}-${sm}`,label:`${sm}º sem/${y}`,ano:y});
+  });
+  if(out.length)return out;
+  // dia/semana/quinzena: só o que tem lançamento
+  return resPeriodosDisponiveis(gran,itens).map(k=>({key:k,label:resLabel(k),ano:null}));
+}
+
+/* total de um período respeitando as fontes marcadas */
+function resTotalPeriodo(itens,lado,key,gran){
+  const dados=resAgrega(itens,lado,key,gran);
+  const cfg=_resCfg[lado];
+  let total=0;
+  Object.keys(resFontesDe(lado)).forEach(f=>{ if(cfg.fontes[f])total+=dados[f].valor; });
+  return total;
+}
+
+function toggleResCmp(lado){
+  _resCmp[lado].ativo=!_resCmp[lado].ativo;
+  if(_resCmp[lado].ativo && !_resCmp[lado].chaves.length && _resCfg[lado].periodo)
+    _resCmp[lado].chaves=[_resCfg[lado].periodo];   // começa com o período atual
+  renderResumoTab();
+}
+function resCmpLimpar(lado){ _resCmp[lado].chaves=[]; renderResumoTab(); }
+
+/* ---- modal de seleção múltipla ---- */
+let _resCmpLado=null;
+function abrirResCmpSel(lado){
+  _resCmpLado=lado;
+  let ov=document.getElementById('resCmpOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='resCmpOverlay'; ov.className='modal-overlay';
+    ov.innerHTML=`<div class="modal-box" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <h3 style="font-family:'Sora';font-size:17px">Escolher períodos</h3>
+        <button class="btn" onclick="fecharResCmpSel()">✕</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--txt-dim);margin-bottom:10px">
+        Toque para marcar. Pode misturar meses e anos diferentes — a ordem da
+        comparação segue a cronológica.</p>
+      <div id="resCmpSelBody" style="max-height:52vh;overflow:auto"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" style="flex:1" onclick="resCmpSelNenhum()">Limpar</button>
+        <button class="btn primary" style="flex:1" onclick="fecharResCmpSel()">Pronto</button>
+      </div>
+    </div>`;
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharResCmpSel(); });
+    document.body.appendChild(ov);
+  }
+  ov.classList.add('open');
+  navPush(()=>fecharResCmpSel(true));
+  renderResCmpSel();
+}
+function fecharResCmpSel(fromBack){
+  const ov=document.getElementById('resCmpOverlay');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+  renderResumoTab();
+}
+function resCmpSelNenhum(){ _resCmp[_resCmpLado].chaves=[]; renderResCmpSel(); }
+function resCmpToggleKey(key){
+  const arr=_resCmp[_resCmpLado].chaves;
+  const i=arr.indexOf(key);
+  if(i>=0)arr.splice(i,1); else arr.push(key);
+  renderResCmpSel();
+}
+function resCmpAno(y){   // marca/desmarca os 12 meses de um ano de uma vez
+  const lado=_resCmpLado, gran=_resCfg[lado].gran;
+  const opts=resPeriodosOferecidos(gran,resCollect()).filter(o=>o.ano===y);
+  const arr=_resCmp[lado].chaves;
+  const todosMarcados=opts.every(o=>arr.includes(o.key));
+  opts.forEach(o=>{
+    const i=arr.indexOf(o.key);
+    if(todosMarcados){ if(i>=0)arr.splice(i,1); }
+    else if(i<0)arr.push(o.key);
+  });
+  renderResCmpSel();
+}
+function renderResCmpSel(){
+  const body=document.getElementById('resCmpSelBody'); if(!body)return;
+  const lado=_resCmpLado, gran=_resCfg[lado].gran;
+  const opts=resPeriodosOferecidos(gran,resCollect());
+  const marcadas=_resCmp[lado].chaves;
+  const anos=[...new Set(opts.map(o=>o.ano).filter(a=>a!=null))];
+  let html='';
+  if(anos.length){
+    anos.forEach(y=>{
+      const doAno=opts.filter(o=>o.ano===y);
+      html+=`<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="font-family:'Sora';font-size:14px">${y}</b>
+          <button class="per-chip" onclick="resCmpAno(${y})">ano todo</button>
+        </div>
+        <div class="per-bar">${doAno.map(o=>
+          `<button class="per-chip${marcadas.includes(o.key)?' active':''}"
+             onclick="resCmpToggleKey('${o.key}')">${marcadas.includes(o.key)?'✓ ':''}${o.label}</button>`
+        ).join('')}</div>
+      </div>`;
+    });
+  }else{
+    html=`<div class="per-bar">${opts.map(o=>
+      `<button class="per-chip${marcadas.includes(o.key)?' active':''}"
+         onclick="resCmpToggleKey('${o.key}')">${marcadas.includes(o.key)?'✓ ':''}${o.label}</button>`
+    ).join('')}</div>`;
+  }
+  html+=`<div style="font-size:12.5px;color:var(--txt-dim);margin-top:6px">
+    ${marcadas.length} período(s) selecionado(s)</div>`;
+  body.innerHTML=html;
+}
+
+/* ---- render do comparativo ---- */
+function resCmpHtml(lado,itens){
+  const cfg=_resCfg[lado], cmp=_resCmp[lado];
+  const cor=lado==='entrada'?'var(--gain)':'var(--expense)';
+  if(!cmp.chaves.length){
+    return `<div class="lanc-empty">Nenhum período escolhido ainda.
+      Toque em <b>escolher períodos</b> para montar a comparação.</div>`;
+  }
+  const linhas=cmp.chaves.slice().sort().map(k=>({
+    key:k, label:resLabel(k), valor:resTotalPeriodo(itens,lado,k,cfg.gran)
+  }));
+  const max=Math.max(...linhas.map(l=>l.valor),0);
+  const soma=linhas.reduce((s,l)=>s+l.valor,0);
+  const media=linhas.length?soma/linhas.length:0;
+  const base=linhas[0].valor;
+
+  const barras=linhas.map((l,i)=>{
+    const pct=max>0?(l.valor/max*100):0;
+    let delta='';
+    if(i>0){
+      if(base>0){
+        const d=(l.valor-base)/base*100;
+        const sinal=d>=0?'▲':'▼';
+        // em despesa, subir é ruim; em entrada, subir é bom
+        const bom=(lado==='entrada')?(d>=0):(d<=0);
+        delta=`<span style="color:${bom?'var(--gain)':'var(--expense)'};font-weight:700">
+          ${sinal} ${fmtN(Math.abs(d),1)}%</span>`;
+      }else{
+        delta=`<span style="color:var(--txt-faint)">—</span>`;
+      }
+    }else{
+      delta=`<span style="color:var(--txt-faint)">base</span>`;
+    }
+    return `<div class="res-det">
+      <div class="res-det-h"><span>${l.label}</span><b style="color:${cor}">${fmt(l.valor)}</b></div>
+      <div class="res-det-bar"><span style="width:${pct}%;background:${cor}"></span></div>
+      <div class="res-det-s">${delta} · vs ${linhas[0].label}</div>
+    </div>`;
+  }).join('');
+
+  const maiorL=linhas.reduce((a,b)=>b.valor>a.valor?b:a,linhas[0]);
+  const menorL=linhas.reduce((a,b)=>b.valor<a.valor?b:a,linhas[0]);
+
+  return `<div class="res-cmp-resumo" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
+      <div class="kpi"><div class="k-label">Σ Total</div><div class="k-val" style="font-size:16px;color:${cor}">${fmt(soma)}</div><div class="k-sub">${linhas.length} período(s)</div></div>
+      <div class="kpi"><div class="k-label">📊 Média</div><div class="k-val" style="font-size:16px">${fmt(media)}</div><div class="k-sub">por período</div></div>
+      <div class="kpi"><div class="k-label">⬆ Maior</div><div class="k-val" style="font-size:15px">${fmt(maiorL.valor)}</div><div class="k-sub">${maiorL.label}</div></div>
+      <div class="kpi"><div class="k-label">⬇ Menor</div><div class="k-val" style="font-size:15px">${fmt(menorL.valor)}</div><div class="k-sub">${menorL.label}</div></div>
+    </div>${barras}`;
+}
+
 /* ---- interações ---- */
 function toggleResLado(lado){ _resCfg[lado].aberto=!_resCfg[lado].aberto; renderResumoTab(); }
 function setResGran(lado,g){ _resCfg[lado].gran=g; _resCfg[lado].periodo=null; renderResumoTab(); }
@@ -6331,6 +6514,12 @@ function resPainelHtml(lado,itens){
         <select class="res-select" onchange="setResPeriodo('${lado}',this.value)">${options}</select>
         <button class="btn" onclick="resStepPeriodo('${lado}',-1)" ${idx<=0?'disabled':''} title="Próximo">›</button>
       </div>
+      <div class="per-bar" style="margin-top:8px">
+        <button class="per-chip${_resCmp[lado].ativo?' active':''}" onclick="toggleResCmp('${lado}')">
+          ${_resCmp[lado].ativo?'✓ ':''}📊 Comparar períodos</button>
+        ${_resCmp[lado].ativo?`<button class="per-chip" onclick="abrirResCmpSel('${lado}')">escolher períodos${_resCmp[lado].chaves.length?` (${_resCmp[lado].chaves.length})`:''}</button>
+        ${_resCmp[lado].chaves.length?`<button class="per-chip" onclick="resCmpLimpar('${lado}')">limpar</button>`:''}`:''}
+      </div>
 
       <div class="res-cfg-t" style="margin-top:14px">🎯 Fontes
         <span class="res-cfg-acts">
@@ -6341,8 +6530,8 @@ function resPainelHtml(lado,itens){
       <div class="per-bar">${chipsFonte}</div>
       ${lado==='saida'?`<p class="sub" style="margin:2px 0 0;font-size:11px">💡 Manutenções já entram dentro de Trabalho/Corp/Pessoal (foram rateadas lá). Marcar as duas conta em dobro.</p>`:''}
 
-      <div class="res-cfg-t" style="margin-top:14px">📋 Detalhe</div>
-      ${detalhes}
+      <div class="res-cfg-t" style="margin-top:14px">${_resCmp[lado].ativo?'📊 Comparativo':'📋 Detalhe'}</div>
+      ${_resCmp[lado].ativo?resCmpHtml(lado,itens):detalhes}
     </div>
   </div>`;
 }
