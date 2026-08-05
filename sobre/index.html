@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direção Rentável — controle de custos e lucro do seu carro</title>
+<meta name="description" content="Direção Rentável é um aplicativo gratuito para motoristas controlarem financiamento, combustível, manutenção e descobrirem quanto realmente sobra por corrida.">
+<link rel="icon" href="../icons/icon-192.png">
+<meta property="og:title" content="Direção Rentável">
+<meta property="og:description" content="Descubra quanto seu carro realmente rende. Controle financiamento, combustível, manutenção e lucro por corrida.">
+<meta property="og:image" content="https://direcaorentavel.com.br/icons/icon-512.png">
+<meta property="og:url" content="https://direcaorentavel.com.br/sobre/">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --bg:#0f1620;--panel:#161f2c;--line:#243244;--txt:#e6edf5;--dim:#9fb0c4;
+  --accent:#2e90fa;--green:#12b76a
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:16px/1.65 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px}
+
+header{padding:56px 0 40px;text-align:center}
+header img{width:88px;height:88px;border-radius:24px;margin-bottom:20px}
+h1{font-size:40px;margin:0 0 12px;letter-spacing:-.5px}
+.tagline{font-size:19px;color:var(--dim);margin:0 auto 28px;max-width:520px;line-height:1.5}
+.cta{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;
+  padding:14px 32px;border-radius:12px;font-weight:600;font-size:16px}
+.cta:hover{filter:brightness(1.1)}
+.cta-note{font-size:13px;color:var(--dim);margin-top:12px}
+
+section{padding:40px 0;border-top:1px solid var(--line)}
+h2{font-size:24px;margin:0 0 20px}
+p{color:#d3dde9}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:24px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h3{margin:0 0 8px;font-size:16px;color:var(--accent)}
+.card p{margin:0;font-size:14.5px;color:var(--dim);line-height:1.55}
+
+ul.checks{list-style:none;padding:0;margin:20px 0}
+ul.checks li{padding:8px 0 8px 30px;position:relative;color:#d3dde9}
+ul.checks li:before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+
+.destaque{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:12px;padding:20px 24px;margin:24px 0}
+.destaque p{margin:0}
+
+footer{padding:32px 0 60px;border-top:1px solid var(--line);color:var(--dim);
+  font-size:13.5px;text-align:center;margin-top:20px}
+footer a{color:var(--accent);text-decoration:none}
+footer a:hover{text-decoration:underline}
+.sep{margin:0 8px;opacity:.5}
+
+@media(prefers-color-scheme:light){
+  :root{--bg:#f5f8fc;--panel:#fff;--line:#dfe6ef;--txt:#16202c;--dim:#5b6b7e}
+  p,ul.checks li{color:#2a3746}
+}
+@media(max-width:600px){
+  h1{font-size:31px}
+  .tagline{font-size:17px}
+  header{padding:40px 0 32px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <img src="../icons/icon-512.png" alt="Ícone do Direção Rentável">
+    <h1>Direção Rentável</h1>
+    <p class="tagline">Descubra quanto o seu carro <strong>realmente</strong> rende — depois de descontar combustível, manutenção, pedágio e a parcela do financiamento.</p>
+    <a class="cta" href="../">Abrir o aplicativo</a>
+    <p class="cta-note">Gratuito · funciona no celular e no computador</p>
+  </header>
+
+  <section>
+    <h2>O problema que ele resolve</h2>
+    <p>Todo motorista de aplicativo sabe quanto faturou no dia. Poucos sabem quanto
+    <em>sobrou</em>. Entre o valor que aparece no app de corrida e o dinheiro que fica
+    no bolso existem combustível, energia, pedágio, manutenção, seguro e a parcela do carro.</p>
+    <p>O <strong>Direção Rentável</strong> junta tudo isso num lugar só e mostra o número
+    que importa: <strong>o lucro por corrida, por hora e por quilômetro</strong>.</p>
+  </section>
+
+  <section>
+    <h2>O que dá para fazer</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>💳 Financiamento</h3>
+        <p>Acompanhe as parcelas do carro e do cartão, marque o que já pagou e veja quanto falta quitar.</p>
+      </div>
+      <div class="card">
+        <h3>⛽ Combustível e energia</h3>
+        <p>Registre abastecimentos e recargas. O app calcula consumo real e custo por quilômetro.</p>
+      </div>
+      <div class="card">
+        <h3>🔧 Manutenção</h3>
+        <p>Histórico de revisões, trocas e reparos, para saber o custo real de manter o veículo.</p>
+      </div>
+      <div class="card">
+        <h3>📊 Lucro de verdade</h3>
+        <p>Faturamento menos todos os custos, por viagem, por hora e por quilômetro rodado.</p>
+      </div>
+      <div class="card">
+        <h3>🚗 Uso pessoal separado</h3>
+        <p>Separe o que é trabalho do que é deslocamento pessoal, sem misturar as contas.</p>
+      </div>
+      <div class="card">
+        <h3>☁️ Em qualquer aparelho</h3>
+        <p>Lance no celular, confira no computador. Os dados acompanham a sua conta.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Feito por quem dirige</h2>
+    <p>O Direção Rentável nasceu de uma planilha pessoal. Eu precisava saber se valia a pena
+    manter o carro rodando por aplicativo, e nenhuma ferramenta pronta respondia isso de
+    forma honesta — considerando a depreciação, a parcela e o combustível de verdade.</p>
+    <p>O aplicativo é a versão organizada dessa conta. Se ele te ajudar a enxergar o
+    seu número, já cumpriu o papel.</p>
+  </section>
+
+  <section>
+    <h2>Privacidade em primeiro lugar</h2>
+    <ul class="checks">
+      <li>Não coletamos localização nem GPS</li>
+      <li>Não acessamos contatos, fotos ou mensagens</li>
+      <li>Não pedimos dados bancários</li>
+      <li>Não vendemos nem compartilhamos seus dados</li>
+      <li>Sem publicidade e sem rastreadores</li>
+      <li>Você exporta tudo em um arquivo quando quiser</li>
+    </ul>
+    <div class="destaque">
+      <p>Guardamos apenas o seu e-mail, para identificar a conta, e os lançamentos que
+      você mesmo digita. Cada conta acessa somente os próprios dados.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quanto custa</h2>
+    <p>Nada. O aplicativo é gratuito nesta versão. Se um dia houver recursos pagos,
+    isso será informado com clareza e antecedência — nada do que você já usa passará
+    a ser cobrado sem aviso.</p>
+  </section>
+
+  <section>
+    <h2>Dúvidas ou sugestões</h2>
+    <p>Escreva para <a href="mailto:direcaorentavel@gmail.com" style="color:var(--accent)">direcaorentavel@gmail.com</a>.
+    Feedback de quem roda todo dia é o que faz o app melhorar.</p>
+    <p style="margin-top:24px"><a class="cta" href="../">Abrir o aplicativo</a></p>
+  </section>
+
+  <footer>
+    <strong>Direção Rentável</strong><br>
+    <a href="../">Aplicativo</a><span class="sep">·</span>
+    <a href="../privacidade/">Política de Privacidade</a><span class="sep">·</span>
+    <a href="../termos/">Termos de Uso</a><br><br>
+    direcaorentavel.com.br
+  </footer>
+
+</div>
+</body>
+</html>
 
