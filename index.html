@@ -109,6 +109,7 @@
   --neutral-bg:rgba(96,165,250,.12);
   --radius:16px;
   --radius-sm:10px;
+  --header-bg:rgba(10,14,20,.9);   /* fundo do header no mobile - tema escuro */
 }
 [data-theme="light"]{
   --bg:#eef1f7;
@@ -125,6 +126,7 @@
   --electric:#0d9488;    --electric-bg:rgba(13,148,136,.12);
   --hybrid:#c2700a;      --hybrid-bg:rgba(194,112,10,.12);
   --neutral:#2563eb;     --neutral-bg:rgba(37,99,235,.10);
+  --header-bg:rgba(244,247,251,.9);   /* fundo do header no mobile - tema claro */
 }
 [data-theme="light"] body::before{
   background:
@@ -529,9 +531,11 @@ select{color-scheme:dark}
 select option{background:var(--panel-solid);color:var(--txt)}
 [data-theme="light"] select option{background:#ffffff;color:#16202e}
 @media (max-width:640px){
-  /* no mobile o app usa a paleta clara forçada — as opções acompanham */
-  select{color-scheme:light}
-  select option{background:#ffffff;color:#0f2039}
+  /* no mobile as opções acompanham o tema escolhido (antes eram fixas no claro) */
+  [data-theme="light"] select{color-scheme:light}
+  [data-theme="light"] select option{background:#ffffff;color:#0f2039}
+  [data-theme="dark"] select{color-scheme:dark}
+  [data-theme="dark"] select option{background:var(--panel-solid);color:var(--txt)}
 }
 
 /* KPI cards */
@@ -616,6 +620,8 @@ table.sched{min-width:0}
 .yr-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 .yr-btn{font-family:'Sora';font-weight:700;font-size:15px;padding:8px 20px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt-dim);cursor:pointer}
 .yr-btn.active{background:var(--electric);color:#04211d;border-color:var(--electric)}
+.yr-btn.yr-add{border-style:dashed;color:var(--txt-faint);font-weight:600;padding:8px 14px}
+.yr-btn.yr-add:hover{color:var(--electric);border-color:var(--electric)}
 .yr-tot{font-size:12.5px;color:var(--txt-dim);margin-left:auto}
 .mo-nav .mo-pick{cursor:pointer;transition:border-color .15s,transform .1s}
 .mo-nav .mo-pick:hover{border-color:var(--electric);transform:translateY(-2px)}
@@ -778,7 +784,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 @media (max-width:640px){
   /* ===== PALETA MOBILE: CLEAN CLARO (azul + verde suave, estilo fintech) =====
      Sobrescreve as variáveis do tema só no celular. Desktop mantém as cores originais. */
-  :root, :root[data-theme="light"], :root[data-theme="dark"]{
+  :root[data-theme="light"]{
     --bg:#f4f7fb !important;
     --bg2:#eef3f9 !important;
     --panel:rgba(255,255,255,.92) !important;
@@ -793,35 +799,58 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     --hybrid:#f79009 !important;      --hybrid-bg:rgba(247,144,9,.12) !important;    /* âmbar */
     --accent:#2e90fa !important;      --accent-bg:rgba(46,144,250,.12) !important;
   }
-  /* garante inputs/selects legíveis em TODOS os modais no mobile (tema claro forçado) */
-  .modal-overlay input, .modal-overlay select, .modal-overlay textarea,
-  .modal-box input, .modal-box select, .modal-box textarea,
-  .modal input, .modal select, .modal textarea,
-  .modal-body input, .modal-body select, .modal-body textarea,
-  .field input, .field select{
+  /* ---- TEMA CLARO no mobile: inputs/modais/login forçados na paleta clara.
+     TUDO aqui é escopado em [data-theme="light"]; sem isso o tema escuro nunca
+     aparecia no celular, por mais que toggleTheme() trocasse o atributo. ---- */
+  [data-theme="light"] .modal-overlay input, [data-theme="light"] .modal-overlay select, [data-theme="light"] .modal-overlay textarea,
+  [data-theme="light"] .modal-box input, [data-theme="light"] .modal-box select, [data-theme="light"] .modal-box textarea,
+  [data-theme="light"] .modal input, [data-theme="light"] .modal select, [data-theme="light"] .modal textarea,
+  [data-theme="light"] .modal-body input, [data-theme="light"] .modal-body select, [data-theme="light"] .modal-body textarea,
+  [data-theme="light"] .field input, [data-theme="light"] .field select{
     background:#ffffff !important; color:#0f2039 !important;
     border:1px solid rgba(20,45,80,.18) !important; -webkit-text-fill-color:#0f2039 !important;
   }
-  .modal-overlay input::placeholder, .modal-box input::placeholder,
-  .modal input::placeholder, .field input::placeholder{color:#8595ad !important}
-  .modal-overlay, .modal-box, .modal-body, .modal-content, .modal{color:#0f2039}
-  .modal-box, .modal-content{background:#ffffff !important}
+  [data-theme="light"] .modal-overlay input::placeholder, [data-theme="light"] .modal-box input::placeholder,
+  [data-theme="light"] .modal input::placeholder, [data-theme="light"] .field input::placeholder{color:#8595ad !important}
+  [data-theme="light"] .modal-overlay, [data-theme="light"] .modal-box, [data-theme="light"] .modal-body,
+  [data-theme="light"] .modal-content, [data-theme="light"] .modal{color:#0f2039}
+  [data-theme="light"] .modal-box, [data-theme="light"] .modal-content{background:#ffffff !important}
   /* rótulos e textos dentro dos modais legíveis no fundo claro */
-  .modal-box label, .modal-box .field-label, .modal-overlay label{color:#5b6b82 !important}
-  body{background:linear-gradient(180deg,#eef4fb 0%,#f4f7fb 240px) !important;color:var(--txt)}
+  [data-theme="light"] .modal-box label, [data-theme="light"] .modal-box .field-label,
+  [data-theme="light"] .modal-overlay label{color:#5b6b82 !important}
+  [data-theme="light"] body{background:linear-gradient(180deg,#eef4fb 0%,#f4f7fb 240px) !important;color:var(--txt)}
   /* login herda a paleta clara + sombra suave */
-  .login-screen{background:linear-gradient(160deg,#eaf2fd,#f4f7fb) !important}
-  .login-box{box-shadow:0 16px 44px rgba(46,144,250,.16) !important}
+  [data-theme="light"] .login-screen{background:linear-gradient(160deg,#eaf2fd,#f4f7fb) !important}
+  [data-theme="light"] .login-box{box-shadow:0 16px 44px rgba(46,144,250,.16) !important}
   .login-logo{background:linear-gradient(135deg,#2e90fa,#12b76a) !important;border:0 !important}
   /* bottom nav clara */
-  #mobileNav{background:rgba(255,255,255,.94) !important;box-shadow:0 -2px 16px rgba(20,45,80,.06)}
+  [data-theme="light"] #mobileNav{background:rgba(255,255,255,.94) !important;box-shadow:0 -2px 16px rgba(20,45,80,.06)}
+
+  /* ---- TEMA ESCURO no mobile: inputs e modais legíveis sobre fundo escuro ---- */
+  [data-theme="dark"] .modal-overlay input, [data-theme="dark"] .modal-overlay select, [data-theme="dark"] .modal-overlay textarea,
+  [data-theme="dark"] .modal-box input, [data-theme="dark"] .modal-box select, [data-theme="dark"] .modal-box textarea,
+  [data-theme="dark"] .modal input, [data-theme="dark"] .modal select, [data-theme="dark"] .modal textarea,
+  [data-theme="dark"] .modal-body input, [data-theme="dark"] .modal-body select, [data-theme="dark"] .modal-body textarea,
+  [data-theme="dark"] .field input, [data-theme="dark"] .field select{
+    background:rgba(255,255,255,.06) !important; color:var(--txt) !important;
+    border:1px solid var(--line-strong) !important; -webkit-text-fill-color:var(--txt) !important;
+  }
+  [data-theme="dark"] .modal-overlay input::placeholder, [data-theme="dark"] .modal-box input::placeholder,
+  [data-theme="dark"] .modal input::placeholder, [data-theme="dark"] .field input::placeholder{color:var(--txt-faint) !important}
+  [data-theme="dark"] .modal-box, [data-theme="dark"] .modal-content{background:var(--panel-solid) !important}
+  [data-theme="dark"] .modal-overlay, [data-theme="dark"] .modal-box, [data-theme="dark"] .modal-body,
+  [data-theme="dark"] .modal-content, [data-theme="dark"] .modal{color:var(--txt)}
+  [data-theme="dark"] .modal-box label, [data-theme="dark"] .modal-box .field-label,
+  [data-theme="dark"] .modal-overlay label{color:var(--txt-dim) !important}
+  [data-theme="dark"] #mobileNav{background:var(--panel-solid);box-shadow:0 -2px 16px rgba(0,0,0,.4)}
+  [data-theme="dark"] select{color-scheme:dark}
 
   .desktop-only{display:none !important}
   .mobile-only{display:block}
 
   /* header compacto */
   .wrap{padding:0 0 84px 0}
-  header{padding:12px 14px;position:sticky;top:0;z-index:40;background:rgba(244,247,251,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:0}
+  header{padding:12px 14px;position:sticky;top:0;z-index:40;background:var(--header-bg);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:0}
   header h1{font-size:17px;color:var(--txt)}
   .brand .logo{width:34px;height:34px;font-size:18px}
   /* esconde a barra de ações do topo; vira menu "..." */
@@ -1999,6 +2028,9 @@ function hydrate(s){
   else s.compare=Object.assign(JSON.parse(JSON.stringify(defaultState.compare)),s.compare);
   if(!s.daily)s.daily=JSON.parse(JSON.stringify(defaultState.daily));
   else if(!s.daily.config || s.daily.config.capKm==null)s.daily.config=JSON.parse(JSON.stringify(defaultState.daily.config));
+  // anos que o usuário adicionou à mão nos seletores (histórico antigo)
+  if(!Array.isArray(s.anosExtras))s.anosExtras=[];
+  s.anosExtras=[...new Set(s.anosExtras.map(Number).filter(y=>Number.isFinite(y)&&y>=1990&&y<=2100))];
   hydratePessoal(s);
   hydrateAbast(s);
   hydrateManut(s);
@@ -2006,11 +2038,12 @@ function hydrate(s){
 }
 // Garante o shape completo da guia Despesa Pessoal (bucket novo). Sem isso, um state antigo
 // vindo da nuvem chega sem pessoal.config e o renderPessoal() quebra (tabela vazia, botões inertes).
+const _mesHoje=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 function hydratePessoal(s){
   if(!s.pessoal || typeof s.pessoal!=='object')s.pessoal={};
   if(!s.pessoal.months || typeof s.pessoal.months!=='object')s.pessoal.months={};
-  if(!s.pessoal.current)s.pessoal.current='2026-07';
-  if(!s.pessoal.year)s.pessoal.year=Number(String(s.pessoal.current).slice(0,4))||2026;
+  if(!s.pessoal.current)s.pessoal.current=_mesHoje();
+  if(!s.pessoal.year)s.pessoal.year=Number(String(s.pessoal.current).slice(0,4))||new Date().getFullYear();
   s.pessoal.config=Object.assign(JSON.parse(JSON.stringify(defaultState.pessoal.config)), s.pessoal.config||{});
   return s;
 }
@@ -2018,16 +2051,16 @@ function hydratePessoal(s){
 function hydrateAbast(s){
   if(!s.abastecimentos || typeof s.abastecimentos!=='object')s.abastecimentos={};
   if(!s.abastecimentos.months || typeof s.abastecimentos.months!=='object')s.abastecimentos.months={};
-  if(!s.abastecimentos.current)s.abastecimentos.current='2026-07';
-  if(!s.abastecimentos.year)s.abastecimentos.year=Number(String(s.abastecimentos.current).slice(0,4))||2026;
+  if(!s.abastecimentos.current)s.abastecimentos.current=_mesHoje();
+  if(!s.abastecimentos.year)s.abastecimentos.year=Number(String(s.abastecimentos.current).slice(0,4))||new Date().getFullYear();
   return s;
 }
 // Garante o shape completo da guia Manutenção (bucket novo).
 function hydrateManut(s){
   if(!s.manutencao || typeof s.manutencao!=='object')s.manutencao={};
   if(!s.manutencao.months || typeof s.manutencao.months!=='object')s.manutencao.months={};
-  if(!s.manutencao.current)s.manutencao.current='2026-07';
-  if(!s.manutencao.year)s.manutencao.year=Number(String(s.manutencao.current).slice(0,4))||2026;
+  if(!s.manutencao.current)s.manutencao.current=_mesHoje();
+  if(!s.manutencao.year)s.manutencao.year=Number(String(s.manutencao.current).slice(0,4))||new Date().getFullYear();
   return s;
 }
 function load(){
@@ -2701,13 +2734,94 @@ function updateCell(i,field,val){
     r.qtdaKwh = r2((r.kmTotal||0)*(cf.kwhKm||0.18));   // Uber: kWh a partir do km rodado (King roda elétrico)
   save();renderUber(true);
 }
+/* ============================================================
+   ANOS DISPONÍVEIS (guias Trabalho/Corp, Pessoal, Abastecimento, Manutenção)
+   Antes cada guia começava com um Set fixo [2026,2027] — quem tem carro de 2019
+   não conseguia lançar o histórico. Agora a lista sai dos próprios dados:
+   anos com lançamentos + ano corrente da guia + ano de hoje + anos que o usuário
+   adicionou à mão (state.anosExtras, persistido junto com o resto).
+   ============================================================ */
+const ANO_MIN=1990, ANO_MAX=2100;
+
+function anosDisponiveis(months,current,year){
+  const set=new Set();
+  Object.keys(months||{}).forEach(k=>{
+    if(months[k] && months[k].length) set.add(Number(String(k).slice(0,4)));
+  });
+  if(current) set.add(Number(String(current).slice(0,4)));
+  if(year) set.add(Number(year));
+  set.add(new Date().getFullYear());
+  (state.anosExtras||[]).forEach(y=>set.add(Number(y)));
+  return [...set].filter(y=>Number.isFinite(y)&&y>=ANO_MIN&&y<=ANO_MAX).sort((a,b)=>a-b);
+}
+
+/* aplicadores por guia — o modal precisa saber quem re-renderizar */
+const _ANO_APLICA={
+  uber:  y=>{ state.uber.year=y; save(); renderUberNav(); },
+  pessoal: y=>{ state.pessoal.year=y; save(); renderPessoalNav(); },
+  abast: y=>{ _abNavYear=y; state.abastecimentos.year=y; save(); renderAbastecimento(); },
+  manut: y=>{ _mNavYear=y;  state.manutencao.year=y;    save(); renderManutencao(); }
+};
+
+function _btnAddAno(secao){
+  return `<button class="yr-btn yr-add" onclick="abrirAddAno('${secao}')" title="Adicionar outro ano">+ ano</button>`;
+}
+
+function abrirAddAno(secao){
+  let ov=document.getElementById('addAnoOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='addAnoOverlay';
+    ov.className='modal-overlay';
+    ov.innerHTML=`<div class="modal-box" style="max-width:320px">
+      <h3 style="font-family:'Sora';font-size:17px;margin-bottom:6px">Adicionar ano</h3>
+      <p style="font-size:13px;color:var(--txt-dim);margin-bottom:14px">
+        Digite qualquer ano entre ${ANO_MIN} e ${ANO_MAX} para lançar o histórico.</p>
+      <input id="addAnoInput" type="number" inputmode="numeric" class="cell-in"
+             style="width:100%;font-size:18px;text-align:center;padding:10px"
+             min="${ANO_MIN}" max="${ANO_MAX}" placeholder="2019">
+      <div id="addAnoMsg" style="font-size:12.5px;color:var(--expense);min-height:18px;margin-top:6px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" style="flex:1" onclick="fecharAddAno()">Cancelar</button>
+        <button class="btn primary" style="flex:1" onclick="confirmarAddAno()">Adicionar</button>
+      </div>
+    </div>`;
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharAddAno(); });
+    document.body.appendChild(ov);
+  }
+  ov._secao=secao;
+  const inp=document.getElementById('addAnoInput');
+  inp.value=''; document.getElementById('addAnoMsg').textContent='';
+  ov.classList.add('open');
+  navPush(()=>fecharAddAno(true));
+  setTimeout(()=>inp.focus(),80);
+  inp.onkeydown=e=>{ if(e.key==='Enter')confirmarAddAno(); };
+}
+
+function fecharAddAno(fromBack){
+  const ov=document.getElementById('addAnoOverlay');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+
+function confirmarAddAno(){
+  const ov=document.getElementById('addAnoOverlay');
+  const y=parseInt(document.getElementById('addAnoInput').value,10);
+  const msg=document.getElementById('addAnoMsg');
+  if(!Number.isFinite(y) || y<ANO_MIN || y>ANO_MAX){
+    msg.textContent=`Informe um ano entre ${ANO_MIN} e ${ANO_MAX}.`;
+    return;
+  }
+  if(!Array.isArray(state.anosExtras))state.anosExtras=[];
+  if(!state.anosExtras.includes(y))state.anosExtras.push(y);
+  const aplica=_ANO_APLICA[ov._secao];
+  fecharAddAno();
+  if(aplica)aplica(y);   // já pula para o ano recém-criado
+}
+
 function monthLabel(){const{y,m}=monthKeyParts(state.uber.current);return `${MESES[m-1]} de ${y}`;}
 function uberYears(){
-  const set=new Set([2026,2027]);
-  Object.keys(state.uber.months).forEach(k=>{if(state.uber.months[k]&&state.uber.months[k].length)set.add(Number(k.slice(0,4)));});
-  set.add(Number(state.uber.current.slice(0,4)));
-  if(state.uber.year)set.add(state.uber.year);
-  return [...set].sort((a,b)=>a-b);
+  return anosDisponiveis(state.uber.months, state.uber.current, state.uber.year);
 }
 function selectUberYear(y){ state.uber.year=y; save(); renderUberNav(); }
 function selectUberMonth(key){ state.uber.current=key; state.uber.year=Number(key.slice(0,4)); save(); renderUber(); }
@@ -2715,8 +2829,8 @@ function renderUberNav(){
   if(!document.getElementById('uberNav') && !document.getElementById('opNav'))return;
   const selYear=state.uber.year||Number(state.uber.current.slice(0,4));
   const years=uberYears();
-  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectUberYear(${y})">${y}</button>`).join('');
-  const mStart=selYear===2026?7:1, mEnd=12;
+  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectUberYear(${y})">${y}</button>`).join('')+_btnAddAno('uber');
+  const mStart=1, mEnd=12;
   let totY={trab:0,uber:0,ganho:0,lucro:0,gasto:0};
   // dois conjuntos de cards: TRABALHO (só gasto de deslocamento) e CORP (ganhos/lucro)
   let cardsTrab='', cardsCorp='';
@@ -2782,7 +2896,7 @@ function parcelaChart(items){
 function renderParcelaPanel(){
   const el=document.getElementById('parcelaPanel'); if(!el)return;
   const selYear=state.uber.year||Number(state.uber.current.slice(0,4));
-  const mStart=selYear===2026?7:1;
+  const mStart=1;
   const items=[]; let tP=0,tG=0;
   for(let m=mStart;m<=12;m++){
     const key=`${selYear}-${pad(m)}`;
@@ -2977,7 +3091,7 @@ function renderUber(){
 let _uNavLevel='anos';   // 'anos' | 'meses' | 'dias'
 let _uNavYear=null;
 function uberYearTotal(y){
-  const mStart=y===2026?7:1;
+  const mStart=1;
   let tot=0;
   for(let m=mStart;m<=12;m++){
     tot+=monthTotals(state.uber.months[`${y}-${pad(m)}`]||[]).gastoTrabalho;
@@ -3027,7 +3141,7 @@ function uRenderAnos(){
 function uRenderMeses(){
   const y=_uNavYear;
   uNavSetHeader(String(y),true);
-  const mStart=y===2026?7:1;
+  const mStart=1;
   const hoje=new Date(), mesAtual=hoje.getMonth()+1, anoAtual=hoje.getFullYear();
   let destaque='', lista='';
   for(let m=mStart;m<=12;m++){
@@ -3690,7 +3804,7 @@ function renderOperacao(rows,tot){
     const wItems=wd.map((rs,i)=>{const a=aggRows(rs);return{label:wdNames[i],gasto:a.gasto,ganho:a.ganho,lucro:a.lucro};});
 
     const selYear=state.uber.year||Number(state.uber.current.slice(0,4));
-    const mStart=selYear===2026?7:1;
+    const mStart=1;
     const mItems=[];
     for(let mm=mStart;mm<=12;mm++){const key=`${selYear}-${pad(mm)}`;const a=aggRows(state.uber.months[key]||[]);mItems.push({label:MESES[mm-1].slice(0,3),gasto:a.gasto,ganho:a.ganho,lucro:a.lucro});}
 
@@ -4774,11 +4888,7 @@ const _inpUnitP=(i,f,v,unit)=>`<div class="inp-unit"><input class="cell-in" inpu
 
 /* --- navegação de mês (própria) --- */
 function pessoalYears(){
-  const set=new Set([2026,2027]);
-  Object.keys(state.pessoal.months).forEach(k=>{if(state.pessoal.months[k]&&state.pessoal.months[k].length)set.add(Number(k.slice(0,4)));});
-  set.add(Number(state.pessoal.current.slice(0,4)));
-  if(state.pessoal.year)set.add(state.pessoal.year);
-  return [...set].sort((a,b)=>a-b);
+  return anosDisponiveis(state.pessoal.months, state.pessoal.current, state.pessoal.year);
 }
 function selectPessoalYear(y){ state.pessoal.year=y; save(); renderPessoalNav(); }
 function selectPessoalMonth(key){ state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4)); save(); renderPessoal(); }
@@ -4786,8 +4896,8 @@ function renderPessoalNav(){
   const el=document.getElementById('pessoalNav'); if(!el)return;
   const selYear=state.pessoal.year||Number(state.pessoal.current.slice(0,4));
   const years=pessoalYears();
-  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectPessoalYear(${y})">${y}</button>`).join('');
-  const mStart=selYear===2026?7:1, mEnd=12;
+  const yearBtns=years.map(y=>`<button class="yr-btn${y===selYear?' active':''}" onclick="selectPessoalYear(${y})">${y}</button>`).join('')+_btnAddAno('pessoal');
+  const mStart=1, mEnd=12;
   let totY=0, cards='';
   for(let m=mStart;m<=mEnd;m++){
     const key=`${selYear}-${pad(m)}`;
@@ -5051,7 +5161,7 @@ function syncPessoalHbar(){
 let _pNavLevel='anos';   // 'anos' | 'meses' | 'dias'
 let _pNavYear=null;
 function pessoalYearTotal(y){
-  const mStart=y===2026?7:1;
+  const mStart=1;
   let tot=0;
   for(let m=mStart;m<=12;m++){
     tot+=monthTotalsP(state.pessoal.months[`${y}-${pad(m)}`]||[]).gastoDia;
@@ -5101,7 +5211,7 @@ function pRenderAnos(){
 function pRenderMeses(){
   const y=_pNavYear;
   pNavSetHeader(String(y),true);
-  const mStart=y===2026?7:1;
+  const mStart=1;
   const hoje=new Date(), mesAtual=hoje.getMonth()+1, anoAtual=hoje.getFullYear();
   let destaque='', lista='';
   for(let m=mStart;m<=12;m++){
@@ -5361,14 +5471,10 @@ function monthTotalsAbast(rows){
   return tot;
 }
 function abastYears(){
-  const set=new Set([2026,2027]);
-  Object.keys(state.abastecimentos.months).forEach(k=>{ if(state.abastecimentos.months[k]&&state.abastecimentos.months[k].length)set.add(Number(k.slice(0,4))); });
-  set.add(Number(state.abastecimentos.current.slice(0,4)));
-  if(state.abastecimentos.year)set.add(state.abastecimentos.year);
-  return [...set].sort((a,b)=>a-b);
+  return anosDisponiveis(state.abastecimentos.months, state.abastecimentos.current, state.abastecimentos.year);
 }
 function abastYearTotal(y){
-  const mStart=y===2026?7:1; let tot=0;
+  const mStart=1; let tot=0;
   for(let m=mStart;m<=12;m++)tot+=monthTotalsAbast(state.abastecimentos.months[`${y}-${pad(m)}`]||[]).valor;
   return tot;
 }
@@ -5409,7 +5515,7 @@ function abMonthlyKmSeries(year){
     }
     return val;
   }
-  const mStart=year===2026?7:1;
+  const mStart=1;
   const out=[];
   let prevComb=null, prevEl=null;
   // referência: última leitura conhecida ANTES do primeiro mês do ano (se houver ano/mês anterior)
@@ -5457,8 +5563,8 @@ function abRenderMeses(){
   const years=abastYears();
   const y=_abNavYear;
   abNavSetHeader('Abastecimentos',false);
-  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_abNavYear=${yy};renderAbastecimento()">${yy}</button>`).join('');
-  const mStart=y===2026?7:1;
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_abNavYear=${yy};renderAbastecimento()">${yy}</button>`).join('')+_btnAddAno('abast');
+  const mStart=1;
   let cards='';
   const kmSeries=abMonthlyKmSeries(y);
   const chartItems=kmSeries.map(s=>({label:MESES[s.m-1].slice(0,3),km:s.km}));
@@ -5690,14 +5796,10 @@ function monthTotalsManut(rows){
   return tot;
 }
 function manutYears(){
-  const set=new Set([2026,2027]);
-  Object.keys(state.manutencao.months).forEach(k=>{ if(state.manutencao.months[k]&&state.manutencao.months[k].length)set.add(Number(k.slice(0,4))); });
-  set.add(Number(state.manutencao.current.slice(0,4)));
-  if(state.manutencao.year)set.add(state.manutencao.year);
-  return [...set].sort((a,b)=>a-b);
+  return anosDisponiveis(state.manutencao.months, state.manutencao.current, state.manutencao.year);
 }
 function manutYearTotal(y){
-  const mStart=y===2026?7:1; let tot=0;
+  const mStart=1; let tot=0;
   for(let m=mStart;m<=12;m++)tot+=monthTotalsManut(state.manutencao.months[`${y}-${pad(m)}`]||[]).valor;
   return tot;
 }
@@ -5759,8 +5861,8 @@ function mRenderMeses(){
   const years=manutYears();
   const y=_mNavYear;
   mNavSetHeader('Manutenção',false);
-  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('');
-  const mStart=y===2026?7:1;
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('')+_btnAddAno('manut');
+  const mStart=1;
   let cards='';
   for(let m=mStart;m<=12;m++){
     const key=`${y}-${pad(m)}`;
@@ -6737,8 +6839,16 @@ function renderDaily(){if(!document.getElementById("view-daily"))return;
 
 /* ============ Theme ============ */
 function applyTheme(t){
+  t = (t==='light') ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme',t);
-  document.getElementById('themeBtn').textContent = t==='light'?'☀️ Claro':'🌙 Escuro';
+  const btn=document.getElementById('themeBtn');
+  if(btn) btn.textContent = t==='light'?'☀️ Claro':'🌙 Escuro';
+  // rótulo do menu "⋯" do mobile — antes nunca era atualizado
+  const lbl=document.getElementById('hdrThemeLbl');
+  if(lbl) lbl.textContent = t==='light'?'Mudar para tema escuro':'Mudar para tema claro';
+  // barra de status do Android acompanha o tema
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', t==='light'?'#f4f7fb':'#0a0e14');
   localStorage.setItem('cv_theme',t);
 }
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');}
@@ -6764,6 +6874,36 @@ window.addEventListener('load',syncHeaderHeight);
 const _navStack=[];   // pilha de camadas abertas: {close, isDirty}
 let _navSuppressPop=false;
 let _modalTyped=false; // marca se o usuário digitou algo em modais lidos via DOM (abast/manut)
+let _navAnchored=false;   // já empurramos a entrada-âncora?
+let _exitArmed=false;     // primeiro "voltar" com nada aberto já aconteceu?
+let _exitTimer=null;
+
+/* ÂNCORA: sem ela o histórico fica vazio e o gesto de borda do Android sai do app
+   direto. Empurramos uma entrada no boot para que o primeiro "voltar" tenha o que
+   consumir. Necessário no TWA, onde não existe o plugin do Capacitor. */
+function _navAnchor(){
+  if(_navAnchored)return;
+  history.pushState({navAnchor:true},'');
+  _navAnchored=true;
+}
+
+/* aviso discreto de "toque de novo para sair" */
+function _navExitToast(){
+  let t=document.getElementById('navExitToast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='navExitToast';
+    t.textContent='Toque em voltar de novo para sair';
+    t.style.cssText='position:fixed;left:50%;bottom:96px;transform:translateX(-50%);'+
+      'background:rgba(15,32,57,.92);color:#fff;padding:10px 16px;border-radius:20px;'+
+      'font-size:13px;font-weight:600;z-index:9999;pointer-events:none;'+
+      'box-shadow:0 6px 20px rgba(0,0,0,.28);opacity:0;transition:opacity .18s';
+    document.body.appendChild(t);
+  }
+  requestAnimationFrame(()=>{t.style.opacity='1'});
+  clearTimeout(t._h);
+  t._h=setTimeout(()=>{t.style.opacity='0'},1800);
+}
 
 /* registra uma camada aberta. close() fecha ela; isDirty() (opcional) diz se há
    alterações não salvas — se tiver, pergunta antes de descartar. */
@@ -6777,11 +6917,29 @@ function navPop(){
   if(!_navStack.length)return;
   _navStack.pop();
   _navSuppressPop=true;
+  // rede de segurança: se o popstate não vier (histórico já no início), a flag
+  // ficaria presa e engoliria o próximo "voltar" legítimo
+  setTimeout(()=>{_navSuppressPop=false},400);
   history.back();   // consome a entrada que empurramos; popstate abaixo ignora
 }
 window.addEventListener('popstate',function(){
   if(_navSuppressPop){ _navSuppressPop=false; return; }
-  _navHandleBack();
+  if(_navHandleBack())return;          // havia modal/menu: fechou, fim
+
+  /* nada aberto: o usuário voltou "para fora" do app.
+     1º toque → reempurra a âncora e avisa. 2º toque em até 2s → deixa sair. */
+  if(_exitArmed){
+    _exitArmed=false;
+    _navAnchored=false;
+    try{ if(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App) window.Capacitor.Plugins.App.exitApp(); }catch(e){}
+    return;                            // no TWA/navegador, deixa o voltar seguir
+  }
+  _exitArmed=true;
+  _navAnchored=false;
+  _navAnchor();                        // recoloca a entrada consumida
+  _navExitToast();
+  clearTimeout(_exitTimer);
+  _exitTimer=setTimeout(()=>{_exitArmed=false},2000);
 });
 
 /* trata um "voltar": fecha a camada do topo (com confirmação se sujo).
@@ -6822,8 +6980,12 @@ function _initCapacitorBack(){
   }catch(err){}
   return false;
 }
-if(document.readyState!=='loading')_initCapacitorBack();
-else document.addEventListener('DOMContentLoaded',_initCapacitorBack);
+function _initBackNav(){
+  _initCapacitorBack();   // só pega efeito no APK antigo (Capacitor); no TWA retorna false
+  _navAnchor();           // âncora sempre — é ela que segura o gesto de borda no TWA
+}
+if(document.readyState!=='loading')_initBackNav();
+else document.addEventListener('DOMContentLoaded',_initBackNav);
 /* helper: fecha por completo a partir de um botão (Salvar/Cancelar/X) */
 function navClose(){ navPop(); }
 
@@ -6845,7 +7007,9 @@ function _emptyLike(d){
 }
 
 /* ============ Init ============ */
-applyTheme(localStorage.getItem('cv_theme')||'dark');
+/* padrão por dispositivo: o mobile sempre foi claro (a paleta antiga era forçada),
+   então mantemos claro no celular e escuro no desktop quando não há escolha salva */
+applyTheme(localStorage.getItem('cv_theme') || (window.matchMedia('(max-width:640px)').matches ? 'light' : 'dark'));
 
 function initApp(){
   syncHeaderHeight();
