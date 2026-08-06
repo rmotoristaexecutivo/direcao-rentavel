@@ -686,6 +686,25 @@ table.sched{min-width:0}
   border:0;cursor:pointer;background:var(--neutral);color:#fff;font-size:24px;line-height:1;
   display:grid;place-items:center;box-shadow:0 5px 16px rgba(44,110,242,.4)}
 
+/* lista de meses: uma linha por mês, não um card por mês.
+   Doze cards fazem a pessoa rolar meio metro para achar o mês com dado. */
+.a-mlist{background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;
+  overflow:hidden;margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 8px 24px rgba(13,22,32,.06)}
+[data-theme="dark"] .a-mlist{box-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3)}
+.a-mrow{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;
+  border-bottom:1px solid var(--line)}
+.a-mrow:last-child{border-bottom:0}
+.a-mrow:active{background:var(--bg2)}
+.a-mrow.empty{opacity:.42}
+.a-mrow-l{flex:1;min-width:0}
+.a-mrow-l b{display:block;font-size:14.5px;font-weight:600}
+.a-mrow-l small{display:block;font-size:11.5px;color:var(--txt-faint);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-mrow-v{font-family:'Barlow Condensed','Sora',sans-serif;font-size:19px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt-faint)}
+.a-mrow-ar{color:var(--txt-faint);font-size:17px;flex-shrink:0}
+
 /* meses sem lançamento: a lista precisa ser varrida com o olho, não lida.
    Rótulo à esquerda, valor à direita, e o mês vazio recuado em opacidade. */
 .mo-listrow{border-radius:13px;padding:13px 14px}
@@ -1066,10 +1085,15 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     min-width:0;overflow:hidden;white-space:nowrap;position:relative}
   #mobileNav button .ic{font-size:18px;line-height:1;transition:.22s cubic-bezier(.2,.8,.3,1.2)}
   #mobileNav button.active{color:var(--accent,#22c55e);font-weight:800}
+  /* o salto de 45% funcionava com emoji, que já vem com moldura própria; com ícone
+     de traço ele invade os vizinhos e some com o rótulo. Destaque discreto: a cor
+     e o peso do texto já marcam a aba ativa. */
   #mobileNav button.active .ic{
-    transform:translateY(-6px) scale(1.45);
-    filter:drop-shadow(0 4px 8px rgba(34,197,94,.4));
+    transform:translateY(-1px);
+    filter:none;
   }
+  #mobileNav button.active{color:var(--neutral) !important}
+  #mobileNav button.active .ic svg{stroke-width:2.1}
   /* pílula de fundo que "eleva" a aba ativa, dando o efeito de saltar pra frente */
   #mobileNav button.active::before{
     content:"";position:absolute;top:-2px;left:50%;transform:translateX(-50%);
@@ -3371,9 +3395,10 @@ function uRenderAnos(){
   const anoAtual=new Date().getFullYear();
   const destaque=years.filter(y=>y===anoAtual);
   const resto=years.filter(y=>y!==anoAtual);
-  const cardGrande=destaque.map(y=>`<div class="mo-card mo-pick year-card destaque" onclick="uNavGoMeses(${y})">
-      <div class="mo-h">${y} <span class="mo-badge">atual</span></div>
-      <div class="mo-row tot"><span>💸 Total gasto</span><b style="color:var(--expense)">${fmt(uberYearTotal(y))}</b></div>
+  const cardGrande=destaque.map(y=>`<div class="a-hero a-hero-click" onclick="uNavGoMeses(${y})">
+      <div class="a-hero-k">${y} · ano atual</div>
+      <div class="a-hero-v" style="color:var(--expense)">${fmt(uberYearTotal(y))}</div>
+      <div class="a-hero-s">toque para ver os meses</div>
     </div>`).join('');
   const lista=resto.map(y=>`<div class="mo-listrow" onclick="uNavGoMeses(${y})">
       <span class="mo-listrow-nome">${y}</span>
@@ -5452,9 +5477,10 @@ function pRenderAnos(){
   const anoAtual=new Date().getFullYear();
   const destaque=years.filter(y=>y===anoAtual);
   const resto=years.filter(y=>y!==anoAtual);
-  const cardGrande=destaque.map(y=>`<div class="mo-card mo-pick year-card destaque" onclick="pNavGoMeses(${y})">
-      <div class="mo-h">${y} <span class="mo-badge">atual</span></div>
-      <div class="mo-row tot"><span>💸 Total gasto</span><b style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</b></div>
+  const cardGrande=destaque.map(y=>`<div class="a-hero a-hero-click" onclick="pNavGoMeses(${y})">
+      <div class="a-hero-k">${y} · ano atual</div>
+      <div class="a-hero-v" style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</div>
+      <div class="a-hero-s">toque para ver os meses</div>
     </div>`).join('');
   const lista=resto.map(y=>`<div class="mo-listrow" onclick="pNavGoMeses(${y})">
       <span class="mo-listrow-nome">${y}</span>
@@ -5834,17 +5860,46 @@ function abRenderMeses(){
     const kmMes = serie.hasPrev ? serie.km : tot.kmRodado;
     if(!serie.hasPrev)chartItems[m-mStart].km=tot.kmRodado;
     const mediaKmL=(kmMes>0 && tot.litros>0)?kmMes/tot.litros:0;
-    cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="abNavGoLista('${key}')">
-      <div class="mo-h">${MESES[m-1]}</div>
-      ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b style="color:var(--expense)">${fmt(tot.valor)}</b></div>
-      <div class="mo-row"><span>⚡ ${fmtN(tot.kwh,1)} kWh</span><span>⛽ ${fmtN(tot.litros,1)} L</span></div>
-      ${kmMes>0?`<div class="mo-row"><span>🛣️ Km no mês</span><b style="color:var(--electric)">${fmtN(kmMes,0)} km</b></div>`:''}
-      ${mediaKmL>0?`<div class="mo-row"><span>⛽ Média km/L</span><b style="color:var(--gain)">${fmtN(mediaKmL,1)}</b></div>`:''}`:`<div class="mo-empty">sem lançamentos</div>`}
-    </div>`;
+    /* mês com dado vira linha com valor e um resumo curto; mês vazio vira linha
+       apagada de uma altura só. Antes, dez meses sem lançamento ocupavam a tela
+       inteira repetindo "sem lançamentos". */
+    if(has){
+      cards+=`<div class="a-mrow" onclick="abNavGoLista('${key}')">
+        <div class="a-mrow-l">
+          <b>${MESES[m-1]}</b>
+          <small>${fmtN(tot.litros,1)} L${tot.kwh>0?` · ${fmtN(tot.kwh,1)} kWh`:''}${kmMes>0?` · ${fmtN(kmMes,0)} km`:''}${mediaKmL>0?` · ${fmtN(mediaKmL,1)} km/l`:''}</small>
+        </div>
+        <div class="a-mrow-v" style="color:var(--expense)">${fmt(tot.valor)}</div>
+        <span class="a-mrow-ar">›</span>
+      </div>`;
+    }else{
+      cards+=`<div class="a-mrow empty" onclick="abNavGoLista('${key}')">
+        <div class="a-mrow-l"><b>${MESES[m-1]}</b></div>
+        <div class="a-mrow-v">—</div>
+        <span class="a-mrow-ar">›</span>
+      </div>`;
+    }
   }
+  const totAno=chartItems.reduce((a,c)=>a+(c.km||0),0);
+  let gastoAno=0, litrosAno=0, kwhAno=0;
+  for(let m=1;m<=12;m++){
+    const t=monthTotalsAbast(state.abastecimentos.months[`${y}-${pad(m)}`]||[]);
+    gastoAno+=t.valor; litrosAno+=t.litros; kwhAno+=t.kwh;
+  }
+  const mediaAno = (totAno>0 && litrosAno>0) ? totAno/litrosAno : 0;
   document.getElementById('abastNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}</div>
-    <div class="month-cards mo-nav">${cards}</div>
+    <div class="a-hero">
+      <div class="a-hero-k">Combustível em ${y}</div>
+      <div class="a-hero-v" style="color:var(--expense)">${fmt(gastoAno)}</div>
+      <div class="a-hero-s">${fmtN(litrosAno,1)} L${kwhAno>0?` · ${fmtN(kwhAno,1)} kWh`:''} · ${fmtN(totAno,0)} km</div>
+    </div>
+    <div class="a-grid3">
+      <div class="a-tile"><div class="t">Consumo médio</div><div class="v">${mediaAno>0?fmtN(mediaAno,1):'—'}<span class="u">km/l</span></div></div>
+      <div class="a-tile"><div class="t">Custo por km</div><div class="v">${totAno>0?fmt(gastoAno/totAno):'—'}</div></div>
+      <div class="a-tile"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
+    </div>
+    <div class="a-mlist">${cards}</div>
     ${abKmChart(chartItems)}`;
 }
 function abRenderLista(){
