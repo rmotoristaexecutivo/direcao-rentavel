@@ -705,6 +705,74 @@ table.sched{min-width:0}
   font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt-faint)}
 .a-mrow-ar{color:var(--txt-faint);font-size:17px;flex-shrink:0}
 
+/* três atalhos no topo do financiamento */
+.a-acts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.a-act{background:var(--panel-solid);border:1px solid var(--line);border-radius:15px;
+  padding:12px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 6px 16px rgba(13,22,32,.05)}
+[data-theme="dark"] .a-act{box-shadow:0 1px 2px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.28)}
+.a-act:active{background:var(--bg2)}
+.a-act-ic{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;
+  color:var(--neutral);font-variant-numeric:tabular-nums;line-height:1}
+.a-act-t{font-size:10.5px;font-weight:600;color:var(--txt-dim);text-align:center;line-height:1.2}
+
+/* ajuste de dias trabalhados */
+.a-steps{justify-content:center;gap:16px}
+.a-step{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);
+  background:var(--bg2);color:var(--txt);font-size:20px;font-weight:700;cursor:pointer;
+  display:grid;place-items:center;line-height:1}
+.a-step:disabled{opacity:.35}
+.a-step-v{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;
+  min-width:96px;text-align:center;font-variant-numeric:tabular-nums}
+.a-step-v small{font-family:Manrope,sans-serif;font-size:11.5px;font-weight:600;
+  color:var(--txt-faint);display:block;margin-top:-2px}
+
+/* folha genérica dos modais */
+.a-sheet-ov{position:fixed;inset:0;z-index:70;background:rgba(6,11,17,.55);
+  backdrop-filter:blur(3px);display:flex;align-items:flex-end;opacity:0;pointer-events:none;
+  transition:opacity .22s}
+.a-sheet-ov.open{opacity:1;pointer-events:auto}
+.a-sheet{background:var(--panel-solid);width:100%;border-radius:22px 22px 0 0;
+  max-height:86vh;display:flex;flex-direction:column;
+  transform:translateY(14px);transition:transform .28s cubic-bezier(.2,.9,.3,1)}
+.a-sheet-ov.open .a-sheet{transform:none}
+.a-sheet-h{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.a-sheet-h b{font-family:'Sora';font-size:16px;font-weight:700}
+.a-sheet-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--bg2);color:var(--txt-dim);font-size:15px;cursor:pointer;
+  display:grid;place-items:center;flex-shrink:0}
+.a-sheet-b{padding:14px 16px calc(20px + env(safe-area-inset-bottom));overflow:auto}
+
+/* dois blocos lado a lado: mês corrente e ano acumulado */
+.a-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.a-duo-c{position:relative;background:var(--panel-solid);border:1px solid var(--line);
+  border-radius:18px;padding:15px 14px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 8px 24px rgba(13,22,32,.06)}
+[data-theme="dark"] .a-duo-c{box-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3)}
+.a-duo-c[onclick]{cursor:pointer}
+.a-duo-k{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;
+  color:var(--txt-faint);padding-right:34px}
+.a-duo-v{font-family:'Barlow Condensed','Sora',sans-serif;font-size:30px;font-weight:700;
+  line-height:1;margin:7px 0 4px;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.a-duo-s{font-size:11px;color:var(--txt-faint);line-height:1.3}
+.a-duo-add{position:absolute;right:11px;top:11px;width:32px;height:32px;border-radius:50%;
+  border:0;cursor:pointer;background:var(--neutral);color:#fff;font-size:19px;line-height:1;
+  display:grid;place-items:center;box-shadow:0 4px 12px rgba(44,110,242,.38)}
+
+/* ações da Corp no topo */
+.a-ops{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 12px}
+.a-op{background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
+  padding:13px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 6px 16px rgba(13,22,32,.05);transition:.15s}
+[data-theme="dark"] .a-op{box-shadow:0 1px 2px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.28)}
+.a-op:active{transform:scale(.97)}
+.a-op-ic{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  font-size:21px;font-weight:700;line-height:1;background:var(--bg2);color:var(--txt-dim)}
+.a-op.gain .a-op-ic{background:var(--gain-bg);color:var(--gain)}
+.a-op.cost .a-op-ic{background:var(--expense-bg);color:var(--expense)}
+.a-op-t{font-size:11.5px;font-weight:600;color:var(--txt-dim)}
+
 /* meses sem lançamento: a lista precisa ser varrida com o olho, não lida.
    Rótulo à esquerda, valor à direita, e o mês vazio recuado em opacidade. */
 .mo-listrow{border-radius:13px;padding:13px 14px}
@@ -1686,22 +1754,29 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
     <div id="opNav"></div>
 
-    <!-- ===== RELATÓRIO DO MÊS (estilo app de motorista) ===== -->
-    <div id="opReportCard"></div>
-
-    <div class="month-nav">
-      <button class="btn primary" onclick="openEntrada()">➕ Nova Entrada</button>
-      <button class="btn danger" onclick="openSaida()">➖ Nova Saída</button>
-      <button class="btn" id="btnVerLanc" onclick="openLancamentosModal()">📋 Ver lançamentos</button>
+    <!-- ===== AÇÕES NO TOPO (redesign) =====
+         Antes ficavam no meio da tela, depois do card de resumo. Lançar é a ação
+         mais frequente da guia e estava atrás de rolagem. -->
+    <div class="a-ops">
+      <button class="a-op gain" onclick="openEntrada()">
+        <span class="a-op-ic">+</span><span class="a-op-t">Entrada</span></button>
+      <button class="a-op cost" onclick="openSaida()">
+        <span class="a-op-ic">−</span><span class="a-op-t">Saída</span></button>
+      <button class="a-op" id="btnVerLanc" onclick="openLancamentosModal()">
+        <span class="a-op-ic">≡</span><span class="a-op-t">Lançamentos</span></button>
     </div>
 
-    <!-- ===== GANHOS SEMANAIS ===== -->
+    <!-- ===== RELATÓRIO DO MÊS (card unificado) ===== -->
+    <div id="opReportCard"></div>
+
+    <!-- ===== GANHOS SEMANAIS (suspenso) ===== -->
     <div id="opWeekly"></div>
 
-    <!-- ===== MÉDIAS DO MÊS (Corp) ===== -->
+    <!-- ===== MÉDIAS DO MÊS (suspenso, unificado no resumo) ===== -->
     <div id="opStats"></div>
 
-    <!-- ===== CARDS ESTILO CPMA ===== -->
+    <div id="opResumoWrap"></div>
+    <div id="opResumoSrc" style="display:none">
     <div class="kpis cpma-grid">
       <div class="kpi"><div class="k-label">Total de viagens</div><div class="k-val" id="cTrips">0</div></div>
       <div class="kpi"><div class="k-label">Horas trabalhadas</div><div class="k-val" id="cHoras">00:00</div></div>
@@ -1720,6 +1795,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <div class="kpi" id="cLphBox"><div class="k-label">Lucro por hora</div><div class="k-val" id="cLph">R$ -</div></div>
       <div class="kpi" id="cLpkBox"><div class="k-label">Lucro por KM</div><div class="k-val" id="cLpk">R$ -</div></div>
     </div>
+
+        </div>
 
     <div class="panel" id="appBreakdownPanel" style="padding:18px 20px;margin-top:14px">
       <h2 style="margin:0 0 12px">💵 Faturamento por aplicativo</h2>
@@ -2539,10 +2616,26 @@ function renderFinanceMobile(){
      foi tocada, então voltar ao index anterior não perde nada.
      ============================================================ */
   const emAtraso = cFin.atraso + cEnt.atraso;
-  const parcelaMes = f.fin.parcelaValor + (cEnt.pagas < f.entrada.parcelas ? f.entrada.parcelaValor : 0);
-  const porDiaUtil = parcelaMes / 22;
+  /* "Parcela do mês" passa a ser SÓ a do financiamento — a entrada tem tile próprio
+     e somar as duas escondia quanto era cada uma. */
+  const parcelaMes = f.fin.parcelaValor;
+  const parcelaEntradaAtiva = (cEnt.pagas < f.entrada.parcelas) ? f.entrada.parcelaValor : 0;
+  /* dias trabalhados por mês, ajustável — chave nova, o index antigo simplesmente a ignora */
+  const diasUteis = Number(state.finance.diasUteis) > 0 ? Number(state.finance.diasUteis) : 22;
+  const porDiaUtil = (parcelaMes + parcelaEntradaAtiva) / diasUteis;
 
   host.innerHTML=`
+    <div class="a-acts">
+      <button class="a-act" onclick="abrirFinModal('entrada')">
+        <span class="a-act-ic">${cEnt.pagas}/${f.entrada.parcelas}</span>
+        <span class="a-act-t">Entrada</span></button>
+      <button class="a-act" onclick="abrirFinModal('fin')">
+        <span class="a-act-ic">${cFin.pagas}/${f.fin.parcelas}</span>
+        <span class="a-act-t">Financiamento</span></button>
+      <button class="a-act" onclick="abrirFinModal('cfg')">
+        <span class="a-act-ic">⚙</span>
+        <span class="a-act-t">Configuração</span></button>
+    </div>
     <div class="a-hero">
       <div class="a-hero-k">Falta pagar</div>
       <div class="a-hero-v">${fmt(restanteTudo)}</div>
@@ -2560,17 +2653,22 @@ function renderFinanceMobile(){
     </div>`:''}
 
     <div class="a-grid3">
-      <div class="a-tile"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div></div>
-      <div class="a-tile"><div class="t">Financiamento</div><div class="v">${cFin.pagas}<span class="u">/${f.fin.parcelas}</span></div></div>
-      <div class="a-tile"><div class="t">Cartão</div><div class="v">${cEnt.pagas}<span class="u">/${f.entrada.parcelas}</span></div></div>
+      <div class="a-tile"><div class="t">Entrada</div><div class="v">${cEnt.pagas}<span class="u">/${f.entrada.parcelas}</span></div><div class="s">${fmt(f.entrada.parcelaValor)}</div></div>
+      <div class="a-tile"><div class="t">Financiamento</div><div class="v">${cFin.pagas}<span class="u">/${f.fin.parcelas}</span></div><div class="s">${fmt(f.fin.parcelaValor)}</div></div>
+      <div class="a-tile"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div><div class="s">só financiamento</div></div>
     </div>
 
     <div class="a-card">
       <h3>Quanto o carro precisa render</h3>
       <div class="a-item">
-        <div class="a-ic neutral">31</div>
-        <div class="a-mid"><b>Por dia útil</b><small>considerando 22 dias no mês</small></div>
+        <div class="a-ic neutral">${diasUteis}</div>
+        <div class="a-mid"><b>Por dia trabalhado</b><small>ajuste quantos dias você roda no mês</small></div>
         <div class="a-amt">${fmt(porDiaUtil)}</div>
+      </div>
+      <div class="a-item a-steps">
+        <button class="a-step" onclick="setFinDias(${diasUteis-1})" ${diasUteis<=1?'disabled':''}>−</button>
+        <div class="a-step-v">${diasUteis} <small>dias no mês</small></div>
+        <button class="a-step" onclick="setFinDias(${diasUteis+1})" ${diasUteis>=31?'disabled':''}>+</button>
       </div>
       <div class="a-item">
         <div class="a-ic gain">%</div>
@@ -2584,24 +2682,73 @@ function renderFinanceMobile(){
       <div class="a-tile"><div class="t">Juros do financiamento</div><div class="v cost">${fmt(jurosFin)}</div><div class="s">sobre ${fmt(f.fin.valor)}</div></div>
     </div>
 
-    ${accParcelas('fin',f.fin,'Parcelas do financiamento',cFin)}
-    ${accParcelas('entrada',f.entrada,'Parcelas da entrada (cartão)',cEnt)}
 
-    <div class="m-acc${_finAccOpen.cfg?' open':''}">
-      <div class="m-acc-head" onclick="finAccToggle('cfg')">
-        <span class="t">Configuração da compra</span>
-        <span class="r"><span class="m-acc-arrow">▸</span></span>
-      </div>
-      <div class="m-acc-body">
-        <div class="m-cfg-row"><span class="lbl">Valor do carro</span><span class="v">${fmt(f.carValue)}</span></div>
-        <div class="m-cfg-row"><span class="lbl">Entrada</span><span class="v">${fmt(f.entrada.valor)} · ${f.entrada.parcelas}x</span></div>
-        <div class="m-cfg-row"><span class="lbl">Financiado</span><span class="v">${fmt(f.fin.valor)} · ${f.fin.parcelas}x</span></div>
-        <div class="m-cfg-row"><span class="lbl">Taxa</span><span class="v">${fmtN(f.fin.taxa,2)}% a.m.</span></div>
-        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="openFinSheet()">Editar configuração</button>
-      </div>
-    </div>`;
+    <div style="height:6px"></div>`;
 }
-function accParcelas(key,plan,titulo,c){
+/* ============================================================
+   MODAIS DO FINANCIAMENTO
+   Antes as parcelas e a configuração ficavam em acordeões no fim da tela — a pessoa
+   rolava tudo para chegar neles. Agora são três atalhos no topo, cada um abrindo
+   uma folha. "Cartão" virou "Entrada": a entrada pode ser paga por pix, boleto ou
+   dinheiro, e o nome antigo assumia uma forma de pagamento só.
+   ============================================================ */
+function setFinDias(n){
+  n=Math.max(1,Math.min(31,Number(n)||22));
+  state.finance.diasUteis=n;
+  save();
+  renderFinance();
+}
+
+let _finModalAberto=null;
+function abrirFinModal(qual){
+  calcFinance();
+  const f=state.finance;
+  const cFin=contarParcelas(f.fin), cEnt=contarParcelas(f.entrada);
+  let titulo='', corpo='';
+  if(qual==='fin'){
+    titulo='Parcelas do financiamento';
+    corpo=accParcelas('fin',f.fin,'',cFin,true);
+  }else if(qual==='entrada'){
+    titulo='Parcelas da entrada';
+    corpo=accParcelas('entrada',f.entrada,'',cEnt,true);
+  }else{
+    titulo='Configuração da compra';
+    corpo=`
+      <div class="m-cfg-row"><span class="lbl">Valor do carro</span><span class="v">${fmt(f.carValue)}</span></div>
+      <div class="m-cfg-row"><span class="lbl">Entrada</span><span class="v">${fmt(f.entrada.valor)} · ${f.entrada.parcelas}x</span></div>
+      <div class="m-cfg-row"><span class="lbl">Financiado</span><span class="v">${fmt(f.fin.valor)} · ${f.fin.parcelas}x</span></div>
+      <div class="m-cfg-row"><span class="lbl">Taxa</span><span class="v">${fmtN(f.fin.taxa,2)}% a.m.</span></div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px"
+        onclick="fecharFinModal();openFinSheet()">Editar configuração</button>`;
+  }
+  let ov=document.getElementById('finModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='finModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharFinModal(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h">
+      <b>${titulo}</b>
+      <button class="a-sheet-x" onclick="fecharFinModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="a-sheet-b">${corpo}</div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  _finModalAberto=qual;
+  navPush(()=>fecharFinModal(true));
+}
+function fecharFinModal(fromBack){
+  const ov=document.getElementById('finModal');
+  if(ov)ov.classList.remove('open');
+  const q=_finModalAberto; _finModalAberto=null;
+  if(!fromBack && q)navPop();
+}
+/* ao marcar/desmarcar parcela dentro do modal, ele precisa se redesenhar */
+function _finModalRefresh(){ if(_finModalAberto)abrirFinModal(_finModalAberto); }
+
+function accParcelas(key,plan,titulo,c,semCabecalho){
   const filtro=_finParcFilter[key];
   const today=new Date();today.setHours(0,0,0,0);
   let itens='';
@@ -2643,12 +2790,10 @@ function accParcelas(key,plan,titulo,c){
   }
   else if(!itens)itens=`<div style="text-align:center;color:var(--txt-faint);padding:16px;font-size:13px">Nenhuma parcela ${filtro==='pagas'?'paga':filtro==='atraso'?'em atraso':'a vencer'}.</div>`;
   const open=_finAccOpen[key];
-  return `<div class="m-acc${open?' open':''}">
-    <div class="m-acc-head" onclick="finAccToggle('${key}')">
-      <span class="t">${titulo}</span>
-      <span class="r">${c.pagas}/${plan.parcelas} ✅${c.atraso>0?` · <span style="color:var(--expense)">${c.atraso}🔴</span>`:''}<span class="m-acc-arrow">▸</span></span>
-    </div>
-    <div class="m-acc-body">
+  /* dentro do modal não existe acordeão: o conteúdo já está aberto */
+  if(semCabecalho){
+    return `<div class="m-acc open" style="border:0;background:transparent;box-shadow:none;margin:0">
+      <div class="m-acc-body" style="padding:0">
       <div class="m-parc-filter">
         <button class="${filtro==='todas'?'on':''}" onclick="finParcFilter('${key}','todas')">Todas</button>
         <button class="${filtro==='avencer'?'on':''}" onclick="finParcFilter('${key}','avencer')">⏳ A vencer</button>
@@ -2657,10 +2802,29 @@ function accParcelas(key,plan,titulo,c){
       </div>
       ${itens}
     </div>
+    </div>`;
+  }
+  return `<div class="m-acc${open?' open':''}">
+    <div class="m-acc-head" onclick="finAccToggle('${key}')">
+      <span class="t">${titulo}</span>
+      <span class="r">${c.pagas}/${plan.parcelas} ✅${c.atraso>0?` · <span style="color:var(--expense)">${c.atraso}🔴</span>`:''}<span class="m-acc-arrow">▸</span></span>
+    </div>
+    <div class="m-acc-body">
+      <div class="m-parc-filter">
+        <button class="${filtro==='todas'?'on':''}" onclick="finParcFilter('${key}','todas')">Todas</button>
+        <button class="${filtro==='avencer'?'on':''}" onclick="finParcFilter('${key}','avencer')">A vencer</button>
+        <button class="${filtro==='atraso'?'on':''}" onclick="finParcFilter('${key}','atraso')">Atraso</button>
+        <button class="${filtro==='pagas'?'on':''}" onclick="finParcFilter('${key}','pagas')">Pagas</button>
+      </div>
+      ${itens}
+    </div>
   </div>`;
 }
 function finAccToggle(key){ _finAccOpen[key]=!_finAccOpen[key]; renderFinanceMobile(); }
-function finParcFilter(key,val){ _finParcFilter[key]=val; renderFinanceMobile(); }
+function finParcFilter(key,val){
+  _finParcFilter[key]=val;
+  if(_finModalAberto)_finModalRefresh(); else renderFinanceMobile();
+}
 
 /* bottom sheet de config do financiamento (mobile) */
 function openFinSheet(){
@@ -2670,7 +2834,7 @@ function openFinSheet(){
     <h3>⚙️ Editar configuração</h3>
     <div class="m-field"><label>Valor do carro (à vista)</label><input inputmode="decimal" id="fsCar" value="${fmtN(f.carValue,2)}"></div>
     <div class="sheet-sec">
-      <div class="sheet-sec-h">💳 Entrada (cartão)</div>
+      <div class="sheet-sec-h">Entrada</div>
       <div class="m-field-row">
         <div class="m-field"><label>Valor</label><input inputmode="decimal" id="fsEntVal" value="${fmtN(f.entrada.valor,2)}"></div>
         <div class="m-field"><label>Parcelas</label><input inputmode="numeric" id="fsEntParc" value="${f.entrada.parcelas}"></div>
@@ -3370,8 +3534,7 @@ function uberYearTotal(y){
 }
 function uNavBack(){
   resetSecoes();
-  if(_uNavLevel==='dias')_uNavLevel='meses';
-  else if(_uNavLevel==='meses')_uNavLevel='anos';
+  _uNavLevel='anos';   /* tela única: de dias volta direto para o começo */
   renderUberMobile();
 }
 function uNavGoMeses(y){ resetSecoes(); _uNavYear=y; _uNavLevel='meses'; renderUberMobile(); }
@@ -3390,26 +3553,64 @@ function renderUberMobile(){
   return uRenderDias();
 }
 function uRenderAnos(){
+  /* ============================================================
+     TELA ÚNICA (redesign): antes eram duas — uma só com o total do ano, outra com
+     os meses. A primeira mostrava um número e nada mais, e obrigava um toque a
+     mais para chegar em qualquer lugar. Agora mês e ano vivem juntos no topo, e
+     "Outros meses" e "Evolução" ficam aqui embaixo.
+     ============================================================ */
   uNavSetHeader('Trabalho',false);
   const years=uberYears();
-  const anoAtual=new Date().getFullYear();
-  const destaque=years.filter(y=>y===anoAtual);
-  const resto=years.filter(y=>y!==anoAtual);
-  const cardGrande=destaque.map(y=>`<div class="a-hero a-hero-click" onclick="uNavGoMeses(${y})">
-      <div class="a-hero-k">${y} · ano atual</div>
-      <div class="a-hero-v" style="color:var(--expense)">${fmt(uberYearTotal(y))}</div>
-      <div class="a-hero-s">toque para ver os meses</div>
-    </div>`).join('');
-  const lista=resto.map(y=>`<div class="mo-listrow" onclick="uNavGoMeses(${y})">
-      <span class="mo-listrow-nome">${y}</span>
-      <span class="mo-listrow-val" style="color:var(--expense)">${fmt(uberYearTotal(y))}</span>
-      ${_delAnoMob(y,'uber')}
-      <span class="mo-listrow-arrow">›</span>
-    </div>`).join('');
+  const hoje=new Date(), anoAtual=hoje.getFullYear(), mesAtual=hoje.getMonth()+1;
+  if(_uNavYear==null)_uNavYear=anoAtual;
+  const y=_uNavYear;
+  const keyMes=`${y}-${pad(mesAtual)}`;
+  const rowsMes=state.uber.months[keyMes]||[];
+  const totMes=monthTotals(rowsMes).gastoTrabalho;
+  const totAno=uberYearTotal(y);
+  const ehAnoAtual=(y===anoAtual);
+
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="uNavSetYear(${yy})">${yy}</button>`).join('')
+    +_btnAddAno('uber')+_btnRemoveAno(y,'uber');
+
+  /* dois blocos lado a lado: o mês (onde se lança) e o ano (o acumulado) */
+  const topo=`<div class="a-duo">
+    <div class="a-duo-c" onclick="${ehAnoAtual?`uNavGoDias('${keyMes}')`:''}">
+      <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
+      <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
+      <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
+      ${ehAnoAtual?`<button class="a-duo-add" onclick="event.stopPropagation();uAddHoje('${keyMes}')" aria-label="Lançar hoje">+</button>`:''}
+    </div>
+    <div class="a-duo-c">
+      <div class="a-duo-k">Ano ${y}</div>
+      <div class="a-duo-v" style="color:var(--expense)">${fmt(totAno)}</div>
+      <div class="a-duo-s">acumulado</div>
+    </div>
+  </div>`;
+
+  /* lista dos outros meses do ano selecionado */
+  let meses='';
+  for(let m=1;m<=12;m++){
+    if(ehAnoAtual && m===mesAtual)continue;
+    const key=`${y}-${pad(m)}`;
+    const rows=state.uber.months[key]||[];
+    const has=rows.length>0;
+    const tot=monthTotals(rows).gastoTrabalho;
+    meses+=`<div class="a-mrow${has?'':' empty'}" onclick="uNavGoDias('${key}')">
+      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${rows.length} dia(s)</small>`:''}</div>
+      <div class="a-mrow-v"${has?' style="color:var(--expense)"':''}>${has?fmt(tot):'—'}</div>
+      <span class="a-mrow-ar">›</span>
+    </div>`;
+  }
+
   document.getElementById('uNavBody').innerHTML=
-    (cardGrande?`<div class="mo-destaque-wrap">${cardGrande}</div>`:'')
-    +(lista?`<div class="mo-lista">${lista}</div>`:'');
+    `<div class="yr-bar">${yearBtns}</div>`
+    +topo
+    +secWrap('u-meses','Outros meses',`<div class="a-mlist">${meses}</div>`)
+    +secWrap('u-evolucao','Evolução',`<div id="perPanel-uber-m"></div>`);
+  renderPeriodPanel('uber');
 }
+function uNavSetYear(y){ _uNavYear=y; state.uber.year=y; save(); renderUberMobile(); }
 function uRenderMeses(){
   const y=_uNavYear;
   uNavSetHeader(String(y),true);
@@ -3742,14 +3943,14 @@ function uRenderDias(){
     <div class="a-hero-s">${rows.length} dia(s) lançado(s) · ${fmtN(kmTot,0)} km rodados</div>
   </div>
   <div class="a-grid3">
-    <div class="a-tile"><div class="t">Custo por km</div><div class="v">${fmt(custoKm)}</div></div>
     <div class="a-tile"><div class="t">Combustível</div><div class="v">${fmt(tot.trabComb)}</div><div class="s">${fmtN(tot.trabLitros,1)} L</div></div>
-    <div class="a-tile"><div class="t">Elétrico</div><div class="v">${fmt(tot.trabEl)}</div><div class="s">${fmtN(tot.trabKwh,1)} kWh</div></div>
-  </div>
-  ${tot.pedagioTotal>0?`<div class="a-grid3 two">
+    <div class="a-tile"><div class="t">EV</div><div class="v">${fmt(tot.trabEl)}</div><div class="s">${fmtN(tot.trabKwh,1)} kWh</div></div>
     <div class="a-tile"><div class="t">Pedágio</div><div class="v">${fmt(tot.pedagioTotal)}</div><div class="s">ida + volta</div></div>
+  </div>
+  <div class="a-grid3 two">
+    <div class="a-tile"><div class="t">Custo por km</div><div class="v">${fmt(custoKm)}</div></div>
     <div class="a-tile"><div class="t">Média por dia</div><div class="v">${fmt(rows.length?tot.gastoTrabalho/rows.length:0)}</div></div>
-  </div>`:''}`;
+  </div>`;
   // o índice usado nos cards precisa ser o da base REAL (allRows), não o do array filtrado,
   // pra editar/excluir a linha certa
   const cardsHtml=rows.length
@@ -4020,7 +4221,40 @@ function saveUSheet(){
   toast('Dia salvo');
 }
 
+/* ============================================================
+   SEÇÕES SUSPENSAS DA CORP (redesign)
+   A guia acumulava seis blocos abertos ao mesmo tempo — resumo colorido, médias,
+   três grades de KPI, semanais, metas, fixas e gráficos — com muita informação
+   repetida entre eles. Agora cada bloco vira uma seção que abre sob demanda, e
+   as grades de KPI foram agrupadas numa só, chamada "Resumo".
+   ============================================================ */
+/* envolve um bloco já renderizado numa seção suspensa, preservando o HTML interno */
+function opEnvolver(elId, secId, titulo){
+  const el=document.getElementById(elId);
+  if(!el || !el.innerHTML.trim())return;
+  if(el.dataset.env==='1')return;
+  const dentro=el.innerHTML;
+  el.innerHTML=secWrap(secId,titulo,dentro);
+  el.dataset.env='1';
+}
+function opDesenvolver(elId){
+  const el=document.getElementById(elId);
+  if(el)el.dataset.env='';
+}
+
+function opMontarSecoes(){
+  const src=document.getElementById('opResumoSrc');
+  const wrap=document.getElementById('opResumoWrap');
+  if(src && wrap && !wrap.dataset.pronto){
+    wrap.innerHTML=secWrap('op-resumo','Resumo do mês','<div id="opResumoSlot"></div>');
+    const slot=document.getElementById('opResumoSlot');
+    if(slot){ slot.appendChild(src); src.style.display=''; }
+    wrap.dataset.pronto='1';
+  }
+}
+
 function renderOperacao(rows,tot){
+  opMontarSecoes();
   if(!rows){rows=ensureMonth(state.uber.current);}
   if(!tot)tot=monthTotals(rows);
 
@@ -4080,6 +4314,8 @@ function renderOperacao(rows,tot){
   // ---- GRÁFICOS Semanal / Mensal / Últimos 3 meses / Anual / Pizzas ----
   const oc=document.getElementById('opCharts');
   if(oc){
+    opDesenvolver('opCharts');
+    setTimeout(()=>opEnvolver('opCharts','op-graficos','Gráficos'),0);
     const wdNames=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
     const wd=[[],[],[],[],[],[],[]];
     rows.forEach(r=>{ if(!r.data)return; const dt=new Date(r.data+'T00:00:00'); wd[(dt.getDay()+6)%7].push(r); });
@@ -4219,6 +4455,8 @@ function weekRangeLabel(mondayStr){
    ============================================================ */
 function renderOpStats(rows,tot){
   const el=document.getElementById('opStats'); if(!el)return;
+  opDesenvolver('opStats');
+  setTimeout(()=>opEnvolver('opStats','op-medias','Médias do mês'),0);
   if(!rows.length){ el.innerHTML=''; return; }
   const diasTrab=rows.filter(r=>{ const c=rowCalc(r); return (r.corridas||0)>0 || c.ganho>0; }).length;
   const per=(v,b)=>b>0?v/b:0;
@@ -4245,6 +4483,8 @@ function renderOpStats(rows,tot){
 
 function renderOpWeekly(rows,tot){
   const el=document.getElementById('opWeekly'); if(!el)return;
+  opDesenvolver('opWeekly');
+  setTimeout(()=>opEnvolver('opWeekly','op-semanais','Ganhos semanais'),0);
   if(!rows.length){
     el.innerHTML=`<div class="panel" style="padding:18px 20px"><h2 style="margin:0 0 4px">📅 Ganhos semanais</h2><div class="week-empty">Nenhum lançamento em ${monthLabel()} ainda.</div></div>`;
     return;
@@ -5452,8 +5692,7 @@ function pessoalYearTotal(y){
 }
 function pNavBack(){
   resetSecoes();
-  if(_pNavLevel==='dias')_pNavLevel='meses';
-  else if(_pNavLevel==='meses')_pNavLevel='anos';
+  _pNavLevel='anos';   /* tela única */
   renderPessoalMobile();
 }
 function pNavGoMeses(y){ resetSecoes(); _pNavYear=y; _pNavLevel='meses'; renderPessoalMobile(); }
@@ -5472,26 +5711,57 @@ function renderPessoalMobile(){
   return pRenderDias();
 }
 function pRenderAnos(){
+  /* mesma tela única do Trabalho — ver comentário em uRenderAnos */
   pNavSetHeader('Pessoal',false);
   const years=pessoalYears();
-  const anoAtual=new Date().getFullYear();
-  const destaque=years.filter(y=>y===anoAtual);
-  const resto=years.filter(y=>y!==anoAtual);
-  const cardGrande=destaque.map(y=>`<div class="a-hero a-hero-click" onclick="pNavGoMeses(${y})">
-      <div class="a-hero-k">${y} · ano atual</div>
-      <div class="a-hero-v" style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</div>
-      <div class="a-hero-s">toque para ver os meses</div>
-    </div>`).join('');
-  const lista=resto.map(y=>`<div class="mo-listrow" onclick="pNavGoMeses(${y})">
-      <span class="mo-listrow-nome">${y}</span>
-      <span class="mo-listrow-val" style="color:var(--expense)">${fmt(pessoalYearTotal(y))}</span>
-      ${_delAnoMob(y,'pessoal')}
-      <span class="mo-listrow-arrow">›</span>
-    </div>`).join('');
+  const hoje=new Date(), anoAtual=hoje.getFullYear(), mesAtual=hoje.getMonth()+1;
+  if(_pNavYear==null)_pNavYear=anoAtual;
+  const y=_pNavYear;
+  const keyMes=`${y}-${pad(mesAtual)}`;
+  const rowsMes=state.pessoal.months[keyMes]||[];
+  const totMes=monthTotalsP(rowsMes).gastoDia;
+  const totAno=pessoalYearTotal(y);
+  const ehAnoAtual=(y===anoAtual);
+
+  const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="pNavSetYear(${yy})">${yy}</button>`).join('')
+    +_btnAddAno('pessoal')+_btnRemoveAno(y,'pessoal');
+
+  const topo=`<div class="a-duo">
+    <div class="a-duo-c" onclick="${ehAnoAtual?`pNavGoDias('${keyMes}')`:''}">
+      <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
+      <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
+      <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
+      ${ehAnoAtual?`<button class="a-duo-add" onclick="event.stopPropagation();pAddHoje('${keyMes}')" aria-label="Lançar hoje">+</button>`:''}
+    </div>
+    <div class="a-duo-c">
+      <div class="a-duo-k">Ano ${y}</div>
+      <div class="a-duo-v" style="color:var(--expense)">${fmt(totAno)}</div>
+      <div class="a-duo-s">acumulado</div>
+    </div>
+  </div>`;
+
+  let meses='';
+  for(let m=1;m<=12;m++){
+    if(ehAnoAtual && m===mesAtual)continue;
+    const key=`${y}-${pad(m)}`;
+    const rows=state.pessoal.months[key]||[];
+    const has=rows.length>0;
+    const tot=monthTotalsP(rows).gastoDia;
+    meses+=`<div class="a-mrow${has?'':' empty'}" onclick="pNavGoDias('${key}')">
+      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${rows.length} dia(s)</small>`:''}</div>
+      <div class="a-mrow-v"${has?' style="color:var(--expense)"':''}>${has?fmt(tot):'—'}</div>
+      <span class="a-mrow-ar">›</span>
+    </div>`;
+  }
+
   document.getElementById('pNavBody').innerHTML=
-    (cardGrande?`<div class="mo-destaque-wrap">${cardGrande}</div>`:'')
-    +(lista?`<div class="mo-lista">${lista}</div>`:'');
+    `<div class="yr-bar">${yearBtns}</div>`
+    +topo
+    +secWrap('p-meses','Outros meses',`<div class="a-mlist">${meses}</div>`)
+    +secWrap('p-evolucao','Evolução',`<div id="perPanel-pessoal-m"></div>`);
+  renderPeriodPanel('pessoal');
 }
+function pNavSetYear(y){ _pNavYear=y; state.pessoal.year=y; save(); renderPessoalMobile(); }
 function pRenderMeses(){
   const y=_pNavYear;
   pNavSetHeader(String(y),true);
@@ -5899,7 +6169,7 @@ function abRenderMeses(){
       <div class="a-tile"><div class="t">Custo por km</div><div class="v">${totAno>0?fmt(gastoAno/totAno):'—'}</div></div>
       <div class="a-tile"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
     </div>
-    <div class="a-mlist">${cards}</div>
+    ${secWrap('ab-meses','Meses',`<div class="a-mlist">${cards}</div>`)}
     ${abKmChart(chartItems)}`;
 }
 function abRenderLista(){
@@ -6174,20 +6444,100 @@ function mRenderMeses(){
   const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('')+_btnAddAno('manut')+_btnRemoveAno(y,'manut');
   const mStart=1;
   let cards='';
+  let gastoAno=0, servicosAno=0, ultimo=null;
   for(let m=mStart;m<=12;m++){
     const key=`${y}-${pad(m)}`;
     const rows=state.manutencao.months[key]||[];
     const has=rows.length>0;
     const tot=monthTotalsManut(rows);
-    cards+=`<div class="mo-card mo-pick${has?'':' empty'}" onclick="mNavGoLista('${key}')">
-      <div class="mo-h">${MESES[m-1]}</div>
-      ${has?`<div class="mo-row tot"><span>🔧 Gasto</span><b style="color:var(--expense)">${fmt(tot.valor)}</b></div>
-      <div class="mo-row"><span>${tot.count} serviço(s)</span></div>`:`<div class="mo-empty">sem lançamentos</div>`}
-    </div>`;
+    gastoAno+=tot.valor; servicosAno+=tot.count;
+    if(has)ultimo={mes:m,tot};
+    /* mês vira linha; toque abre o modal com os serviços daquele mês */
+    if(has){
+      cards+=`<div class="a-mrow" onclick="abrirManutModal('${key}')">
+        <div class="a-mrow-l"><b>${MESES[m-1]}</b><small>${tot.count} serviço(s)</small></div>
+        <div class="a-mrow-v" style="color:var(--expense)">${fmt(tot.valor)}</div>
+        <span class="a-mrow-ar">›</span>
+      </div>`;
+    }else{
+      cards+=`<div class="a-mrow empty" onclick="abrirManutModal('${key}')">
+        <div class="a-mrow-l"><b>${MESES[m-1]}</b></div>
+        <div class="a-mrow-v">—</div>
+        <span class="a-mrow-ar">›</span>
+      </div>`;
+    }
   }
   document.getElementById('manutNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}</div>
-    <div class="month-cards mo-nav">${cards}</div>`;
+    <div class="a-hero">
+      <div class="a-hero-k">Manutenção em ${y}</div>
+      <div class="a-hero-v" style="color:var(--expense)">${fmt(gastoAno)}</div>
+      <div class="a-hero-s">${servicosAno} serviço(s)${ultimo?` · último em ${MESES[ultimo.mes-1].toLowerCase()}`:''}</div>
+    </div>
+    <div class="a-grid3 two">
+      <div class="a-tile"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
+      <div class="a-tile"><div class="t">Por serviço</div><div class="v">${servicosAno>0?fmt(gastoAno/servicosAno):'—'}</div></div>
+    </div>
+    ${secWrap('mn-meses','Meses',`<div class="a-mlist">${cards}</div>`)}`;
+}
+
+/* ============================================================
+   MODAL DE MANUTENÇÃO DO MÊS
+   Antes cada mês era um card e o toque trocava de tela. Agora a lista é suspensa
+   e o mês abre numa folha — dá para conferir um mês e voltar sem perder o lugar.
+   ============================================================ */
+function abrirManutModal(key){
+  const rows=state.manutencao.months[key]||[];
+  const tot=monthTotalsManut(rows);
+  const {y,m}=monthKeyParts(key);
+  let corpo;
+  if(!rows.length){
+    corpo=`<div class="lanc-empty">Nenhum serviço lançado em ${MESES[m-1].toLowerCase()}.</div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
+        onclick="fecharManutModal();mNavGoLista('${key}')">Abrir o mês para lançar</button>`;
+  }else{
+    const itens=rows.map(r=>{
+      const dests=(r.rateio||[]).filter(a=>a.valor>0).map(a=>{
+        const d=MANUT_DESTINOS.find(x=>x.key===a.destino); return d?d.label:a.destino;
+      });
+      return `<div class="a-item">
+        <div class="a-ic cost">🔧</div>
+        <div class="a-mid">
+          <b>${r.descricao||'Serviço'}</b>
+          <small>${r.data?fmtDateBR(r.data):''}${r.km?` · ${fmtN(r.km,0)} km`:''}${dests.length?` · ${dests.join(', ')}`:''}</small>
+        </div>
+        <div class="a-amt" style="color:var(--expense)">${fmt(r.valor||0)}</div>
+      </div>`;
+    }).join('');
+    corpo=`<div class="a-grid3 two" style="margin-bottom:12px">
+        <div class="a-tile"><div class="t">Total do mês</div><div class="v cost">${fmt(tot.valor)}</div></div>
+        <div class="a-tile"><div class="t">Serviços</div><div class="v">${tot.count}</div></div>
+      </div>
+      ${itens}
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px"
+        onclick="fecharManutModal();mNavGoLista('${key}')">Abrir o mês para editar</button>`;
+  }
+  let ov=document.getElementById('manutModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='manutModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharManutModal(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h">
+      <b>${MESES[m-1]} ${y}</b>
+      <button class="a-sheet-x" onclick="fecharManutModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="a-sheet-b">${corpo}</div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharManutModal(true));
+}
+function fecharManutModal(fromBack){
+  const ov=document.getElementById('manutModal');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
 }
 function mRenderLista(){
   const key=state.manutencao.current;
