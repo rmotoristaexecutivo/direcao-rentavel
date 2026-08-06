@@ -5318,9 +5318,23 @@ function recalcRowFromLists(r){
   });
   r.alim=alim; r.manut=manut; r.combExtra=comb; r.kwhExtra=kwh; r.manutUber=manutUber;
 }
+let _salvandoLanc=false;
 function saveLancamento(){
+  /* ============================================================
+     TRAVA CONTRA LANÇAMENTO DUPLICADO
+     Sem ela, um duplo toque no botão salvar rodava a função duas vezes antes do
+     modal fechar — e como _pendingItems ainda estava cheio, os mesmos itens eram
+     gravados de novo. Resultado: dois lançamentos idênticos no mesmo dia.
+     ============================================================ */
+  if(_salvandoLanc)return;
+  _salvandoLanc=true;
+  setTimeout(()=>{_salvandoLanc=false},1200);
+  try{ _saveLancamentoInterno(); }
+  finally{ /* libera já se deu tudo certo; o timeout acima é só rede de segurança */ }
+}
+function _saveLancamentoInterno(){
   const date=document.getElementById('mData').value;
-  if(!date){ alert('Escolha a data.'); return; }
+  if(!date){ alert('Escolha a data.'); _salvandoLanc=false; return; }
   // se ainda há algo digitado nos campos e não foi "adicionado", inclui automaticamente como último item
   if(_modalKind==='entrada'){
     const v=parseNum(document.getElementById('mValor').value);
@@ -5335,7 +5349,7 @@ function saveLancamento(){
       if(v>0)addPendingSaida();
     }
   }
-  if(!_pendingItems.length){ alert('Adicione pelo menos um item.'); return; }
+  if(!_pendingItems.length){ alert('Adicione pelo menos um item.'); _salvandoLanc=false; return; }
   const monthKey=date.slice(0,7);
   if(monthKey!==state.uber.current){ state.uber.current=monthKey; state.uber.year=Number(monthKey.slice(0,4)); }
   const rows=ensureMonth(monthKey);
@@ -5353,7 +5367,11 @@ function saveLancamento(){
     r.gastosExtra.push(..._pendingItems);
     recalcRowFromLists(r);
   }
+  /* zera a pilha ANTES de qualquer coisa assíncrona: mesmo que a função seja
+     chamada de novo, não há mais o que regravar */
+  _pendingItems=[];
   save(); closeLancModal(); renderUber();
+  _salvandoLanc=false;
   toast(_modalKind==='entrada'?'Entrada salva':'Saída salva');
 }
 
@@ -6196,7 +6214,10 @@ function abNavGoLista(key){ state.abastecimentos.current=key; state.abasteciment
 function abNavSetHeader(title,showBack){
   const t=document.getElementById('abastNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('abastBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('abastFab'); if(fab)fab.style.display=(_abNavLevel==='lista')?'':'none';
+  /* o + some quando a tela não é a lista de um mês — mas depois que os meses
+     viraram lista suspensa, a tela inicial deixou de ser 'lista' e o botão nunca
+     mais aparecia. Agora vale nos dois níveis: no de meses, lança no mês atual. */
+  const fab=document.getElementById('abastFab'); if(fab)fab.style.display='';
   // botão desktop aparece tanto na lista de um mês quanto na tela de meses (add direto)
   const addD=document.getElementById('abastAddDesktop'); if(addD)addD.style.display=(_abNavLevel==='lista'||_abNavLevel==='meses')?'':'none';
 }
@@ -6418,6 +6439,12 @@ function abUpdateValorTotal(){
   set('abSubComb',subComb); set('abSubEl',subEl); set('abValorTotal',total);
 }
 function openAbastModal(i){
+  /* se veio da tela de meses, o mês corrente pode estar apontando para outro lugar:
+     ancora no mês de hoje para não gravar num mês que a pessoa não escolheu */
+  if(i==null && _abNavLevel!=='lista'){
+    const hoje=new Date();
+    state.abastecimentos.current=hoje.getFullYear()+'-'+pad(hoje.getMonth()+1);
+  }
   _abastEditIdx=(i==null?null:i);
   const key=state.abastecimentos.current;
   const rows=ensureAbastMonth(key);
@@ -6476,7 +6503,12 @@ function openAbastModal(i){
   navPush(()=>closeAbastModal(true), ()=>_modalTyped);
 }
 function closeAbastModal(fromBack){ document.getElementById('abastModal').classList.remove('open'); _abastEditIdx=null; if(!fromBack)navPop(); }
+let _salvando_saveAbastEntry=false;
 function saveAbastEntry(){
+  /* mesma trava do lançamento: evita gravar duas vezes com duplo toque */
+  if(_salvando_saveAbastEntry)return;
+  _salvando_saveAbastEntry=true;
+  setTimeout(()=>{_salvando_saveAbastEntry=false},1200);
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
   const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
@@ -6585,7 +6617,7 @@ function mNavGoLista(key){ state.manutencao.current=key; state.manutencao.year=N
 function mNavSetHeader(title,showBack){
   const t=document.getElementById('manutNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('manutBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('manutFab'); if(fab)fab.style.display=(_mNavLevel==='lista')?'':'none';
+  const fab=document.getElementById('manutFab'); if(fab)fab.style.display='';
   const add=document.getElementById('manutAddBtn'); if(add)add.style.display=(_mNavLevel==='lista')?'':'none';
   const sp=document.getElementById('manutSpacer'); if(sp)sp.style.display=(_mNavLevel==='lista')?'none':'';
 }
@@ -6735,6 +6767,10 @@ function mRenderLista(){
 /* ===== MODAL: nova/editar manutenção ===== */
 let _manutEditIdx=null;
 function openManutModal(i){
+  if(i==null && _mNavLevel!=='lista'){
+    const hoje=new Date();
+    state.manutencao.current=hoje.getFullYear()+'-'+pad(hoje.getMonth()+1);
+  }
   _manutEditIdx=(i==null?null:i);
   const key=state.manutencao.current;
   const rows=ensureManutMonth(key);
@@ -6836,7 +6872,12 @@ function onManutRateioInput(){
     box.style.display=''; msg.value=`✓ Rateio confere: ${fmt(soma)}`; msg.style.color='var(--gain)';
   } else { box.style.display='none'; }
 }
+let _salvando_saveManutEntry=false;
 function saveManutEntry(){
+  /* mesma trava do lançamento: evita gravar duas vezes com duplo toque */
+  if(_salvando_saveManutEntry)return;
+  _salvando_saveManutEntry=true;
+  setTimeout(()=>{_salvando_saveManutEntry=false},1200);
   const data=document.getElementById('mnData').value;
   if(!data){ alert('Escolha a data.'); return; }
   const garantia=!!document.getElementById('mnGarantia').checked;
