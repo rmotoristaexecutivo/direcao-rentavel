@@ -2608,6 +2608,27 @@ function togglePago(tbodyId,i,val){
   const plan = tbodyId==='entradaSched'?state.finance.entrada:state.finance.fin;
   plan.pagos[i]=val;save();renderFinance();
 }
+/* ============================================================
+   STATUS E CONTAGEM DE PARCELAS
+   Estavam declaradas dentro de renderFinanceMobile, o que as deixava invisíveis
+   para os modais de Entrada/Financiamento/Configuração — os três atalhos do topo
+   quebravam em silêncio ao serem tocados.
+   ============================================================ */
+function parcelaStatus(plan,i){
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(plan.pagos[i])return{ic:'✅',cls:'pago',key:'pagas'};
+  const vd=new Date(addMonths(plan.inicio,i)+'T00:00:00');
+  return vd<today?{ic:'🔴',cls:'atraso',key:'atraso'}:{ic:'⏳',cls:'pend',key:'avencer'};
+}
+function contarParcelas(plan){
+  let pagas=0,atraso=0,aven=0;
+  for(let i=0;i<plan.parcelas;i++){
+    const s=parcelaStatus(plan,i);
+    if(s.key==='pagas')pagas++; else if(s.key==='atraso')atraso++; else aven++;
+  }
+  return{pagas,atraso,aven};
+}
+
 function renderFinance(){
   calcFinance();   // garante parcelas recalculadas (entrada÷nº, financiado, Price)
   const f=state.finance;
@@ -2668,14 +2689,9 @@ function renderFinanceMobile(){
   const pctTudo=totalDivida>0?(totalPago/totalDivida*100):0;
   const jurosFin=totFin-f.fin.valor, jurosCartao=totEntrada-f.entrada.valor;
 
-  const st=(plan,i)=>{ const today=new Date();today.setHours(0,0,0,0);
-    if(plan.pagos[i])return{ic:'✅',cls:'pago',key:'pagas'};
-    const vd=new Date(addMonths(plan.inicio,i)+'T00:00:00');
-    return vd<today?{ic:'🔴',cls:'atraso',key:'atraso'}:{ic:'⏳',cls:'pend',key:'avencer'}; };
-
-  // próximas parcelas e contadores
-  const cont=(plan)=>{let pagas=0,atraso=0,aven=0;for(let i=0;i<plan.parcelas;i++){const s=st(plan,i);if(s.key==='pagas')pagas++;else if(s.key==='atraso')atraso++;else aven++;}return{pagas,atraso,aven};};
-  const cFin=cont(f.fin), cEnt=cont(f.entrada);
+  const st=parcelaStatus;   /* agora global — os modais também precisam dela */
+  const cont=contarParcelas;
+  const cFin=contarParcelas(f.fin), cEnt=contarParcelas(f.entrada);
 
   /* ============================================================
      TELA MOBILE DO FINANCIAMENTO — redesign (cenário A)
@@ -6660,10 +6676,13 @@ function abrirManutModal(key){
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px"
         onclick="fecharManutModal();mNavGoLista('${key}')">Abrir o mês para editar</button>`;
   }
-  let ov=document.getElementById('manutModal');
+  /* id próprio: 'manutModal' já era do formulário de nova/editar manutenção, e
+     reaproveitá-lo apagava aquele formulário do DOM — depois de abrir este modal,
+     não dava mais para criar nem editar serviço. */
+  let ov=document.getElementById('manutMesModal');
   if(!ov){
     ov=document.createElement('div');
-    ov.id='manutModal'; ov.className='a-sheet-ov';
+    ov.id='manutMesModal'; ov.className='a-sheet-ov';
     ov.addEventListener('click',e=>{ if(e.target===ov)fecharManutModal(); });
     document.body.appendChild(ov);
   }
@@ -6678,7 +6697,7 @@ function abrirManutModal(key){
   navPush(()=>fecharManutModal(true));
 }
 function fecharManutModal(fromBack){
-  const ov=document.getElementById('manutModal');
+  const ov=document.getElementById('manutMesModal');
   if(ov)ov.classList.remove('open');
   if(!fromBack)navPop();
 }
