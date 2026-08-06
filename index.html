@@ -773,6 +773,29 @@ table.sched{min-width:0}
 .a-op.cost .a-op-ic{background:var(--expense-bg);color:var(--expense)}
 .a-op-t{font-size:11.5px;font-weight:600;color:var(--txt-dim)}
 
+/* totais do ano da Corp, em linha própria abaixo dos botões de ano */
+.a-yeartot{display:flex;gap:14px;justify-content:space-between;margin:0 0 12px;
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:11px 14px}
+.a-yeartot span{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.a-yeartot i{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--txt-faint)}
+.a-yeartot b{font-family:'Barlow Condensed','Sora',sans-serif;font-size:18px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* categorias como faixa dentro do card do mês */
+.a-cats{margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.22)}
+.a-cats-t{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;
+  opacity:.75;margin-bottom:8px}
+.a-cats-l{display:flex;gap:7px;flex-wrap:wrap}
+.a-cat{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);
+  border-radius:9px;padding:5px 10px;font-size:12px}
+.a-cat i{font-style:normal;opacity:.85}
+.a-cat b{font-family:'Barlow Condensed',sans-serif;font-size:15px}
+
+/* mês selecionado na lista da Corp */
+.a-mrow.on{background:var(--neutral-bg)}
+.a-mrow.on .a-mrow-l b{color:var(--neutral)}
+
 /* meses sem lançamento: a lista precisa ser varrida com o olho, não lida.
    Rótulo à esquerda, valor à direita, e o mês vazio recuado em opacidade. */
 .mo-listrow{border-radius:13px;padding:13px 14px}
@@ -1752,8 +1775,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <!-- =================== ABA OPERAÇÃO (UBER) =================== -->
   <section class="view" id="view-operacao">
 
-    <div id="opNav"></div>
-
     <!-- ===== AÇÕES NO TOPO (redesign) =====
          Antes ficavam no meio da tela, depois do card de resumo. Lançar é a ação
          mais frequente da guia e estava atrás de rolagem. -->
@@ -1765,6 +1786,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <button class="a-op" id="btnVerLanc" onclick="openLancamentosModal()">
         <span class="a-op-ic">≡</span><span class="a-op-t">Lançamentos</span></button>
     </div>
+
+    <div id="opNav"></div>
 
     <!-- ===== RELATÓRIO DO MÊS (card unificado) ===== -->
     <div id="opReportCard"></div>
@@ -3282,24 +3305,28 @@ function renderUberNav(){
       :`<div class="mo-empty">sem lançamentos</div>`}
     </div>`;
     // aba CORP: ganhos/gastos/lucro da operação
-    cardsCorp+=`<div class="mo-card mo-pick${active?' active':''}${has?'':' empty'}" onclick="selectUberMonth('${key}')">
-      <div class="mo-h">${MESES[m-1]}</div>
-      ${has?`<div class="mo-row"><span>💵 Ganhos</span><b style="color:var(--gain)">${fmt(a.ganho)}</b></div>
-      <div class="mo-row"><span>💸 Gastos</span><b style="color:var(--expense)">${fmt(a.gasto)}</b></div>
-      <div class="mo-row tot"><span>Lucro</span><b style="color:${a.lucro>=0?'var(--gain)':'var(--expense)'}">${fmt(a.lucro)}</b></div>`
-      :`<div class="mo-empty">sem lançamentos</div>`}
+    /* mês da Corp vira linha: nome, ganhos/gastos em texto pequeno e o lucro à direita */
+    cardsCorp+=`<div class="a-mrow${has?'':' empty'}${active?' on':''}" onclick="selectUberMonth('${key}')">
+      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${fmt(a.ganho)} − ${fmt(a.gasto)}</small>`:''}</div>
+      <div class="a-mrow-v"${has?` style="color:${a.lucro>=0?'var(--gain)':'var(--expense)'}"`:''}>${has?fmt(a.lucro):'—'}</div>
+      <span class="a-mrow-ar">›</span>
     </div>`;
   }
   const navTrab=`
     <div class="yr-bar">${yearBtns}</div>
     <div class="month-cards mo-nav">${cardsTrab}</div>
     <div class="sel-month">📋 Editando: <b>${monthLabel()}</b></div>`;
+  /* o total do ano saiu de cima, colado nos botões de ano, para uma linha própria
+     abaixo deles — lá em cima ele disputava espaço e quebrava o alinhamento */
   const navCorp=`
-    <div class="yr-bar">${yearBtns}
-      <span class="yr-tot">Ano ${selYear}: 💵 ${fmt(totY.ganho)} · 💸 ${fmt(totY.gasto)} · 📊 <b style="color:${totY.lucro>=0?'var(--gain)':'var(--expense)'}">${fmt(totY.lucro)}</b></span>
+    <div class="yr-bar">${yearBtns}</div>
+    <div class="a-yeartot">
+      <span><i>Ganhos</i><b style="color:var(--gain)">${fmt(totY.ganho)}</b></span>
+      <span><i>Gastos</i><b style="color:var(--expense)">${fmt(totY.gasto)}</b></span>
+      <span><i>Lucro ${selYear}</i><b style="color:${totY.lucro>=0?'var(--gain)':'var(--expense)'}">${fmt(totY.lucro)}</b></span>
     </div>
-    <div class="month-cards mo-nav">${cardsCorp}</div>
-    <div class="sel-month">📋 Editando: <b>${monthLabel()}</b></div>`;
+    ${secWrap('op-meses','Meses',`<div class="a-mlist">${cardsCorp}</div>`)}
+    <div class="sel-month">Editando: <b>${monthLabel()}</b></div>`;
   const et=document.getElementById('uberNav'); if(et)et.innerHTML=navTrab;
   const ec=document.getElementById('opNav'); if(ec)ec.innerHTML=navCorp;
 }
@@ -4406,11 +4433,13 @@ function renderOpReportCard(rows,tot){
   const catsU=categoriasTotais(rows,'Uber'), catsN=categoriasTotais(rows,'99');
   const catsUActive=UBER_CATS.filter(c=>catsU[c.key]>0);
   const catsNActive=NN_CATS.filter(c=>catsN[c.key]>0);
-  const bloco=(titulo,active,cats)=>active.length?`<div class="panel" style="padding:14px 18px;margin-top:10px">
-    <h2 style="margin:0 0 10px;font-size:14.5px">${titulo} — ${monthLabel()}</h2>
-    <div class="week-apps" style="margin-top:0">${active.map(c=>`<span class="week-app-chip"><span class="nm">${c.label}</span><span class="vl">${fmtN(cats[c.key],0)}</span></span>`).join('')}</div>
+  /* categorias deixam de ser card próprio e viram uma faixa de chips dentro do
+     card do mês — eram duas caixas ocupando meia tela para mostrar um número */
+  const bloco=(titulo,active,cats)=>active.length?`<div class="a-cats">
+    <div class="a-cats-t">${titulo}</div>
+    <div class="a-cats-l">${active.map(c=>`<span class="a-cat"><i>${c.label}</i><b>${fmtN(cats[c.key],0)}</b></span>`).join('')}</div>
   </div>`:'';
-  const catsHtml=bloco('🚕 Corridas Uber por categoria',catsUActive,catsU)+bloco('🚕 Corridas 99 por categoria',catsNActive,catsN);
+  const catsHtml=bloco('Corridas Uber',catsUActive,catsU)+bloco('Corridas 99',catsNActive,catsN);
   el.innerHTML=`
     <div class="op-hero">
       <div class="op-hero-top">
@@ -4432,8 +4461,8 @@ function renderOpReportCard(rows,tot){
         <div class="op-hero-item"><div class="lbl">📍 Ganho por km</div><div class="val">${tot.kmTotal>0?fmt(gpk):'R$ -'}</div></div>
         <div class="op-hero-item"><div class="lbl">⏳ Ganho por hora</div><div class="val">${tot.horas>0?fmt(gph):'R$ -'}</div></div>
       </div>
-    </div>
-    ${catsHtml}`;
+      ${catsHtml}
+    </div>`;
 }
 
 /* ============================================================
