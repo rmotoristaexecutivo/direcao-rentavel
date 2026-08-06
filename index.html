@@ -1596,8 +1596,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <div class="tabs">
     <button class="tab active" data-tab="finance">💳 Financiamento</button>
-    <button class="tab" data-tab="uber">🏢 Despesas trabalho</button>
-    <button class="tab" data-tab="operacao">🚗 Corp Pessoal</button>
+    <button class="tab" data-tab="uber">🏢 Corp</button>
+    <button class="tab" data-tab="operacao">🚗 APP</button>
     <button class="tab" data-tab="pessoal">👤 Despesa Pessoal</button>
     <button class="tab" data-tab="abastecimento">⛽ Abastecimentos</button>
     <button class="tab" data-tab="manutencao">🔧 Manutenção</button>
@@ -1606,10 +1606,10 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <!-- ===== BOTTOM NAV (mobile) ===== -->
   <nav id="mobileNav">
-    <button data-tab="finance" onclick="mobileGoTab('finance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg></span>Financ.</button>
-    <button data-tab="uber" onclick="mobileGoTab('uber')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 21h4V11l-4-2"/><path d="M7 10h3M7 14h3M7 18h3"/></svg></span>Trabalho</button>
-    <button data-tab="operacao" onclick="mobileGoTab('operacao')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.3-4.6A2 2 0 0 0 15.8 10H8.2a2 2 0 0 0-1.9 1.4L5 16Z"/><path d="M4 16v3M20 16v3"/><circle cx="7.5" cy="16" r="1.4"/><circle cx="16.5" cy="16" r="1.4"/></svg></span>Corp</button>
-    <button data-tab="pessoal" class="active" onclick="mobileGoTab('pessoal')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg></span>Pessoal</button>
+    <button data-tab="finance" class="active" onclick="mobileGoTab('finance')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20"/></svg></span>Financ.</button>
+    <button data-tab="operacao" onclick="mobileGoTab('operacao')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.3-4.6A2 2 0 0 0 15.8 10H8.2a2 2 0 0 0-1.9 1.4L5 16Z"/><path d="M4 16v3M20 16v3"/><circle cx="7.5" cy="16" r="1.4"/><circle cx="16.5" cy="16" r="1.4"/></svg></span>APP</button>
+    <button data-tab="uber" onclick="mobileGoTab('uber')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 21h4V11l-4-2"/><path d="M7 10h3M7 14h3M7 18h3"/></svg></span>Corp</button>
+    <button data-tab="pessoal" onclick="mobileGoTab('pessoal')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1-4 4-6 7.5-6s6.5 2 7.5 6"/></svg></span>Pessoal</button>
     <button data-tab="abastecimento" onclick="mobileGoTab('abastecimento')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M14 9h3.5a1.5 1.5 0 0 1 1.5 1.5V17a1.6 1.6 0 0 0 3 0v-6l-2.4-2.4"/><path d="M7 8h5"/></svg></span>Abastec.</button>
     <button data-tab="manutencao" onclick="mobileGoTab('manutencao')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 4.5a4.5 4.5 0 0 0-5.9 5.7L4 15.8 8.2 20l5.6-5.6a4.5 4.5 0 0 0 5.7-5.9l-2.8 2.8-2.3-.6-.6-2.3 2.7-2.9Z"/></svg></span>Manut.</button>
     <button data-tab="resumo" onclick="mobileGoTab('resumo')"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span>Resumo</button>
@@ -1745,7 +1745,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     <div class="mobile-only">
       <div class="m-navbar" id="uNavbar">
         <button class="uNavBackBtn" id="uBackBtn" onclick="uNavBack()" aria-label="Voltar">‹</button>
-        <div class="m-navbar-title" id="uNavTitle">Trabalho</div>
+        <div class="m-navbar-title" id="uNavTitle">Corp</div>
         <span class="m-navbar-spacer"></span>
       </div>
       <div id="uNavBody"></div>
@@ -3614,7 +3614,7 @@ function uRenderAnos(){
      mais para chegar em qualquer lugar. Agora mês e ano vivem juntos no topo, e
      "Outros meses" e "Evolução" ficam aqui embaixo.
      ============================================================ */
-  uNavSetHeader('Trabalho',false);
+  uNavSetHeader('Corp',false);
   const years=uberYears();
   const hoje=new Date(), anoAtual=hoje.getFullYear(), mesAtual=hoje.getMonth()+1;
   if(_uNavYear==null)_uNavYear=anoAtual;
@@ -5315,7 +5315,7 @@ const NN_CATS=[{key:'pop',label:'POP'},{key:'eletric',label:'Eletric'}];
 const GASTO_CATS=['Alimentação','Borracharia','Combustível','DAS MEI','Funilaria','Internet','IPVA','Lavagem','Licenciamento','Manutenção','Mecânico','Multas','Outro','Prestação','Reserva','Revisão','Seguro','TAG','Troca de Óleo'];
 const MANUT_SERVICOS=['Alinhamento/balanceamento','Ar condicionado','Bateria','Bomba de combustível','Correia/Corrente','Direção Hidráulica/Elétrica','Embreagem','Filtro de Ar','Filtro de Ar da Cabine','Filtro de Combustível','Fluido da Embreagem','Fluido de Freio','Fluido da Transmissão','Funilaria','Inspeção Técnica','Lâmpada/Farol','Limpador do Para-brisa','Mão de Obra','Óleo (troca)','Óleo (completar)','Orçamento','Pastilha de freio','Pneu (troca)','Pneu (reparo)','Pneu (rodízio)','Radiador','Revisão','Suspensão/Amortecedor','Vela de Ignição','Vidro/Espelho','Outro'];
 const MANUT_FORMAS=['Cartão de Crédito','Cartão de Débito','Pix','Boleto','Dinheiro','Outros'];
-const MANUT_DESTINOS=[{key:'uber',label:'🏢 Trabalho'},{key:'corp',label:'🚗 Corp'},{key:'pessoal',label:'👤 Pessoal'}];
+const MANUT_DESTINOS=[{key:'uber',label:'🏢 Corp'},{key:'corp',label:'🚗 APP'},{key:'pessoal',label:'👤 Pessoal'}];
 const FORMA_PGTO=['Cartão de Crédito','Cartão de Débito','Dinheiro','Pix'];
 const WD_NOMES=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
 const WD_CURTO=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -6659,8 +6659,8 @@ function mRenderLista(){
 
   const kpisHtml=`<div class="kpis">
     <div class="kpi expense"><div class="k-label">Total do mês</div><div class="k-val">${fmt(tot.valor)}</div><div class="k-sub">${tot.count} serviço(s)</div></div>
-    ${tot.uber>0?`<div class="kpi"><div class="k-label">Trabalho</div><div class="k-val">${fmt(tot.uber)}</div></div>`:''}
-    ${tot.corp>0?`<div class="kpi"><div class="k-label">Corp</div><div class="k-val">${fmt(tot.corp)}</div></div>`:''}
+    ${tot.uber>0?`<div class="kpi"><div class="k-label">Corp</div><div class="k-val">${fmt(tot.uber)}</div></div>`:''}
+    ${tot.corp>0?`<div class="kpi"><div class="k-label">APP</div><div class="k-val">${fmt(tot.corp)}</div></div>`:''}
     ${tot.pessoal>0?`<div class="kpi"><div class="k-label">Pessoal</div><div class="k-val">${fmt(tot.pessoal)}</div></div>`:''}
   </div>`;
   const listHtml = rows.length ? rows.map((r,i)=>{
@@ -6852,8 +6852,8 @@ const RES_FONTES_ENT={};
 RES_APPS.forEach(([nome,slug])=>{ RES_FONTES_ENT[slug]={label:nome,cor:'var(--gain)'}; });
 /* fontes de SAÍDA */
 const RES_FONTES_SAI={
-  trabalho:     {label:'🏢 Trabalho',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
-  corp:         {label:'🚗 Corp',          cor:'var(--expense)', sub:'energia, alimentação, manutenção'},
+  trabalho:     {label:'🏢 Corp',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
+  corp:         {label:'🚗 APP',          cor:'var(--expense)', sub:'energia, alimentação, manutenção'},
   pessoal:      {label:'👤 Pessoal',       cor:'var(--expense)', sub:'uso particular do carro'},
   abastecimento:{label:'⛽ Abastecimento', cor:'var(--hybrid)',  sub:'compras de combustível/carga'},
   manutencao:   {label:'🔧 Manutenção',    cor:'#f97316',        sub:'serviços no veículo'},
@@ -7265,14 +7265,14 @@ function resGeralHtml(itens){
     <div class="res-big-s">ganhos, gastos e saldo nos períodos escolhidos</div>
     <div class="res-cfg">
       <div class="res-cfg-t">Unidade</div>
-      <div class="per-bar">${chipsGran}</div>
+      <div class="per-grid">${chipsGran}</div>
       <div class="per-bar" style="margin-top:8px">
         <button class="per-chip active" onclick="abrirResCmpSel('geral')">
           escolher períodos${chaves.length?` (${chaves.length})`:''}</button>
         ${chaves.length?`<button class="per-chip" onclick="resCmpLimpar('geral')">limpar</button>`:''}
       </div>
       <div class="res-cfg-t" style="margin-top:14px">Gastos considerados</div>
-      <div class="per-bar">${chipsFonte}</div>
+      <div class="per-grid">${chipsFonte}</div>
       <p class="sub" style="margin:2px 0 0;font-size:11px">💡 Entradas entram todas. Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
       <div class="res-cfg-t" style="margin-top:14px">Comparativo</div>
       ${corpo}
