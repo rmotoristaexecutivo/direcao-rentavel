@@ -796,6 +796,34 @@ table.sched{min-width:0}
 .a-mrow.on{background:var(--neutral-bg)}
 .a-mrow.on .a-mrow-l b{color:var(--neutral)}
 
+/* card único do mês */
+.a-mescard{padding:18px 16px}
+.a-mes-top{display:flex;align-items:flex-start;gap:14px}
+.a-mes-main{flex:1;min-width:0}
+.a-mes-side{display:flex;flex-direction:column;gap:9px;flex-shrink:0;text-align:right}
+.a-mes-side-i i{font-style:normal;display:block;font-size:9.5px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--txt-faint)}
+.a-mes-side-i b{font-family:'Barlow Condensed','Sora',sans-serif;font-size:20px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.a-mescard .a-cats{border-top-color:var(--line)}
+.a-mescard .a-cat{background:var(--bg2)}
+
+/* campos da meta */
+.a-mfields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.a-mfield label{display:block;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--txt-faint);margin-bottom:5px}
+.a-mfield input{width:100%;background:var(--bg2);border:1px solid var(--line-strong);
+  border-radius:12px;padding:11px 12px;color:var(--txt);font-family:'Barlow Condensed',sans-serif;
+  font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.a-mfield input:focus{outline:none;border-color:var(--neutral)}
+
+/* chips de período e de fonte com largura igual — em faixa livre eles ficavam
+   de tamanhos diferentes conforme o texto, e a grade parecia desalinhada */
+.per-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.per-grid .per-chip{width:100%;padding:9px 4px;text-align:center;justify-content:center;
+  font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+@media (max-width:400px){.per-grid{grid-template-columns:repeat(3,1fr)}}
+
 /* meses sem lançamento: a lista precisa ser varrida com o olho, não lida.
    Rótulo à esquerda, valor à direita, e o mês vazio recuado em opacidade. */
 .mo-listrow{border-radius:13px;padding:13px 14px}
@@ -2676,9 +2704,9 @@ function renderFinanceMobile(){
     </div>`:''}
 
     <div class="a-grid3">
-      <div class="a-tile"><div class="t">Entrada</div><div class="v">${cEnt.pagas}<span class="u">/${f.entrada.parcelas}</span></div><div class="s">${fmt(f.entrada.parcelaValor)}</div></div>
-      <div class="a-tile"><div class="t">Financiamento</div><div class="v">${cFin.pagas}<span class="u">/${f.fin.parcelas}</span></div><div class="s">${fmt(f.fin.parcelaValor)}</div></div>
       <div class="a-tile"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div><div class="s">só financiamento</div></div>
+      <div class="a-tile"><div class="t">Parcela da entrada</div><div class="v">${fmt(parcelaEntradaAtiva)}</div><div class="s">${parcelaEntradaAtiva>0?'ainda ativa':'quitada'}</div></div>
+      <div class="a-tile"><div class="t">Sai por mês</div><div class="v">${fmt(parcelaMes+parcelaEntradaAtiva)}</div><div class="s">soma das duas</div></div>
     </div>
 
     <div class="a-card">
@@ -4440,27 +4468,55 @@ function renderOpReportCard(rows,tot){
     <div class="a-cats-l">${active.map(c=>`<span class="a-cat"><i>${c.label}</i><b>${fmtN(cats[c.key],0)}</b></span>`).join('')}</div>
   </div>`:'';
   const catsHtml=bloco('Corridas Uber',catsUActive,catsU)+bloco('Corridas 99',catsNActive,catsN);
+  /* ============================================================
+     CARD ÚNICO DO MÊS (redesign)
+     Antes eram dois blocos — o colorido e o "Médias do mês" — repetindo
+     faturamento, km, viagens e ganho por hora. Agora é um card só: os três
+     números que importam em cima, os quadradinhos embaixo, e o resto atrás
+     de "ver mais" para não devolver a parede de números.
+     ============================================================ */
+  const diasTrab = diasTrabalhados||1;
+  const kmDia   = per(tot.kmTotal, diasTrabalhados);
+  const kmViag  = per(tot.kmTotal, tot.corridas);
+  const kmHora  = per(tot.kmTotal, tot.horas);
+  const cpk     = per(tot.gastoUber, tot.kmTotal);
+  const gpv     = per(tot.ganho, tot.corridas);
+  const kwh     = tot.qtdaKwh||0;
+  const kmKwh   = kwh>0 ? tot.kmTotal/kwh : 0;
+
+  const tile=(t,v,s2)=>`<div class="a-tile"><div class="t">${t}</div><div class="v">${v}</div>${s2?`<div class="s">${s2}</div>`:''}</div>`;
+
   el.innerHTML=`
-    <div class="op-hero">
-      <div class="op-hero-top">
-        <div>
-          <div class="op-hero-label">💵 Faturamento — ${monthLabel()}</div>
-          <div class="op-hero-val">${fmt(tot.ganho)}</div>
+    <div class="a-card a-mescard">
+      <div class="a-mes-top">
+        <div class="a-mes-main">
+          <div class="a-hero-k">Faturamento — ${monthLabel()}</div>
+          <div class="a-hero-v" style="color:var(--gain)">${fmt(tot.ganho)}</div>
         </div>
-        <div class="op-hero-lucro">
-          <div class="op-hero-label">📊 Lucro líquido</div>
-          <div class="op-hero-val">${fmt(lucroLiquido)}</div>
+        <div class="a-mes-side">
+          <div class="a-mes-side-i"><i>Lucro</i><b style="color:${lucroLiquido>=0?'var(--gain)':'var(--expense)'}">${fmt(lucroLiquido)}</b></div>
+          <div class="a-mes-side-i"><i>Gastos</i><b style="color:var(--expense)">${fmt(tot.gastoUber)}</b></div>
         </div>
       </div>
-      <div class="op-hero-grid">
-        <div class="op-hero-item"><div class="lbl">💸 Gastos</div><div class="val">${fmt(tot.gastoUber)}</div></div>
-        <div class="op-hero-item"><div class="lbl">📅 Dias trabalhados</div><div class="val">${diasTrabalhados}</div></div>
-        <div class="op-hero-item"><div class="lbl">⏱️ Horas trabalhadas</div><div class="val">${pad(hh)}:${pad(mm)}</div></div>
-        <div class="op-hero-item"><div class="lbl">🛣️ Km rodados</div><div class="val">${fmtN(tot.kmTotal,0)} km</div></div>
-        <div class="op-hero-item"><div class="lbl">🚕 Total de viagens</div><div class="val">${fmtN(tot.corridas,0)}</div></div>
-        <div class="op-hero-item"><div class="lbl">📍 Ganho por km</div><div class="val">${tot.kmTotal>0?fmt(gpk):'R$ -'}</div></div>
-        <div class="op-hero-item"><div class="lbl">⏳ Ganho por hora</div><div class="val">${tot.horas>0?fmt(gph):'R$ -'}</div></div>
+
+      <div class="a-grid3" style="margin:14px 0 0">
+        ${tile('Viagens',fmtN(tot.corridas,0))}
+        ${tile('Km',fmtN(tot.kmTotal,0))}
+        ${tile('Horas',`${pad(hh)}:${pad(mm)}`)}
+        ${tile('Ganho por km',tot.kmTotal>0?fmt(gpk):'—')}
+        ${tile('Ganho por hora',tot.horas>0?fmt(gph):'—')}
+        ${tile('Custo por km',tot.kmTotal>0?fmt(cpk):'—')}
       </div>
+
+      ${secWrap('op-mais','Ver mais números',`<div class="a-grid3" style="margin:0">
+        ${tile('Dias trabalhados',fmtN(diasTrabalhados,0))}
+        ${tile('Ganho por viagem',tot.corridas>0?fmt(gpv):'—')}
+        ${tile('Km por dia',diasTrabalhados>0?fmtN(kmDia,1):'—')}
+        ${tile('Km por viagem',tot.corridas>0?fmtN(kmViag,1):'—')}
+        ${tile('Km por hora',tot.horas>0?fmtN(kmHora,1):'—')}
+        ${tile('Km por kWh',kmKwh>0?fmtN(kmKwh,1):'—')}
+      </div>`)}
+
       ${catsHtml}
     </div>`;
 }
@@ -4552,56 +4608,82 @@ function renderOpWeekly(rows,tot){
 
 function renderMeta(){
   const el=document.getElementById('metaPanel'); if(!el)return;
-  const m=state.uber.meta||{diasMes:22};
-  const parcela=parcelaFinMes(state.uber.current);
-  // O que realmente sobra pra pagar a parcela é o SALDO (faturamento − despesas da operação).
-  // Usar o faturamento bruto aqui dava uma falsa sensação de que faltava menos do que falta.
+  /* ============================================================
+     META DO MÊS (redesign)
+     Antes a meta era a parcela do financiamento, calculada sozinha. Agora você
+     digita quanto quer faturar e em quantos dias vai rodar — pode existir outra
+     renda pagando o carro, e a meta não precisa estar amarrada à parcela.
+     A parcela continua aparecendo, mas como referência, não como a meta.
+     ============================================================ */
+  const m=state.uber.meta||(state.uber.meta={diasMes:22});
   const mt=monthTotals(ensureMonth(state.uber.current));
   const monthGanho=mt.ganho;
   const monthDesp=mt.gastoUber;
   const monthSaldo=monthGanho-monthDesp;
-  const restante=Math.max(0,parcela-monthSaldo);
-  const pct=parcela>0?Math.max(0,Math.min(100,monthSaldo/parcela*100)):0;
-  const bateu=monthSaldo>=parcela && parcela>0;
-  const diasMes=m.diasMes||22;
-  const valorDiario=diasMes>0?parcela/diasMes:0;
-  const valorDiarioRestante=diasMes>0?restante/diasMes:0;
-  if(parcela<=0){
-    const fIni=state.finance.fin.inicio;
-    el.innerHTML=`<div class="panel" style="padding:18px 20px">
-      <h2>🎯 Meta do mês <span style="font-weight:400;color:var(--txt-dim);font-size:13px">— parcela do financiamento</span></h2>
-      <p class="sub" style="color:var(--hybrid)">⚠️ ${monthLabel()} está fora do período do financiamento (que começa em ${fmtDateBR(fIni)}). Selecione um mês dentro da janela do financiamento pra ver a meta aqui.</p>
-    </div>`;
-    return;
-  }
-  el.innerHTML=`<div class="panel" style="padding:18px 20px">
-    <h2>🎯 Meta do mês <span style="font-weight:400;color:var(--txt-dim);font-size:13px">— parcela do financiamento</span></h2>
-    <p class="sub">A conta considera o <b>saldo</b> (faturamento − despesas), que é o que de fato sobra pra pagar a parcela.</p>
-    <div class="prog-wrap">
-      <div class="prog-top"><span>Saldo do mês</span><b>${fmt(monthSaldo)} / ${fmt(parcela)}</b></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div class="prog-bot"><span style="color:var(--gain)">${pct.toFixed(0)}% completo</span><span style="color:var(--txt-dim)">${bateu?'meta batida ✓':'falta '+fmt(restante)}</span></div>
-    </div>
-    <div class="kpis" style="margin-top:14px">
-      <div class="kpi"><div class="k-label">Parcela do mês</div><div class="k-val" style="color:var(--neutral)">${fmt(parcela)}</div><div class="k-sub">meta total</div></div>
-      <div class="kpi ${monthSaldo>=0?'gain':'expense'}"><div class="k-label">Saldo do mês</div><div class="k-val">${fmt(monthSaldo)}</div><div class="k-sub">${fmt(monthGanho)} − ${fmt(monthDesp)} de despesas</div></div>
-      <div class="kpi ${bateu?'gain':'expense'}"><div class="k-label">⏳ Ainda falta</div><div class="k-val">${bateu?'R$ 0,00 ✓':fmt(restante)}</div><div class="k-sub">${bateu?'parcela coberta':'sobre o saldo, não o bruto'}</div></div>
+  const parcela=parcelaFinMes(state.uber.current);
+
+  const dias=Number(m.diasMes)>0?Number(m.diasMes):22;
+  /* metaFat = o que você quer faturar no mês. Sem valor definido, cai na parcela,
+     que era o comportamento antigo — assim ninguém abre a tela e vê zero. */
+  const metaFat=Number(m.metaFat)>0?Number(m.metaFat):parcela;
+
+  const faltaFat=Math.max(0,metaFat-monthGanho);
+  const pct=metaFat>0?Math.min(100,monthGanho/metaFat*100):0;
+  const bateu=monthGanho>=metaFat && metaFat>0;
+
+  /* por dia: o bruto é a meta dividida pelos dias. O "livre" desconta a despesa
+     média por dia já observada no mês — é o que sobra de fato no bolso. */
+  const diasFeitos=ensureMonth(state.uber.current).filter(r=>{const c=rowCalc(r);return (r.corridas||0)>0||c.ganho>0;}).length;
+  const despDia=diasFeitos>0?monthDesp/diasFeitos:0;
+  const porDiaBruto=dias>0?metaFat/dias:0;
+  const porDiaLivre=Math.max(0,porDiaBruto-despDia);
+  const diasRestantes=Math.max(0,dias-diasFeitos);
+  const porDiaRestante=diasRestantes>0?faltaFat/diasRestantes:0;
+
+  el.innerHTML=`
+  <div class="a-card">
+    <h3>Meta do mês</h3>
+    <div class="a-hero-k" style="margin-bottom:2px">Faturar em ${monthLabel()}</div>
+    <div class="a-hero-v" style="font-size:38px;color:var(--neutral)">${fmt(metaFat)}</div>
+    <div class="a-bar" style="margin:12px 0 7px"><i style="width:${pct}%"></i></div>
+    <div class="a-bar-lg">
+      <span style="color:${bateu?'var(--gain)':'inherit'}">${fmtN(pct,1)}% ${bateu?'· meta batida':''}</span>
+      <span>${bateu?fmt(monthGanho)+' faturados':'falta '+fmt(faltaFat)}</span>
     </div>
 
-    <h2 style="margin-top:20px">📅 Meta diária</h2>
-    <p class="sub">Quanto de saldo você precisa fazer por dia trabalhado pra cobrir a parcela.</p>
-    <div class="cfg-grid">
-      <div class="field"><label>Dias que vou trabalhar no mês</label><input id="metaDiasMes" inputmode="decimal" value="${fmtN(diasMes,0)}" onchange="onMetaInput()"><div class="hint">total de dias de trabalho previstos</div></div>
+    <div class="a-mfields">
+      <div class="a-mfield">
+        <label>Quero faturar no mês</label>
+        <input inputmode="decimal" id="metaFatMes" value="${fmtN(metaFat,2)}" onchange="onMetaInput()">
+      </div>
+      <div class="a-mfield">
+        <label>Dias que vou rodar</label>
+        <input inputmode="numeric" id="metaDiasMes" value="${fmtN(dias,0)}" onchange="onMetaInput()">
+      </div>
     </div>
-    <div class="kpis" style="margin-top:14px">
-      <div class="kpi electric"><div class="k-label">Valor diário (meta total)</div><div class="k-val">${fmt(valorDiario)}</div><div class="k-sub">parcela ÷ ${diasMes} dias · fixo</div></div>
-      <div class="kpi ${bateu?'gain':'expense'}"><div class="k-label">Valor diário (do que falta)</div><div class="k-val">${bateu?'R$ 0,00 ✓':fmt(valorDiarioRestante)}</div><div class="k-sub">${bateu?'meta já batida':'recalcula com o saldo atual'}</div></div>
+
+    <div class="a-grid3" style="margin:12px 0 0">
+      <div class="a-tile"><div class="t">Por dia</div><div class="v" style="color:var(--neutral)">${fmt(porDiaBruto)}</div><div class="s">faturamento</div></div>
+      <div class="a-tile"><div class="t">Livre por dia</div><div class="v" style="color:var(--gain)">${fmt(porDiaLivre)}</div><div class="s">sem despesas</div></div>
+      <div class="a-tile"><div class="t">${bateu?'Já feito':'Falta por dia'}</div><div class="v">${bateu?'✓':fmt(porDiaRestante)}</div><div class="s">${bateu?'meta batida':`${diasRestantes} dia(s)`}</div></div>
     </div>
+
+    ${secWrap('op-meta-mais','Detalhes do mês',`<div class="a-grid3" style="margin:0">
+      <div class="a-tile"><div class="t">Entradas do mês</div><div class="v" style="color:var(--gain)">${fmt(monthGanho)}</div></div>
+      <div class="a-tile"><div class="t">Despesas do mês</div><div class="v" style="color:var(--expense)">${fmt(monthDesp)}</div></div>
+      <div class="a-tile"><div class="t">Ainda falta</div><div class="v">${fmt(faltaFat)}</div></div>
+      <div class="a-tile"><div class="t">Saldo do mês</div><div class="v" style="color:${monthSaldo>=0?'var(--gain)':'var(--expense)'}">${fmt(monthSaldo)}</div></div>
+      <div class="a-tile"><div class="t">Parcela financ.</div><div class="v">${fmt(parcela)}</div><div class="s">referência</div></div>
+      <div class="a-tile"><div class="t">Despesa por dia</div><div class="v">${fmt(despDia)}</div><div class="s">média observada</div></div>
+    </div>`)}
   </div>`;
 }
 function onMetaInput(){
-  const m=state.uber.meta;
-  m.diasMes=parseNum(document.getElementById('metaDiasMes').value)||0;
+  const m=state.uber.meta||(state.uber.meta={});
+  const d=document.getElementById('metaDiasMes');
+  const f=document.getElementById('metaFatMes');
+  if(d)m.diasMes=parseNum(d.value)||0;
+  if(f)m.metaFat=parseNum(f.value)||0;   /* chave nova: o index antigo ignora */
   save(); renderMeta();
 }
 function toggleFixas(){
@@ -7260,19 +7342,16 @@ function resPainelHtml(lado,itens){
     <div class="res-big-s">${resLabel(cfg.periodo)} · ${nFontes} fonte(s)</div>
 
     <div class="res-cfg">
-      <div class="res-cfg-t">Período</div>
-      <div class="per-bar">${chipsGran}</div>
+      <!-- ordem (redesign): mês → período → fontes → comparar.
+           O seletor de mês é o que mais se mexe e estava em terceiro lugar. -->
       <div class="res-nav">
         <button class="btn" onclick="resStepPeriodo('${lado}',1)" ${idx>=lista.length-1?'disabled':''} title="Anterior">‹</button>
         <select class="res-select" onchange="setResPeriodo('${lado}',this.value)">${options}</select>
         <button class="btn" onclick="resStepPeriodo('${lado}',-1)" ${idx<=0?'disabled':''} title="Próximo">›</button>
       </div>
-      <div class="per-bar" style="margin-top:8px">
-        <button class="per-chip${_resCmp[lado].ativo?' active':''}" onclick="toggleResCmp('${lado}')">
-          ${_resCmp[lado].ativo?'✓ ':''}📊 Comparar períodos</button>
-        ${_resCmp[lado].ativo?`<button class="per-chip" onclick="abrirResCmpSel('${lado}')">escolher períodos${_resCmp[lado].chaves.length?` (${_resCmp[lado].chaves.length})`:''}</button>
-        ${_resCmp[lado].chaves.length?`<button class="per-chip" onclick="resCmpLimpar('${lado}')">limpar</button>`:''}`:''}
-      </div>
+
+      <div class="res-cfg-t" style="margin-top:14px">Período</div>
+      <div class="per-grid">${chipsGran}</div>
 
       <div class="res-cfg-t" style="margin-top:14px">Fontes
         <span class="res-cfg-acts">
@@ -7280,7 +7359,14 @@ function resPainelHtml(lado,itens){
           <button onclick="resMarcarTodas('${lado}',false)">nenhuma</button>
         </span>
       </div>
-      <div class="per-bar">${chipsFonte}</div>
+      <div class="per-grid">${chipsFonte}</div>
+
+      <div class="per-bar" style="margin-top:14px">
+        <button class="per-chip${_resCmp[lado].ativo?' active':''}" onclick="toggleResCmp('${lado}')">
+          ${_resCmp[lado].ativo?'✓ ':''}Comparar períodos</button>
+        ${_resCmp[lado].ativo?`<button class="per-chip" onclick="abrirResCmpSel('${lado}')">escolher períodos${_resCmp[lado].chaves.length?` (${_resCmp[lado].chaves.length})`:''}</button>
+        ${_resCmp[lado].chaves.length?`<button class="per-chip" onclick="resCmpLimpar('${lado}')">limpar</button>`:''}`:''}
+      </div>
       ${lado==='saida'?`<p class="sub" style="margin:2px 0 0;font-size:11px">💡 Manutenções já entram dentro de Trabalho/Corp/Pessoal (foram rateadas lá). Marcar as duas conta em dobro.</p>`:''}
 
       <div class="res-cfg-t" style="margin-top:14px">${_resCmp[lado].ativo?'📊 Comparativo':'📋 Detalhe'}</div>
