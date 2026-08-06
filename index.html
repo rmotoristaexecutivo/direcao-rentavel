@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ================= SPLASH SCREEN ================= */
@@ -87,45 +87,45 @@
 
 :root{
   --hdrH:56px;
-  --bg:#0a0e14;
-  --bg2:#0e131c;
-  --panel:rgba(20,27,38,.72);
-  --panel-solid:#141b26;
-  --line:rgba(255,255,255,.08);
-  --line-strong:rgba(255,255,255,.16);
-  --txt:#e8edf4;
-  --txt-dim:#8a98ab;
-  --txt-faint:#5d6a7d;
+  --bg:#0b1017;
+  --bg2:#111925;
+  --panel:rgba(21,28,38,.78);
+  --panel-solid:#151c26;
+  --line:rgba(255,255,255,.10);
+  --line-strong:rgba(255,255,255,.18);
+  --txt:#eef3f9;
+  --txt-dim:#9fb0c2;
+  --txt-faint:#6b7d90;
   /* color coding */
-  --gain:#22c55e;        /* ganhos - verde */
-  --gain-bg:rgba(34,197,94,.12);
-  --expense:#fb7185;     /* despesas - rosa/vermelho */
-  --expense-bg:rgba(251,113,133,.12);
-  --electric:#2dd4bf;    /* modo elétrico - teal */
-  --electric-bg:rgba(45,212,191,.12);
-  --hybrid:#f59e0b;      /* híbrido/combustível - âmbar */
-  --hybrid-bg:rgba(245,158,11,.12);
-  --neutral:#60a5fa;     /* azul neutro */
-  --neutral-bg:rgba(96,165,250,.12);
+  --gain:#3ddc84;        /* ganhos - verde */
+  --gain-bg:rgba(61,220,132,.14);
+  --expense:#ff6b6b;     /* despesas - vermelho */
+  --expense-bg:rgba(255,107,107,.14);
+  --electric:#4fd8c4;    /* modo elétrico - teal */
+  --electric-bg:rgba(79,216,196,.14);
+  --hybrid:#ffc247;      /* híbrido/combustível - âmbar */
+  --hybrid-bg:rgba(255,194,71,.14);
+  --neutral:#6ea8ff;     /* azul neutro - cor do saldo */
+  --neutral-bg:rgba(110,168,255,.14);
   --radius:16px;
   --radius-sm:10px;
   --header-bg:rgba(10,14,20,.9);   /* fundo do header no mobile - tema escuro */
 }
 [data-theme="light"]{
-  --bg:#eef1f7;
-  --bg2:#e6eaf1;
-  --panel:rgba(255,255,255,.82);
+  --bg:#eef1f6;
+  --bg2:#f7f9fc;
+  --panel:rgba(255,255,255,.88);
   --panel-solid:#ffffff;
-  --line:rgba(15,23,42,.09);
-  --line-strong:rgba(15,23,42,.16);
-  --txt:#16202e;
-  --txt-dim:#56657b;
-  --txt-faint:#94a1b4;
-  --gain:#3f8f0a;        --gain-bg:rgba(63,143,10,.12);
-  --expense:#dc2626;     --expense-bg:rgba(220,38,38,.10);
+  --line:rgba(13,22,32,.09);
+  --line-strong:rgba(13,22,32,.17);
+  --txt:#0d1620;
+  --txt-dim:#5a6a7d;
+  --txt-faint:#93a1b2;
+  --gain:#0f9d58;        --gain-bg:#e6f5ed;
+  --expense:#e5484d;     --expense-bg:#fdeaea;
   --electric:#0d9488;    --electric-bg:rgba(13,148,136,.12);
-  --hybrid:#c2700a;      --hybrid-bg:rgba(194,112,10,.12);
-  --neutral:#2563eb;     --neutral-bg:rgba(37,99,235,.10);
+  --hybrid:#f5a524;      --hybrid-bg:#fef4e2;
+  --neutral:#2c6ef2;     --neutral-bg:#e8f0fe;
   --header-bg:rgba(244,247,251,.9);   /* fundo do header no mobile - tema claro */
 }
 [data-theme="light"] body::before{
@@ -621,6 +621,54 @@ table.sched{min-width:0}
 .yr-btn{font-family:'Sora';font-weight:700;font-size:15px;padding:8px 20px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--txt-dim);cursor:pointer}
 .yr-btn.active{background:var(--electric);color:#04211d;border-color:var(--electric)}
 .yr-btn.yr-add{border-style:dashed;color:var(--txt-faint);font-weight:600;padding:8px 14px}
+
+/* ============================================================
+   TIPOGRAFIA DOS NÚMEROS (redesign, fase 1)
+   Números grandes passam a usar Barlow Condensed: a face estreita de painel de
+   instrumento. Cabe mais dígito na mesma largura, que é o que faltava no celular,
+   e dá ao valor um peso visual diferente do texto ao redor. Só nos VALORES —
+   rótulos e textos continuam em Manrope, senão a tela toda vira placa de trânsito.
+   ============================================================ */
+.op-hero-val, .k-val, .kpi .k-val, .res-det-h b, .res-big-v,
+.mo-listrow-val, .lanc-val, .tile-val, .hero-val{
+  font-family:'Barlow Condensed','Sora',system-ui,sans-serif !important;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.4px;
+}
+/* a face condensada é mais leve na mancha: sobe um pouco o tamanho para compensar */
+.op-hero-val{font-size:clamp(34px,7.4vw,48px) !important;letter-spacing:.2px !important}
+.kpi .k-val{font-size:21px}
+@media (max-width:640px){
+  .cpma-grid .kpi .k-val{font-size:19px}
+  #finKpis .kpi .k-val{font-size:19px}
+}
+
+/* cabeçalho do mobile: dois botões redondos no lugar da barra de ferramentas */
+@media (max-width:640px){
+  header{padding:12px 14px 10px}
+  .brand h1{font-size:17px;letter-spacing:-.2px}
+  #hdrMenuBtn{
+    width:38px;height:38px;padding:0;border-radius:12px;
+    display:grid;place-items:center;font-size:17px;
+    background:var(--panel-solid);border:1px solid var(--line);color:var(--txt-dim);
+  }
+  /* o alternador de tema volta ao cabeçalho, ao lado do menu — antes só existia
+     dentro do menu ⋯, o que escondia demais uma ação de uso frequente */
+  header .actions #themeBtn{
+    display:grid;place-items:center;width:38px;height:38px;padding:0;border-radius:12px;
+    font-size:0;background:var(--panel-solid);border:1px solid var(--line);
+  }
+  header .actions #themeBtn::after{font-size:17px;content:'🌙'}
+  [data-theme="light"] header .actions #themeBtn::after{content:'☀️'}
+  header .actions{gap:8px}
+}
+
+/* barra inferior: alvos maiores e indicador mais discreto */
+@media (max-width:640px){
+  #mobileNav{padding:6px 2px calc(6px + env(safe-area-inset-bottom))}
+  #mobileNav button{padding:6px 0;font-size:10px;gap:3px}
+  #mobileNav button .ic{font-size:19px}
+}
 .yr-btn.yr-add:hover{color:var(--electric);border-color:var(--electric)}
 .yr-btn.yr-del{border-style:dashed;color:var(--expense);border-color:var(--expense);font-weight:600;padding:8px 14px;opacity:.8}
 .yr-btn.yr-del:hover{opacity:1;background:var(--expense-bg)}
