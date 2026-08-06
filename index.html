@@ -816,6 +816,8 @@ table.sched{min-width:0}
   border-radius:12px;padding:11px 12px;color:var(--txt);font-family:'Barlow Condensed',sans-serif;
   font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
 .a-mfield input:focus{outline:none;border-color:var(--neutral)}
+.a-meta-reset{margin-top:6px;background:none;border:0;padding:0;cursor:pointer;
+  color:var(--txt-faint);font-size:11px;font-weight:600;text-decoration:underline}
 
 /* chips de período e de fonte com largura igual — em faixa livre eles ficavam
    de tamanhos diferentes conforme o texto, e a grade parecia desalinhada */
@@ -2333,8 +2335,10 @@ function hydrate(s){
   if(s.uber.config.bateriaKwh==null)s.uber.config.bateriaKwh=18.3;
   if(!s.uber.meta)s.uber.meta={diasMes:22};
   else if(s.uber.meta.diasMes==null){
+    /* ANTES: s.uber.meta = {diasMes:...} — trocava o objeto inteiro e levava junto
+       metaFat/metaManual. Agora só preenche o campo que falta. */
     const ds=s.uber.meta.diasSemana||3;
-    s.uber.meta={diasMes:Math.round(ds*4.345)+1};
+    s.uber.meta.diasMes=Math.round(ds*4.345)+1;
   }
   if(!s.uber.months||typeof s.uber.months!=='object')s.uber.months={};
   if(!s.despesas)s.despesas={};
@@ -4623,9 +4627,11 @@ function renderMeta(){
   const parcela=parcelaFinMes(state.uber.current);
 
   const dias=Number(m.diasMes)>0?Number(m.diasMes):22;
-  /* metaFat = o que você quer faturar no mês. Sem valor definido, cai na parcela,
-     que era o comportamento antigo — assim ninguém abre a tela e vê zero. */
-  const metaFat=Number(m.metaFat)>0?Number(m.metaFat):parcela;
+  /* metaFat = o que você quer faturar no mês.
+     A flag metaManual separa "nunca mexi nisso" de "quis mesmo colocar esse valor".
+     Sem ela, digitar um valor e o cálculo cair em zero fazia a meta voltar
+     sozinha para a parcela, dando a impressão de campo travado. */
+  const metaFat = m.metaManual ? Number(m.metaFat)||0 : parcela;
 
   const faltaFat=Math.max(0,metaFat-monthGanho);
   const pct=metaFat>0?Math.min(100,monthGanho/metaFat*100):0;
@@ -4654,11 +4660,14 @@ function renderMeta(){
     <div class="a-mfields">
       <div class="a-mfield">
         <label>Quero faturar no mês</label>
-        <input inputmode="decimal" id="metaFatMes" value="${fmtN(metaFat,2)}" onchange="onMetaInput()">
+        <input inputmode="decimal" id="metaFatMes" value="${fmtN(metaFat,2)}"
+               onchange="onMetaInput()" onblur="onMetaInput()">
+        ${m.metaManual?`<button class="a-meta-reset" onclick="resetMetaFat()">voltar para a parcela</button>`:''}
       </div>
       <div class="a-mfield">
         <label>Dias que vou rodar</label>
-        <input inputmode="numeric" id="metaDiasMes" value="${fmtN(dias,0)}" onchange="onMetaInput()">
+        <input inputmode="numeric" id="metaDiasMes" value="${fmtN(dias,0)}"
+               onchange="onMetaInput()" onblur="onMetaInput()">
       </div>
     </div>
 
@@ -4682,8 +4691,19 @@ function onMetaInput(){
   const m=state.uber.meta||(state.uber.meta={});
   const d=document.getElementById('metaDiasMes');
   const f=document.getElementById('metaFatMes');
-  if(d)m.diasMes=parseNum(d.value)||0;
-  if(f)m.metaFat=parseNum(f.value)||0;   /* chave nova: o index antigo ignora */
+  if(d){ const v=parseNum(d.value); if(v>0)m.diasMes=v; }
+  if(f){
+    const v=parseNum(f.value);
+    const antes=Number(m.metaFat)||0;
+    if(v>0){ m.metaFat=v; m.metaManual=true; }
+    /* campo apagado: mantém o último valor em vez de zerar e voltar para a parcela */
+    else if(antes>0){ m.metaFat=antes; }
+  }
+  save(); renderMeta();
+}
+function resetMetaFat(){
+  const m=state.uber.meta||(state.uber.meta={});
+  m.metaManual=false; m.metaFat=0;
   save(); renderMeta();
 }
 function toggleFixas(){
