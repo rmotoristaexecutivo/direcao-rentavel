@@ -680,6 +680,24 @@ table.sched{min-width:0}
   white-space:nowrap;font-variant-numeric:tabular-nums}
 .a-amt.gain{color:var(--gain)}
 
+/* herói clicável (mês atual nas guias de lançamento) */
+.a-hero-click{position:relative;cursor:pointer}
+.a-hero-add{position:absolute;right:14px;top:14px;width:40px;height:40px;border-radius:50%;
+  border:0;cursor:pointer;background:var(--neutral);color:#fff;font-size:24px;line-height:1;
+  display:grid;place-items:center;box-shadow:0 5px 16px rgba(44,110,242,.4)}
+
+/* meses sem lançamento: a lista precisa ser varrida com o olho, não lida.
+   Rótulo à esquerda, valor à direita, e o mês vazio recuado em opacidade. */
+.mo-listrow{border-radius:13px;padding:13px 14px}
+.mo-listrow.empty{opacity:.5}
+.mo-listrow.empty .mo-listrow-sub{font-size:11.5px}
+
+/* espaço no fim da rolagem: sem isso o último item fica sob a barra inferior */
+@media (max-width:640px){
+  .view{padding-bottom:26px}
+  #uNavBody, #pNavBody, #abBody, #mnBody, #resumoBody{padding-bottom:20px}
+}
+
 /* ============================================================
    ÍCONES DA BARRA INFERIOR (redesign, fase 1b)
    Emoji não é ícone de interface: cada um vem de uma família diferente, com
@@ -702,8 +720,17 @@ table.sched{min-width:0}
     border-radius:50% !important;border:0 !important;flex-shrink:0;align-self:center}
   .sync-badge.synced{background:var(--gain) !important}
   .sync-badge.pending{background:var(--hybrid) !important}
+  /* cabeçalho numa linha só: marca à esquerda, dois botões redondos à direita */
+  header{display:flex !important;align-items:center !important;flex-wrap:nowrap !important;gap:10px}
+  header .brand{flex:1 1 auto;min-width:0}
+  header .actions{flex:0 0 auto !important;width:auto !important;display:flex !important;
+    flex-wrap:nowrap !important;justify-content:flex-end}
+  /* flex:0 0 38px é o que impede o container de esticar os botões em elipse —
+     era o que estava acontecendo: largura fixa perdia para o crescimento do flex */
   header .actions #themeBtn, header #hdrMenuBtn{
-    width:38px !important;height:38px !important;padding:0 !important;border-radius:50% !important;
+    flex:0 0 38px !important;width:38px !important;height:38px !important;
+    min-width:38px !important;max-width:38px !important;
+    padding:0 !important;border-radius:50% !important;
     display:grid !important;place-items:center;font-size:0 !important;
     background:var(--panel-solid) !important;border:1px solid var(--line) !important}
   header .actions #themeBtn::after{font-size:15px;content:'🌙'}
@@ -3372,14 +3399,11 @@ function uRenderMeses(){
     const ehAtual=(y===anoAtual && m===mesAtual);
     if(ehAtual){
       // mês atual fica FORA da seção, sempre visível, com botão + pra lançar direto
-      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}">
-        <div class="mo-atual-top">
-          <div class="mo-atual-info" onclick="uNavGoDias('${key}')">
-            <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
-            ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
-          </div>
-          <button class="mo-add-btn" onclick="event.stopPropagation();uAddHoje('${key}')" title="Lançar dia de hoje">＋</button>
-        </div>
+      destaque=`<div class="a-hero a-hero-click" onclick="uNavGoDias('${key}')">
+        <div class="a-hero-k">${MESES[m-1]} · mês atual</div>
+        <div class="a-hero-v" style="color:${has?'var(--expense)':'var(--txt-faint)'}">${has?fmt(tot):'—'}</div>
+        <div class="a-hero-s">${has?'toque para ver os dias':'nenhum lançamento ainda'}</div>
+        <button class="a-hero-add" onclick="event.stopPropagation();uAddHoje('${key}')" aria-label="Lançar hoje">+</button>
       </div>`;
     } else {
       lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="uNavGoDias('${key}')">
@@ -3682,12 +3706,25 @@ function uRenderDias(){
   const rows=allRows.filter(r=>temDadosTrab(r) || !temDadosCorp(r));
   uNavSetHeader(`${MESES[m-1]} ${y}<div class="mm-sub">${rows.length} dia(s) · ${fmt(tot.gastoTrabalho)}</div>`,true);
 
-  const kpisHtml=`<div class="kpis" id="uberKpisMob">
-    <div class="kpi expense"><div class="k-label">Gasto do mês</div><div class="k-val">${fmt(tot.gastoTrabalho)}</div><div class="k-sub">${fmtN(tot.kmIda+tot.kmVolta,0)} km</div></div>
-    <div class="kpi" style="border-color:rgba(249,115,22,.35)"><div class="k-label" style="color:#f97316">Pedágio</div><div class="k-val" style="color:#f97316">${fmt(tot.pedagioTotal)}</div><div class="k-sub">ida + volta</div></div>
-    <div class="kpi hybrid"><div class="k-label">Elétrico</div><div class="k-val">${fmt(tot.trabEl)}</div><div class="k-sub">${fmtN(tot.trabKwh,1)} kWh</div></div>
-    <div class="kpi"><div class="k-label">Combustível</div><div class="k-val">${fmt(tot.trabComb)}</div><div class="k-sub">${fmtN(tot.trabLitros,1)} L</div></div>
-  </div>`;
+  /* redesign: um número herói + tiles, no lugar dos quatro cards de mesmo peso.
+     O gasto do mês é a resposta que a pessoa abre a tela para ver; o resto é apoio. */
+  const kmTot = tot.kmIda + tot.kmVolta;
+  const custoKm = kmTot>0 ? tot.gastoTrabalho/kmTot : 0;
+  const kpisHtml=`
+  <div class="a-hero">
+    <div class="a-hero-k">Gasto do mês</div>
+    <div class="a-hero-v" style="color:var(--expense)">${fmt(tot.gastoTrabalho)}</div>
+    <div class="a-hero-s">${rows.length} dia(s) lançado(s) · ${fmtN(kmTot,0)} km rodados</div>
+  </div>
+  <div class="a-grid3">
+    <div class="a-tile"><div class="t">Custo por km</div><div class="v">${fmt(custoKm)}</div></div>
+    <div class="a-tile"><div class="t">Combustível</div><div class="v">${fmt(tot.trabComb)}</div><div class="s">${fmtN(tot.trabLitros,1)} L</div></div>
+    <div class="a-tile"><div class="t">Elétrico</div><div class="v">${fmt(tot.trabEl)}</div><div class="s">${fmtN(tot.trabKwh,1)} kWh</div></div>
+  </div>
+  ${tot.pedagioTotal>0?`<div class="a-grid3 two">
+    <div class="a-tile"><div class="t">Pedágio</div><div class="v">${fmt(tot.pedagioTotal)}</div><div class="s">ida + volta</div></div>
+    <div class="a-tile"><div class="t">Média por dia</div><div class="v">${fmt(rows.length?tot.gastoTrabalho/rows.length:0)}</div></div>
+  </div>`:''}`;
   // o índice usado nos cards precisa ser o da base REAL (allRows), não o do array filtrado,
   // pra editar/excluir a linha certa
   const cardsHtml=rows.length
@@ -5442,14 +5479,11 @@ function pRenderMeses(){
     const tot=monthTotalsP(rows).gastoDia;
     const ehAtual=(y===anoAtual && m===mesAtual);
     if(ehAtual){
-      destaque=`<div class="mo-card mo-pick destaque${has?'':' empty'}">
-        <div class="mo-atual-top">
-          <div class="mo-atual-info" onclick="pNavGoDias('${key}')">
-            <div class="mo-h">${MESES[m-1]} <span class="mo-badge">atual</span></div>
-            ${has?`<div class="mo-row tot"><span>💸 Gasto</span><b class="mc-val" style="color:var(--expense)">${fmt(tot)}</b></div>`:`<div class="mo-empty">sem lançamentos</div>`}
-          </div>
-          <button class="mo-add-btn" onclick="event.stopPropagation();pAddHoje('${key}')" title="Lançar dia de hoje">＋</button>
-        </div>
+      destaque=`<div class="a-hero a-hero-click" onclick="pNavGoDias('${key}')">
+        <div class="a-hero-k">${MESES[m-1]} · mês atual</div>
+        <div class="a-hero-v" style="color:${has?'var(--expense)':'var(--txt-faint)'}">${has?fmt(tot):'—'}</div>
+        <div class="a-hero-s">${has?'toque para ver os dias':'nenhum lançamento ainda'}</div>
+        <button class="a-hero-add" onclick="event.stopPropagation();pAddHoje('${key}')" aria-label="Lançar hoje">+</button>
       </div>`;
     } else {
       lista+=`<div class="mo-listrow${has?'':' empty'}" onclick="pNavGoDias('${key}')">
