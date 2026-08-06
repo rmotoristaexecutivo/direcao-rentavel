@@ -623,6 +623,64 @@ table.sched{min-width:0}
 .yr-btn.yr-add{border-style:dashed;color:var(--txt-faint);font-weight:600;padding:8px 14px}
 
 /* ============================================================
+   COMPONENTES DO REDESIGN (cenário A)
+   Blocos novos usados pelas telas mobile reconstruídas. Prefixo a- para não
+   colidir com nada do layout antigo — desktop e telas ainda não migradas
+   continuam intactos.
+   ============================================================ */
+.a-hero{background:var(--panel-solid);border:1px solid var(--line);border-radius:20px;
+  padding:18px;margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 8px 24px rgba(13,22,32,.06)}
+[data-theme="dark"] .a-hero{box-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3)}
+.a-hero-k{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt-faint)}
+.a-hero-v{font-family:'Barlow Condensed','Sora',sans-serif;font-size:48px;font-weight:700;
+  line-height:1;margin:7px 0 3px;color:var(--neutral);font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.a-hero-s{font-size:12.5px;color:var(--txt-dim)}
+.a-bar{height:10px;border-radius:7px;background:var(--bg2);overflow:hidden;margin:14px 0 7px}
+.a-bar i{display:block;height:100%;border-radius:7px;
+  background:linear-gradient(90deg,var(--neutral),var(--gain));transition:width .6s ease}
+.a-bar-lg{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--txt-dim)}
+
+.a-alert{background:var(--expense-bg);border-radius:14px;padding:12px 14px;margin-bottom:12px;
+  font-size:12.5px;line-height:1.5;color:var(--txt-dim)}
+.a-alert b{display:block;font-size:13.5px;color:var(--expense);margin-bottom:2px}
+
+.a-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.a-grid3.two{grid-template-columns:repeat(2,1fr)}
+.a-tile{background:var(--panel-solid);border:1px solid var(--line);border-radius:15px;padding:12px 11px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 6px 16px rgba(13,22,32,.05)}
+[data-theme="dark"] .a-tile{box-shadow:0 1px 2px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.28)}
+.a-tile .t{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--txt-faint);line-height:1.3;min-height:26px}
+.a-tile .v{font-family:'Barlow Condensed','Sora',sans-serif;font-size:23px;font-weight:700;
+  margin-top:5px;line-height:1;font-variant-numeric:tabular-nums}
+.a-tile .v.cost{color:var(--expense)}
+.a-tile .v .u{font-size:14px;color:var(--txt-faint);font-weight:600}
+.a-tile .s{font-size:11px;color:var(--txt-faint);margin-top:4px}
+
+.a-card{background:var(--panel-solid);border:1px solid var(--line);border-radius:20px;
+  padding:16px;margin-bottom:12px;
+  box-shadow:0 1px 2px rgba(13,22,32,.05),0 8px 24px rgba(13,22,32,.06)}
+[data-theme="dark"] .a-card{box-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3)}
+.a-card h3{margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;color:var(--txt-faint)}
+
+.a-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.a-item:last-child{border-bottom:0;padding-bottom:0}
+.a-item:first-child{padding-top:0}
+.a-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;
+  font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700}
+.a-ic.neutral{background:var(--neutral-bg);color:var(--neutral)}
+.a-ic.gain{background:var(--gain-bg);color:var(--gain)}
+.a-ic.cost{background:var(--expense-bg);color:var(--expense)}
+.a-mid{flex:1;min-width:0}
+.a-mid b{display:block;font-size:14px;font-weight:600}
+.a-mid small{display:block;font-size:11.5px;color:var(--txt-faint);margin-top:1px}
+.a-amt{font-family:'Barlow Condensed','Sora',sans-serif;font-size:19px;font-weight:700;
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.a-amt.gain{color:var(--gain)}
+
+/* ============================================================
    ÍCONES DA BARRA INFERIOR (redesign, fase 1b)
    Emoji não é ícone de interface: cada um vem de uma família diferente, com
    perspectiva, paleta e peso próprios, e o conjunto nunca parece desenhado junto.
@@ -2424,38 +2482,63 @@ function renderFinanceMobile(){
   const cont=(plan)=>{let pagas=0,atraso=0,aven=0;for(let i=0;i<plan.parcelas;i++){const s=st(plan,i);if(s.key==='pagas')pagas++;else if(s.key==='atraso')atraso++;else aven++;}return{pagas,atraso,aven};};
   const cFin=cont(f.fin), cEnt=cont(f.entrada);
 
+  /* ============================================================
+     TELA MOBILE DO FINANCIAMENTO — redesign (cenário A)
+     Mesmos cálculos de antes; só a apresentação mudou. Nenhuma chave do state
+     foi tocada, então voltar ao index anterior não perde nada.
+     ============================================================ */
+  const emAtraso = cFin.atraso + cEnt.atraso;
+  const parcelaMes = f.fin.parcelaValor + (cEnt.pagas < f.entrada.parcelas ? f.entrada.parcelaValor : 0);
+  const porDiaUtil = parcelaMes / 22;
+
   host.innerHTML=`
-    <!-- CARD HERÓI -->
-    <div class="m-hero">
-      <div class="m-hero-label">⏳ Falta pagar (financiamento + cartão)</div>
-      <div class="m-hero-val">${fmt(restanteTudo)}</div>
-      <div class="m-hero-sub">de ${fmt(totalDivida)} · ${proxParcela()}</div>
-      <div class="m-progress"><span style="width:${pctTudo}%"></span></div>
-      <div class="m-progress-row"><span style="color:var(--gain)">Pago ${fmt(totalPago)}</span><span style="color:var(--hybrid)">${fmtN(pctTudo,1)}%</span></div>
-      <div class="m-chipline">
-        ${cFin.atraso+cEnt.atraso>0?`<span class="m-chip" style="background:var(--expense-bg);color:var(--expense);border-color:transparent">🔴 ${cFin.atraso+cEnt.atraso} em atraso</span>`:''}
-        <span class="m-chip next">🏦 ${cFin.pagas}/${f.fin.parcelas} financ.</span>
-        <span class="m-chip next">💳 ${cEnt.pagas}/${f.entrada.parcelas} cartão</span>
+    <div class="a-hero">
+      <div class="a-hero-k">Falta pagar</div>
+      <div class="a-hero-v">${fmt(restanteTudo)}</div>
+      <div class="a-hero-s">de ${fmt(totalDivida)} · ${proxParcela()}</div>
+      <div class="a-bar"><i style="width:${pctTudo}%"></i></div>
+      <div class="a-bar-lg">
+        <span>${fmtN(pctTudo,1)}% quitado</span>
+        <span>${fmt(totalPago)} pagos</span>
       </div>
     </div>
 
-    <!-- KPIs 2x2 -->
-    <div class="kpis">
-      <div class="kpi electric"><div class="k-label">Valor do carro</div><div class="k-val">${fmt(f.carValue)}</div><div class="k-sub">à vista</div></div>
-      <div class="kpi hybrid"><div class="k-label">Total financiado</div><div class="k-val">${fmt(totFin)}</div><div class="k-sub">${f.fin.parcelas}x ${fmt(f.fin.parcelaValor)}</div></div>
-      <div class="kpi expense"><div class="k-label">Juros financ.</div><div class="k-val">${fmt(jurosFin)}</div><div class="k-sub">sobre ${fmt(f.fin.valor)}</div></div>
-      <div class="kpi gain"><div class="k-label">Já quitado</div><div class="k-val">${fmtN(pctFin,0)}%</div><div class="k-sub">${fmt(pagoFin)} financ.</div></div>
+    ${emAtraso>0?`<div class="a-alert">
+      <b>${emAtraso} parcela${emAtraso>1?'s':''} em atraso</b>
+      Abra a lista abaixo para marcar o que já foi pago.
+    </div>`:''}
+
+    <div class="a-grid3">
+      <div class="a-tile"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div></div>
+      <div class="a-tile"><div class="t">Financiamento</div><div class="v">${cFin.pagas}<span class="u">/${f.fin.parcelas}</span></div></div>
+      <div class="a-tile"><div class="t">Cartão</div><div class="v">${cEnt.pagas}<span class="u">/${f.entrada.parcelas}</span></div></div>
     </div>
 
-    <!-- ACORDEÃO: parcelas financiamento -->
-    ${accParcelas('fin',f.fin,'🏦 Parcelas do financiamento',cFin)}
-    <!-- ACORDEÃO: parcelas entrada/cartão -->
-    ${accParcelas('entrada',f.entrada,'💳 Parcelas da entrada (cartão)',cEnt)}
+    <div class="a-card">
+      <h3>Quanto o carro precisa render</h3>
+      <div class="a-item">
+        <div class="a-ic neutral">31</div>
+        <div class="a-mid"><b>Por dia útil</b><small>considerando 22 dias no mês</small></div>
+        <div class="a-amt">${fmt(porDiaUtil)}</div>
+      </div>
+      <div class="a-item">
+        <div class="a-ic gain">%</div>
+        <div class="a-mid"><b>Já quitado do financiamento</b><small>${fmt(pagoFin)} de ${fmt(totFin)}</small></div>
+        <div class="a-amt gain">${fmtN(pctFin,0)}%</div>
+      </div>
+    </div>
 
-    <!-- ACORDEÃO: configuração -->
+    <div class="a-grid3 two">
+      <div class="a-tile"><div class="t">Valor do carro</div><div class="v">${fmt(f.carValue)}</div><div class="s">à vista</div></div>
+      <div class="a-tile"><div class="t">Juros do financiamento</div><div class="v cost">${fmt(jurosFin)}</div><div class="s">sobre ${fmt(f.fin.valor)}</div></div>
+    </div>
+
+    ${accParcelas('fin',f.fin,'Parcelas do financiamento',cFin)}
+    ${accParcelas('entrada',f.entrada,'Parcelas da entrada (cartão)',cEnt)}
+
     <div class="m-acc${_finAccOpen.cfg?' open':''}">
       <div class="m-acc-head" onclick="finAccToggle('cfg')">
-        <span class="t">⚙️ Configuração da compra</span>
+        <span class="t">Configuração da compra</span>
         <span class="r"><span class="m-acc-arrow">▸</span></span>
       </div>
       <div class="m-acc-body">
@@ -2463,7 +2546,7 @@ function renderFinanceMobile(){
         <div class="m-cfg-row"><span class="lbl">Entrada</span><span class="v">${fmt(f.entrada.valor)} · ${f.entrada.parcelas}x</span></div>
         <div class="m-cfg-row"><span class="lbl">Financiado</span><span class="v">${fmt(f.fin.valor)} · ${f.fin.parcelas}x</span></div>
         <div class="m-cfg-row"><span class="lbl">Taxa</span><span class="v">${fmtN(f.fin.taxa,2)}% a.m.</span></div>
-        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="openFinSheet()">✏️ Editar configuração</button>
+        <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px" onclick="openFinSheet()">Editar configuração</button>
       </div>
     </div>`;
 }
