@@ -3629,7 +3629,8 @@ function uNavGoDias(key){ resetSecoes(); state.uber.current=key; state.uber.year
 function uNavSetHeader(title,showBack){
   const t=document.getElementById('uNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('uBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('uberFab'); if(fab)fab.style.display=(_uNavLevel==='dias')?'':'none';
+  /* o + agora é o botão flutuante do rodapé, igual a Abastecimento e Manutenção */
+  const fab=document.getElementById('uberFab'); if(fab)fab.style.display='';
 }
 function renderUberMobile(){
   const body=document.getElementById('uNavBody');
@@ -3666,7 +3667,6 @@ function uRenderAnos(){
       <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
       <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
-      ${ehAnoAtual?`<button class="a-duo-add" onclick="event.stopPropagation();uAddHoje('${keyMes}')" aria-label="Lançar hoje">+</button>`:''}
     </div>
     <div class="a-duo-c">
       <div class="a-duo-k">Ano ${y}</div>
@@ -4118,6 +4118,11 @@ function uMonthPicker(){
 /* ===== BOTTOM SHEET Trabalho ===== */
 let _uSheetIdx=null,_uSheetDraft=null,_uSheetOrig=null;
 function openUSheet(i,focoLado){
+  /* veio da tela inicial? ancora no mês de hoje para não lançar num mês antigo */
+  if(i==null && _uNavLevel!=='dias'){
+    const h=new Date();
+    state.uber.current=h.getFullYear()+'-'+pad(h.getMonth()+1);
+  }
   const rows=ensureMonth(state.uber.current);
   _uSheetIdx=(i==null?null:i);
   if(i==null){
@@ -5877,7 +5882,7 @@ function pNavGoDias(key){ resetSecoes(); state.pessoal.current=key; state.pessoa
 function pNavSetHeader(title,showBack){
   const t=document.getElementById('pNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('pBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display=(_pNavLevel==='dias')?'':'none';
+  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display='';
 }
 function renderPessoalMobile(){
   const body=document.getElementById('pNavBody');
@@ -5908,7 +5913,6 @@ function pRenderAnos(){
       <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
       <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
-      ${ehAnoAtual?`<button class="a-duo-add" onclick="event.stopPropagation();pAddHoje('${keyMes}')" aria-label="Lançar hoje">+</button>`:''}
     </div>
     <div class="a-duo-c">
       <div class="a-duo-k">Ano ${y}</div>
@@ -6014,6 +6018,10 @@ function pMonthPicker(){
 let _pSheetIdx=null; // null = novo
 let _pSheetDraft=null,_pSheetOrig=null;
 function openPSheet(i,focoLado){
+  if(i==null && _pNavLevel!=='dias'){
+    const h=new Date();
+    state.pessoal.current=h.getFullYear()+'-'+pad(h.getMonth()+1);
+  }
   const rows=ensurePessoalMonth(state.pessoal.current);
   _pSheetIdx = (i==null?null:i);
   if(i==null){
@@ -8894,8 +8902,11 @@ function desativarTranca(){
 }
 
 /* ---------- destravar ---------- */
+let _bioEmAndamento=false;   /* uma solicitação de biometria por vez */
 function mostrarTranca(){
   const el=document.getElementById('lockScreen'); if(!el)return;
+  /* solicitação em curso? não reabre — reabrir dispara uma segunda biometria */
+  if(_bioEmAndamento)return;
   const cfg=lockCfg();
   const bio=document.getElementById('lockBioBtn');
   if(bio) bio.style.display=(cfg&&cfg.bio)?'':'none';
@@ -8921,6 +8932,8 @@ async function destravarComPin(){
 
 async function destravarComBiometria(silencioso){
   const cfg=lockCfg(); if(!cfg||!cfg.bio){ return; }
+  if(_bioEmAndamento)return;   /* evita dois prompts simultâneos */
+  _bioEmAndamento=true;
   try{
     const desafio=new Uint8Array(32); crypto.getRandomValues(desafio);
     const raw=Uint8Array.from(atob(cfg.credId),c=>c.charCodeAt(0));
@@ -8932,6 +8945,10 @@ async function destravarComBiometria(silencioso){
     if(r) esconderTranca();
   }catch(e){
     if(!silencioso) lockMsg('Biometria não reconhecida. Use o PIN.');
+  }finally{
+    /* pequena folga antes de liberar: o visibilitychange que o prompt do sistema
+       provoca chega logo depois, e sem essa folga ele pediria biometria de novo */
+    setTimeout(()=>{_bioEmAndamento=false},800);
   }
 }
 
@@ -8947,8 +8964,13 @@ function sairPelaTranca(){
    de app rapidinho pra conferir um endereço. */
 let _saiuEm=0;
 document.addEventListener('visibilitychange',()=>{
+  /* o prompt de biometria do sistema deixa a página oculta: sem esta guarda o app
+     entendia isso como "saiu do app" e, ao voltar, pedia a digital uma segunda vez */
+  if(_bioEmAndamento) return;
   if(document.hidden){ _saiuEm=Date.now(); return; }
   if(!trancaAtiva()) return;
+  const lock=document.getElementById('lockScreen');
+  if(lock && lock.style.display!=='none') return;   /* tranca já visível */
   if(_saiuEm && (Date.now()-_saiuEm)>30000){ _appDestravado=false; mostrarTranca(); }
 });
 
