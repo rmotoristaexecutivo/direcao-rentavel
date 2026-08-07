@@ -831,6 +831,19 @@ table.sched{min-width:0}
 .sec-body .a-grid3.two{grid-template-columns:repeat(2,1fr)}
 @media (max-width:360px){.sec-body .a-grid3{grid-template-columns:1fr}}
 
+/* campo digitável do "dias no mês" */
+.a-step-in{width:104px;background:var(--bg2);border:1px solid var(--line-strong);border-radius:12px;
+  padding:6px 8px;color:var(--txt);text-align:center;
+  font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.a-step-in:focus{outline:none;border-color:var(--neutral)}
+.a-steps .a-step-v{display:flex;flex-direction:column;align-items:center;gap:2px}
+
+/* valores em reais não devem quebrar linha: encolhem a fonte quando não cabem.
+   "R$ 3.277,84" estava virando "R$ 3.277,8" + "4" na linha de baixo. */
+.a-tile .v{white-space:nowrap;overflow-wrap:normal;font-size:clamp(15px,4.6vw,23px)}
+.a-tile .t{overflow-wrap:break-word}
+
 /* chips de período e de fonte com largura igual — em faixa livre eles ficavam
    de tamanhos diferentes conforme o texto, e a grade parecia desalinhada */
 .per-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
@@ -2750,7 +2763,12 @@ function renderFinanceMobile(){
       </div>
       <div class="a-item a-steps">
         <button class="a-step" onclick="setFinDias(${diasUteis-1})" ${diasUteis<=1?'disabled':''}>−</button>
-        <div class="a-step-v">${diasUteis} <small>dias no mês</small></div>
+        <div class="a-step-v">
+          <input id="finDiasInput" class="a-step-in" inputmode="numeric" value="${diasUteis}"
+                 onchange="setFinDias(this.value)" onblur="setFinDias(this.value)"
+                 onfocus="this.select()">
+          <small>dias no mês</small>
+        </div>
         <button class="a-step" onclick="setFinDias(${diasUteis+1})" ${diasUteis>=31?'disabled':''}>+</button>
       </div>
       <div class="a-item">
@@ -2776,8 +2794,10 @@ function renderFinanceMobile(){
    dinheiro, e o nome antigo assumia uma forma de pagamento só.
    ============================================================ */
 function setFinDias(n){
-  n=Math.max(1,Math.min(31,Number(n)||22));
-  state.finance.diasUteis=n;
+  const v=parseNum(n);
+  /* campo apagado ou inválido: mantém o valor atual em vez de voltar para 22 */
+  if(!(v>0)){ renderFinance(); return; }
+  state.finance.diasUteis=Math.max(1,Math.min(31,Math.round(v)));
   save();
   renderFinance();
 }
