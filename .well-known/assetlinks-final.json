@@ -1,0 +1,12 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "br.com.direcaorentavel.app",
+    "sha256_cert_fingerprints": [
+      "B0:09:82:BE:3F:15:E8:F5:FA:58:D8:C6:CA:3F:3C:A5:8F:66:0B:32:DF:6D:38:0A:7B:59:E5:A2:1C:CE:71:E8",
+      "06:CB:12:FA:50:3F:39:20:B6:9D:67:A3:5D:1B:FF:1A:B7:2F:30:DC:5C:E3:62:52:7F:BD:D0:44:A2:E6:6E:64",
+      "A5:D4:7B:B2:B3:91:6B:F8:E4:66:58:D2:AD:E8:92:FE:28:3D:9B:CE:42:83:75:17:4E:29:1A:0F:BC:7A:75:D6"
+    ]
+  }
+}]
