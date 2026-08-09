@@ -107,6 +107,8 @@
   --hybrid-bg:rgba(255,194,71,.14);
   --neutral:#6ea8ff;     /* azul neutro - cor do saldo */
   --neutral-bg:rgba(110,168,255,.14);
+  --roxo:#a371f7;        /* pessoal / reservas */
+  --roxo-bg:rgba(163,113,247,.15);
   --radius:16px;
   --radius-sm:10px;
   --header-bg:rgba(10,14,20,.9);   /* fundo do header no mobile - tema escuro */
@@ -126,6 +128,7 @@
   --electric:#0d9488;    --electric-bg:rgba(13,148,136,.12);
   --hybrid:#f5a524;      --hybrid-bg:#fef4e2;
   --neutral:#2c6ef2;     --neutral-bg:#e8f0fe;
+  --roxo:#8250df;        --roxo-bg:#fbefff;
   --header-bg:rgba(244,247,251,.9);   /* fundo do header no mobile - tema claro */
 }
 [data-theme="light"] body::before{
@@ -865,6 +868,68 @@ table.sched{min-width:0}
 .md-saldo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-variant-numeric:tabular-nums}
 .md-mes{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
 .md-mes .md-sub{overflow:hidden}
+
+/* ============================================================
+   FAIXAS DE COR POR CATEGORIA (cenário 3)
+   Card neutro com uma tarja colorida à esquerda. A cor identifica do que se
+   trata sem pintar a tela inteira — no escuro, cor cheia em área grande cansa
+   a vista à noite, que é quando o app mais é usado.
+   As cores do tema escuro são versões mais claras das do claro, para manter
+   contraste suficiente sobre o fundo escuro.
+   ============================================================ */
+.a-tile,.kpi,.a-card,.a-hero,.a-mlist,.a-act,.a-op{position:relative;overflow:hidden}
+
+/* a faixa em si */
+.a-tile::before,.kpi::before,.a-hero::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--faixa,var(--neutral));border-radius:4px 0 0 4px}
+.a-tile,.kpi{padding-left:15px}
+.a-hero{padding-left:20px}
+
+/* variações por natureza do dado */
+.f-gain{--faixa:var(--gain)}
+.f-cost{--faixa:var(--expense)}
+.f-neutral{--faixa:var(--neutral)}
+.f-fuel{--faixa:var(--hybrid)}
+.f-ev{--faixa:var(--electric)}
+.f-roxo{--faixa:var(--roxo)}
+
+/* o valor herda a cor da faixa quando faz sentido */
+.a-tile.f-gain .v,.kpi.f-gain .k-val{color:var(--gain)}
+/* números pequenos (o subtítulo do tile) usam tom mais escuro no tema claro */
+.a-tile .s{color:var(--txt-faint)}
+.a-tile.f-cost .v,.kpi.f-cost .k-val{color:var(--expense)}
+.a-tile.f-neutral .v,.kpi.f-neutral .k-val{color:var(--neutral)}
+.a-tile.f-fuel .v,.kpi.f-fuel .k-val{color:var(--hybrid)}
+.a-tile.f-ev .v,.kpi.f-ev .k-val{color:var(--electric)}
+.a-tile.f-roxo .v,.kpi.f-roxo .k-val{color:var(--roxo)}
+
+/* no escuro, o âmbar puro fica fraco sobre fundo escuro: sobe o brilho */
+/* no tema CLARO o âmbar #f5a524 dá só 2:1 de contraste no branco — ilegível.
+   O texto usa um tom mais fechado; a faixa e os fundos seguem com o âmbar vivo,
+   porque ali a cor identifica, não precisa ser lida. */
+.a-tile.f-fuel .v,.kpi.f-fuel .k-val{color:#b45309}
+[data-theme="dark"] .a-tile.f-fuel .v,[data-theme="dark"] .kpi.f-fuel .k-val{color:#ffcf5c}
+[data-theme="dark"] .a-tile.f-ev .v,[data-theme="dark"] .kpi.f-ev .k-val{color:#5ee6d0}
+
+/* ícones das listas ganham o fundo da cor */
+.a-ic.roxo{background:var(--roxo-bg);color:var(--roxo)}
+.a-ic.fuel{background:var(--hybrid-bg);color:var(--hybrid)}
+.a-ic.ev{background:var(--electric-bg);color:var(--electric)}
+[data-theme="dark"] .a-ic.fuel{color:#ffcf5c}
+[data-theme="dark"] .a-ic.ev{color:#5ee6d0}
+
+/* faixa também nos atalhos e nos botões de ação da Corp */
+.a-act::before,.a-op::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--faixa,var(--line-strong))}
+.a-op.gain{--faixa:var(--gain)} .a-op.cost{--faixa:var(--expense)}
+.a-act{--faixa:var(--neutral)}
+
+/* o card de metas do dia mantém a borda de estado (verde/vermelho) e ganha faixa */
+.md-card{--faixa:var(--neutral)}
+.md-card.md-ok{--faixa:var(--gain)}
+.md-card.md-alerta{--faixa:var(--expense)}
 
 /* ---------- alerta em tela cheia (3 segundos) ---------- */
 #alertaFlash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
@@ -2800,7 +2865,7 @@ function renderFinanceMobile(){
         <span class="a-act-ic">⚙</span>
         <span class="a-act-t">Configuração</span></button>
     </div>
-    <div class="a-hero">
+    <div class="a-hero f-neutral">
       <div class="a-hero-k">Falta pagar</div>
       <div class="a-hero-v">${fmt(restanteTudo)}</div>
       <div class="a-hero-s">de ${fmt(totalDivida)} · ${proxParcela()}</div>
@@ -2817,9 +2882,9 @@ function renderFinanceMobile(){
     </div>`:''}
 
     <div class="a-grid3">
-      <div class="a-tile"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div><div class="s">só financiamento</div></div>
-      <div class="a-tile"><div class="t">Parcela da entrada</div><div class="v">${fmt(parcelaEntradaAtiva)}</div><div class="s">${parcelaEntradaAtiva>0?'ainda ativa':'quitada'}</div></div>
-      <div class="a-tile"><div class="t">Sai por mês</div><div class="v">${fmt(parcelaMes+parcelaEntradaAtiva)}</div><div class="s">soma das duas</div></div>
+      <div class="a-tile f-neutral"><div class="t">Parcela do mês</div><div class="v">${fmt(parcelaMes)}</div><div class="s">só financiamento</div></div>
+      <div class="a-tile f-roxo"><div class="t">Parcela da entrada</div><div class="v">${fmt(parcelaEntradaAtiva)}</div><div class="s">${parcelaEntradaAtiva>0?'ainda ativa':'quitada'}</div></div>
+      <div class="a-tile f-cost"><div class="t">Sai por mês</div><div class="v">${fmt(parcelaMes+parcelaEntradaAtiva)}</div><div class="s">soma das duas</div></div>
     </div>
 
     <div class="a-card">
@@ -2847,8 +2912,8 @@ function renderFinanceMobile(){
     </div>
 
     <div class="a-grid3 two">
-      <div class="a-tile"><div class="t">Valor do carro</div><div class="v">${fmt(f.carValue)}</div><div class="s">à vista</div></div>
-      <div class="a-tile"><div class="t">Juros do financiamento</div><div class="v cost">${fmt(jurosFin)}</div><div class="s">sobre ${fmt(f.fin.valor)}</div></div>
+      <div class="a-tile f-neutral"><div class="t">Valor do carro</div><div class="v">${fmt(f.carValue)}</div><div class="s">à vista</div></div>
+      <div class="a-tile f-cost"><div class="t">Juros do financiamento</div><div class="v cost">${fmt(jurosFin)}</div><div class="s">sobre ${fmt(f.fin.valor)}</div></div>
     </div>
 
 
@@ -3751,12 +3816,12 @@ function uRenderAnos(){
 
   /* dois blocos lado a lado: o mês (onde se lança) e o ano (o acumulado) */
   const topo=`<div class="a-duo">
-    <div class="a-duo-c" onclick="${ehAnoAtual?`uNavGoDias('${keyMes}')`:''}">
+    <div class="a-duo-c f-cost" onclick="${ehAnoAtual?`uNavGoDias('${keyMes}')`:''}">
       <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
       <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
     </div>
-    <div class="a-duo-c">
+    <div class="a-duo-c f-roxo">
       <div class="a-duo-k">Ano ${y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totAno)}</div>
       <div class="a-duo-s">acumulado</div>
@@ -4112,19 +4177,19 @@ function uRenderDias(){
   const kmTot = tot.kmIda + tot.kmVolta;
   const custoKm = kmTot>0 ? tot.gastoTrabalho/kmTot : 0;
   const kpisHtml=`
-  <div class="a-hero">
+  <div class="a-hero f-cost">
     <div class="a-hero-k">Gasto do mês</div>
     <div class="a-hero-v" style="color:var(--expense)">${fmt(tot.gastoTrabalho)}</div>
     <div class="a-hero-s">${rows.length} dia(s) lançado(s) · ${fmtN(kmTot,0)} km rodados</div>
   </div>
   <div class="a-grid3">
-    <div class="a-tile"><div class="t">Combustível</div><div class="v">${fmt(tot.trabComb)}</div><div class="s">${fmtN(tot.trabLitros,1)} L</div></div>
-    <div class="a-tile"><div class="t">EV</div><div class="v">${fmt(tot.trabEl)}</div><div class="s">${fmtN(tot.trabKwh,1)} kWh</div></div>
-    <div class="a-tile"><div class="t">Pedágio</div><div class="v">${fmt(tot.pedagioTotal)}</div><div class="s">ida + volta</div></div>
+    <div class="a-tile f-fuel"><div class="t">Combustível</div><div class="v">${fmt(tot.trabComb)}</div><div class="s">${fmtN(tot.trabLitros,1)} L</div></div>
+    <div class="a-tile f-ev"><div class="t">EV</div><div class="v">${fmt(tot.trabEl)}</div><div class="s">${fmtN(tot.trabKwh,1)} kWh</div></div>
+    <div class="a-tile f-roxo"><div class="t">Pedágio</div><div class="v">${fmt(tot.pedagioTotal)}</div><div class="s">ida + volta</div></div>
   </div>
   <div class="a-grid3 two">
-    <div class="a-tile"><div class="t">Custo por km</div><div class="v">${fmt(custoKm)}</div></div>
-    <div class="a-tile"><div class="t">Média por dia</div><div class="v">${fmt(rows.length?tot.gastoTrabalho/rows.length:0)}</div></div>
+    <div class="a-tile f-cost"><div class="t">Custo por km</div><div class="v">${fmt(custoKm)}</div></div>
+    <div class="a-tile f-cost"><div class="t">Média por dia</div><div class="v">${fmt(rows.length?tot.gastoTrabalho/rows.length:0)}</div></div>
   </div>`;
   // o índice usado nos cards precisa ser o da base REAL (allRows), não o do array filtrado,
   // pra editar/excluir a linha certa
@@ -4544,15 +4609,15 @@ function renderVeiculo(){
     </div>`).join('');
 
   el.innerHTML=`
-  <div class="a-hero">
+  <div class="a-hero f-roxo">
     <div class="a-hero-k">Separar por dia trabalhado</div>
     <div class="a-hero-v" style="color:var(--hybrid)">${fmt(r.totalDia)}</div>
     <div class="a-hero-s">${fmt(r.totalMes)} por mês · base de ${r.dias} dias</div>
   </div>
 
   <div class="a-grid3 two">
-    <div class="a-tile"><div class="t">Valor FIPE</div><div class="v">${fmt(v.valorFipe)}</div><div class="s">${v.proprio?'veículo próprio':'veículo alugado'}</div></div>
-    <div class="a-tile"><div class="t">Reserva no ano</div><div class="v">${fmt(r.totalMes*12)}</div><div class="s">soma de tudo</div></div>
+    <div class="a-tile f-neutral"><div class="t">Valor FIPE</div><div class="v">${fmt(v.valorFipe)}</div><div class="s">${v.proprio?'veículo próprio':'veículo alugado'}</div></div>
+    <div class="a-tile f-roxo"><div class="t">Reserva no ano</div><div class="v">${fmt(r.totalMes*12)}</div><div class="s">soma de tudo</div></div>
   </div>
 
   <div class="a-card">
@@ -5161,7 +5226,7 @@ function renderOpReportCard(rows,tot){
   const kwh     = tot.qtdaKwh||0;
   const kmKwh   = kwh>0 ? tot.kmTotal/kwh : 0;
 
-  const tile=(t,v,s2)=>`<div class="a-tile"><div class="t">${t}</div><div class="v">${v}</div>${s2?`<div class="s">${s2}</div>`:''}</div>`;
+  const tile=(t,v,s2,f)=>`<div class="a-tile ${f||'f-neutral'}"><div class="t">${t}</div><div class="v">${v}</div>${s2?`<div class="s">${s2}</div>`:''}</div>`;
 
   el.innerHTML=`
     <div class="a-card a-mescard">
@@ -5177,21 +5242,21 @@ function renderOpReportCard(rows,tot){
       </div>
 
       <div class="a-grid3" style="margin:14px 0 0">
-        ${tile('Viagens',fmtN(tot.corridas,0))}
-        ${tile('Km',fmtN(tot.kmTotal,0))}
-        ${tile('Horas',`${pad(hh)}:${pad(mm)}`)}
-        ${tile('Ganho por km',tot.kmTotal>0?fmt(gpk):'—')}
-        ${tile('Ganho por hora',tot.horas>0?fmt(gph):'—')}
-        ${tile('Custo por km',tot.kmTotal>0?fmt(cpk):'—')}
+        ${tile('Viagens',fmtN(tot.corridas,0),'','f-neutral')}
+        ${tile('Km',fmtN(tot.kmTotal,0),'','f-ev')}
+        ${tile('Horas',`${pad(hh)}:${pad(mm)}`,'','f-roxo')}
+        ${tile('Ganho por km',tot.kmTotal>0?fmt(gpk):'—','','f-gain')}
+        ${tile('Ganho por hora',tot.horas>0?fmt(gph):'—','','f-gain')}
+        ${tile('Custo por km',tot.kmTotal>0?fmt(cpk):'—','','f-cost')}
       </div>
 
       ${secWrap('op-mais','Ver mais números',`<div class="a-grid3" style="margin:0">
-        ${tile('Dias trabalhados',fmtN(diasTrabalhados,0))}
-        ${tile('Ganho por viagem',tot.corridas>0?fmt(gpv):'—')}
-        ${tile('Km por dia',diasTrabalhados>0?fmtN(kmDia,1):'—')}
-        ${tile('Km por viagem',tot.corridas>0?fmtN(kmViag,1):'—')}
-        ${tile('Km por hora',tot.horas>0?fmtN(kmHora,1):'—')}
-        ${tile('Km por kWh',kmKwh>0?fmtN(kmKwh,1):'—')}
+        ${tile('Dias trabalhados',fmtN(diasTrabalhados,0),'','f-neutral')}
+        ${tile('Ganho por viagem',tot.corridas>0?fmt(gpv):'—','','f-gain')}
+        ${tile('Km por dia',diasTrabalhados>0?fmtN(kmDia,1):'—','','f-ev')}
+        ${tile('Km por viagem',tot.corridas>0?fmtN(kmViag,1):'—','','f-ev')}
+        ${tile('Km por hora',tot.horas>0?fmtN(kmHora,1):'—','','f-ev')}
+        ${tile('Km por kWh',kmKwh>0?fmtN(kmKwh,1):'—','','f-fuel')}
       </div>`)}
 
       ${catsHtml}
@@ -6479,12 +6544,12 @@ function pRenderAnos(){
     +_btnAddAno('pessoal')+_btnRemoveAno(y,'pessoal');
 
   const topo=`<div class="a-duo">
-    <div class="a-duo-c" onclick="${ehAnoAtual?`pNavGoDias('${keyMes}')`:''}">
+    <div class="a-duo-c f-cost" onclick="${ehAnoAtual?`pNavGoDias('${keyMes}')`:''}">
       <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
       <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
     </div>
-    <div class="a-duo-c">
+    <div class="a-duo-c f-roxo">
       <div class="a-duo-k">Ano ${y}</div>
       <div class="a-duo-v" style="color:var(--expense)">${fmt(totAno)}</div>
       <div class="a-duo-s">acumulado</div>
@@ -6917,15 +6982,15 @@ function abRenderMeses(){
   const mediaAno = (totAno>0 && litrosAno>0) ? totAno/litrosAno : 0;
   document.getElementById('abastNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}</div>
-    <div class="a-hero">
+    <div class="a-hero f-fuel">
       <div class="a-hero-k">Combustível em ${y}</div>
       <div class="a-hero-v" style="color:var(--expense)">${fmt(gastoAno)}</div>
       <div class="a-hero-s">${fmtN(litrosAno,1)} L${kwhAno>0?` · ${fmtN(kwhAno,1)} kWh`:''} · ${fmtN(totAno,0)} km</div>
     </div>
     <div class="a-grid3">
-      <div class="a-tile"><div class="t">Consumo médio</div><div class="v">${mediaAno>0?fmtN(mediaAno,1):'—'}<span class="u">km/l</span></div></div>
-      <div class="a-tile"><div class="t">Custo por km</div><div class="v">${totAno>0?fmt(gastoAno/totAno):'—'}</div></div>
-      <div class="a-tile"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
+      <div class="a-tile f-gain"><div class="t">Consumo médio</div><div class="v">${mediaAno>0?fmtN(mediaAno,1):'—'}<span class="u">km/l</span></div></div>
+      <div class="a-tile f-cost"><div class="t">Custo por km</div><div class="v">${totAno>0?fmt(gastoAno/totAno):'—'}</div></div>
+      <div class="a-tile f-roxo"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
     </div>
     ${secWrap('ab-meses','Meses',`<div class="a-mlist">${cards}</div>`)}
     ${abKmChart(chartItems)}`;
@@ -7238,14 +7303,14 @@ function mRenderMeses(){
   }
   document.getElementById('manutNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}</div>
-    <div class="a-hero">
+    <div class="a-hero f-cost">
       <div class="a-hero-k">Manutenção em ${y}</div>
       <div class="a-hero-v" style="color:var(--expense)">${fmt(gastoAno)}</div>
       <div class="a-hero-s">${servicosAno} serviço(s)${ultimo?` · último em ${MESES[ultimo.mes-1].toLowerCase()}`:''}</div>
     </div>
     <div class="a-grid3 two">
-      <div class="a-tile"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
-      <div class="a-tile"><div class="t">Por serviço</div><div class="v">${servicosAno>0?fmt(gastoAno/servicosAno):'—'}</div></div>
+      <div class="a-tile f-roxo"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
+      <div class="a-tile f-cost"><div class="t">Por serviço</div><div class="v">${servicosAno>0?fmt(gastoAno/servicosAno):'—'}</div></div>
     </div>
     ${secWrap('mn-meses','Meses',`<div class="a-mlist">${cards}</div>`)}`;
 }
