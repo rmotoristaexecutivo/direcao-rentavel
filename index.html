@@ -880,10 +880,13 @@ table.sched{min-width:0}
 .a-tile,.kpi,.a-card,.a-hero,.a-mlist,.a-act,.a-op{position:relative;overflow:hidden}
 
 /* a faixa em si */
-.a-tile::before,.kpi::before,.a-hero::before{
+.a-tile::before,.kpi::before,.a-hero::before,.a-duo-c::before,.a-mlist::before{
   content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
   background:var(--faixa,var(--neutral));border-radius:4px 0 0 4px}
 .a-tile,.kpi{padding-left:15px}
+.a-duo-c{padding-left:18px}
+.a-mlist{--faixa:var(--neutral)}
+.a-mlist::before{border-radius:4px 0 0 4px}
 .a-hero{padding-left:20px}
 
 /* variações por natureza do dado */
@@ -1775,7 +1778,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   </nav>
 
   <!-- =================== ABA FINANCIAMENTO =================== -->
-  <section class="view active" id="view-finance">
+  <section class="view" id="view-finance">
 
     <!-- ===== MOBILE: card-herói + acordeões compactos ===== -->
     <div class="mobile-only" id="finMobile"></div>
@@ -2121,7 +2124,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   </div>
 
   <!-- =================== ABA MANUTENÇÃO =================== -->
-  <section class="view" id="view-veiculo">
+  <section class="view active" id="view-veiculo">
     <div class="m-navbar"><div class="m-navbar-title">Veículo e reservas</div></div>
     <div id="veiculoBody"></div>
   </section>
@@ -4865,11 +4868,11 @@ function renderMetaDia(){
       <button class="md-edit" onclick="abrirMetaDiaModal()">ajustar</button>
     </h3>
 
-    ${!temMeta?`<div class="lanc-empty" style="margin:0">
+    ${!temMeta?`<div class="lanc-empty" style="margin:0 0 4px">
       Defina quanto quer ganhar e quanto pode gastar por dia para receber os avisos.
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
               onclick="abrirMetaDiaModal()">Definir metas do dia</button>
-    </div>`:`
+    </div>${metaMesBloco()}`:`
       ${m.ganho>0?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Ganhar hoje</span>
@@ -8840,6 +8843,7 @@ function initApp(){
     renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();
     renderResumo();renderPessoal();renderAbastecimento();renderManutencao();renderResumoTab();
   };
+  renderVeiculo();   /* o app abre na guia Veículo */
   renderFinanceInputs();
   renderFinance();
   renderUberCfg();
