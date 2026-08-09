@@ -933,6 +933,28 @@ table.sched{min-width:0}
 .rs-tag.ok{background:var(--gain-bg);color:var(--gain)}
 .rs-tag.ruim{background:var(--expense-bg);color:var(--expense)}
 
+/* ---------- seletor de períodos por ano ---------- */
+.cmp-ano{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--bg2)}
+.cmp-ano-h{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:none;border:0;padding:12px 14px;cursor:pointer;color:var(--txt)}
+.cmp-ano-h b{font-family:'Sora';font-size:15px;font-weight:700}
+.cmp-ano-r{display:flex;align-items:center;gap:8px}
+.cmp-badge{font-style:normal;font-size:10.5px;font-weight:800;background:var(--neutral);color:#fff;
+  min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 6px}
+.cmp-arrow{font-size:11px;color:var(--txt-faint);transition:transform .2s}
+.cmp-ano.open .cmp-arrow{transform:rotate(180deg)}
+.cmp-ano-b{display:none;padding:0 12px 12px}
+.cmp-ano.open .cmp-ano-b{display:block}
+.cmp-todos{width:100%;margin-top:9px;background:none;border:1px dashed var(--line-strong);
+  color:var(--txt-dim);font:600 11.5px Manrope;padding:8px;border-radius:10px;cursor:pointer}
+.cmp-sel{background:var(--neutral-bg);border-radius:12px;padding:11px 12px;margin-bottom:12px}
+.cmp-sel-t{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--neutral);margin-bottom:7px}
+.cmp-sel-l{display:flex;gap:6px;flex-wrap:wrap}
+.cmp-sel-chip{background:var(--panel-solid);border:1px solid var(--line);color:var(--txt);
+  font:600 11.5px Manrope;padding:5px 9px;border-radius:8px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+.cmp-sel-chip i{font-style:normal;color:var(--txt-faint);font-size:10px}
+
 /* ============================================================
    FAIXAS DE COR POR CATEGORIA (cenário 3)
    Card neutro com uma tarja colorida à esquerda. A cor identifica do que se
@@ -7861,6 +7883,7 @@ function abrirResCmpSel(lado){
       <div id="resCmpSelBody" style="max-height:52vh;overflow:auto"></div>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn" style="flex:1" onclick="resCmpSelNenhum()">Limpar</button>
+        ${_resCmpLado==='geral'?`<button class="btn" style="flex:1" onclick="resCmpSelPadrao()">Últimos 3 meses</button>`:''}
         <button class="btn primary" style="flex:1" onclick="fecharResCmpSel()">Pronto</button>
       </div>
     </div>`;
@@ -7877,14 +7900,25 @@ function fecharResCmpSel(fromBack){
   if(!fromBack)navPop();
   renderResumoTab();
 }
-function resCmpSelNenhum(){ _resCmp[_resCmpLado].chaves=[]; renderResCmpSel(); }
+function resCmpSelNenhum(){
+  if(_resCmpLado==='geral')_resCmp.geral.manual=true;
+  _resCmp[_resCmpLado].chaves=[]; renderResCmpSel();
+}
+/* volta ao padrão dos últimos 3 meses */
+function resCmpSelPadrao(){
+  if(_resCmpLado!=='geral')return;
+  _resCmp.geral.manual=false; _resCmp.geral.chaves=[]; _resCmp.geral.montadoEm='';
+  garantirPadraoGeral(); renderResCmpSel();
+}
 function resCmpToggleKey(key){
+  if(_resCmpLado==='geral')_resCmp.geral.manual=true;
   const arr=_resCmp[_resCmpLado].chaves;
   const i=arr.indexOf(key);
   if(i>=0)arr.splice(i,1); else arr.push(key);
   renderResCmpSel();
 }
 function resCmpAno(y){   // marca/desmarca os 12 meses de um ano de uma vez
+  if(_resCmpLado==='geral')_resCmp.geral.manual=true;
   const lado=_resCmpLado, gran=_resCfg[lado].gran;
   const opts=resPeriodosOferecidos(gran,resCollect()).filter(o=>o.ano===y);
   const arr=_resCmp[lado].chaves;
@@ -7896,36 +7930,66 @@ function resCmpAno(y){   // marca/desmarca os 12 meses de um ano de uma vez
   });
   renderResCmpSel();
 }
+let _cmpAnoAberto=null;   /* qual ano está expandido no seletor */
+function cmpToggleAno(y){
+  _cmpAnoAberto = (_cmpAnoAberto===y) ? null : y;
+  renderResCmpSel();
+}
 function renderResCmpSel(){
   const body=document.getElementById('resCmpSelBody'); if(!body)return;
   const lado=_resCmpLado, gran=_resCfg[lado].gran;
   const opts=resPeriodosOferecidos(gran,resCollect());
   const marcadas=_resCmp[lado].chaves;
   const anos=[...new Set(opts.map(o=>o.ano).filter(a=>a!=null))];
+  const anoHoje=new Date().getFullYear();
+  if(_cmpAnoAberto===null)_cmpAnoAberto=anos.includes(anoHoje)?anoHoje:anos[0];
+
   let html='';
   if(anos.length){
+    /* ============================================================
+       SELETOR POR ANO (recolhido)
+       Antes a tela despejava todos os meses de todos os anos de uma vez — com
+       poucos anos já eram dezenas de botões. Agora cada ano é uma linha que abre
+       quando tocada, e só um fica aberto por vez.
+       ============================================================ */
     anos.forEach(y=>{
       const doAno=opts.filter(o=>o.ano===y);
-      html+=`<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <b style="font-family:'Sora';font-size:14px">${y}</b>
-          <button class="per-chip" onclick="resCmpAno(${y})">ano todo</button>
+      const nMarc=doAno.filter(o=>marcadas.includes(o.key)).length;
+      const aberto=(_cmpAnoAberto===y);
+      html+=`<div class="cmp-ano${aberto?' open':''}">
+        <button class="cmp-ano-h" onclick="cmpToggleAno(${y})">
+          <b>${y}</b>
+          <span class="cmp-ano-r">
+            ${nMarc?`<i class="cmp-badge">${nMarc}</i>`:''}
+            <span class="cmp-arrow">▾</span>
+          </span>
+        </button>
+        <div class="cmp-ano-b">
+          <div class="per-grid">${doAno.map(o=>
+            `<button class="per-chip${marcadas.includes(o.key)?' active':''}"
+               onclick="resCmpToggleKey('${o.key}')">${o.label.replace('/'+y,'')}</button>`
+          ).join('')}</div>
+          <button class="cmp-todos" onclick="resCmpAno(${y})">
+            ${nMarc===doAno.length?'desmarcar o ano':'marcar o ano todo'}</button>
         </div>
-        <div class="per-bar">${doAno.map(o=>
-          `<button class="per-chip${marcadas.includes(o.key)?' active':''}"
-             onclick="resCmpToggleKey('${o.key}')">${marcadas.includes(o.key)?'✓ ':''}${o.label}</button>`
-        ).join('')}</div>
       </div>`;
     });
   }else{
-    html=`<div class="per-bar">${opts.map(o=>
+    html=`<div class="per-grid">${opts.map(o=>
       `<button class="per-chip${marcadas.includes(o.key)?' active':''}"
-         onclick="resCmpToggleKey('${o.key}')">${marcadas.includes(o.key)?'✓ ':''}${o.label}</button>`
+         onclick="resCmpToggleKey('${o.key}')">${o.label}</button>`
     ).join('')}</div>`;
   }
-  html+=`<div style="font-size:12.5px;color:var(--txt-dim);margin-top:6px">
-    ${marcadas.length} período(s) selecionado(s)</div>`;
-  body.innerHTML=html;
+
+  const sel=marcadas.slice().sort().map(k=>
+    `<button class="cmp-sel-chip" onclick="resCmpToggleKey('${k}')">${resLabel(k)} <i>✕</i></button>`).join('');
+
+  body.innerHTML=`
+    ${marcadas.length?`<div class="cmp-sel">
+      <div class="cmp-sel-t">${marcadas.length} selecionado(s)</div>
+      <div class="cmp-sel-l">${sel}</div>
+    </div>`:''}
+    ${html}`;
 }
 
 /* ---- render do comparativo ---- */
@@ -7934,7 +7998,7 @@ function renderResCmpSel(){
    (restaurado: um recorte anterior levou este bloco junto com o comparativo)
    ============================================================ */
 const _resGeral={
-  gran:'mes', aberto:true,
+  gran:'mes', aberto:false,
   fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}
 };
 _resCmp.geral={ativo:true,chaves:[]};
@@ -7943,6 +8007,31 @@ _resCfg.geral=_resGeral;
 function toggleResGeral(){ _resGeral.aberto=!_resGeral.aberto; renderResumoTab(); }
 function setResGeralGran(g){ _resGeral.gran=g; _resCmp.geral.chaves=[]; renderResumoTab(); }
 function toggleResGeralFonte(f){ _resGeral.fontes[f]=!_resGeral.fontes[f]; renderResumoTab(); }
+
+/* ============================================================
+   PADRÃO DO GERAL: os últimos 3 meses, sempre atuais
+   Guardamos o mês em que a seleção foi montada. Quando o mês vira, se a pessoa
+   não tiver escolhido nada à mão, a seleção anda junto — assim o card abre
+   sempre mostrando o período recente, sem precisar mexer.
+   ============================================================ */
+function ultimosMeses(n){
+  const out=[], d=new Date();
+  for(let i=n-1;i>=0;i--){
+    const x=new Date(d.getFullYear(), d.getMonth()-i, 1);
+    out.push(`M:${x.getFullYear()}-${pad(x.getMonth()+1)}`);
+  }
+  return out;
+}
+function garantirPadraoGeral(){
+  const c=_resCmp.geral;
+  const mesAtual=hojeKey().slice(0,7);
+  if(c.manual)return;                        /* a pessoa escolheu: não mexemos */
+  if(c.chaves.length && c.montadoEm===mesAtual)return;
+  c.chaves=ultimosMeses(3);
+  c.montadoEm=mesAtual;
+  /* todas as fontes de gasto marcadas por padrão, menos as que contam em dobro */
+  _resGeral.fontes.trabalho=true; _resGeral.fontes.corp=true; _resGeral.fontes.pessoal=true;
+}
 
 function resGeralPeriodo(itens,key,gran){
   const ent=resAgrega(itens,'entrada',key,gran);
@@ -7959,6 +8048,7 @@ function resGeralPeriodo(itens,key,gran){
 }
 
 function resGeralHtml(itens){
+  garantirPadraoGeral();
   const gran=_resGeral.gran;
   const chaves=_resCmp.geral.chaves;
   const chipsGran=RES_GRANS.map(([k,lbl])=>
