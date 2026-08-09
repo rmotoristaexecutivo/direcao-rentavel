@@ -863,6 +863,8 @@ table.sched{min-width:0}
 .md-saldo{display:flex;justify-content:space-between;align-items:center;
   margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--txt-dim)}
 .md-saldo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-variant-numeric:tabular-nums}
+.md-mes{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+.md-mes .md-sub{overflow:hidden}
 
 /* ---------- alerta em tela cheia (3 segundos) ---------- */
 #alertaFlash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
@@ -4825,6 +4827,8 @@ function renderMetaDia(){
         <span>Sobra hoje</span>
         <b style="color:${(t.ganho-t.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(t.ganho-t.gasto)}</b>
       </div>`:''}
+
+      ${metaMesBloco()}
     `}
   </div>`;
 
@@ -4836,6 +4840,70 @@ function renderMetaDia(){
       piscarAlerta(estourou?'estouro':'meta', estourou?fmt(t.gasto-m.gasto):fmt(t.ganho));
     }
   }
+}
+
+/* meta do mês, agora dentro do mesmo card do dia — antes era um painel próprio
+   repetindo barra, rótulo e campos. Uma tela, um lugar para olhar. */
+function metaMesBloco(){
+  const mm=state.uber.meta||{};
+  const parcela=parcelaFinMes(state.uber.current);
+  const metaFat = mm.metaManual ? Number(mm.metaFat)||0 : parcela;
+  if(!(metaFat>0))return '';
+  const mt=monthTotals(ensureMonth(state.uber.current));
+  const feito=mt.ganho, falta=Math.max(0,metaFat-feito);
+  const pct=Math.min(100,feito/metaFat*100);
+  const dias=Number(mm.diasMes)>0?Number(mm.diasMes):22;
+  const bateu=feito>=metaFat;
+  return `<div class="md-mes">
+    <div class="md-top">
+      <span class="md-lbl">Meta do mês · ${monthLabel()}</span>
+      <span class="md-val" style="color:var(--neutral)">${fmt(feito)} <i>/ ${fmt(metaFat)}</i></span>
+    </div>
+    <div class="md-bar"><span style="width:${pct}%;background:var(--neutral)"></span></div>
+    <div class="md-sub">${bateu?'meta do mês batida':`faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))} por dia em ${dias} dias`}
+      <button class="md-edit" style="float:right;margin-top:-4px" onclick="abrirMetaMesModal()">ajustar</button></div>
+  </div>`;
+}
+
+/* o ajuste da meta mensal vira modal, já que o painel saiu da tela */
+function abrirMetaMesModal(){
+  const mm=state.uber.meta||(state.uber.meta={});
+  const parcela=parcelaFinMes(state.uber.current);
+  const metaFat = mm.metaManual ? Number(mm.metaFat)||0 : parcela;
+  const dias=Number(mm.diasMes)>0?Number(mm.diasMes):22;
+  let ov=document.getElementById('metaMesModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='metaMesModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharMetaMesModal(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>Meta do mês</b>
+      <button class="a-sheet-x" onclick="fecharMetaMesModal()">✕</button></div>
+    <div class="a-sheet-b">
+      <div class="a-mfields">
+        <div class="a-mfield"><label>Quero faturar no mês</label>
+          <input id="metaFatMes" inputmode="decimal" value="${fmtN(metaFat,2)}"
+                 onchange="onMetaInput()" onblur="onMetaInput()" onfocus="this.select()"></div>
+        <div class="a-mfield"><label>Dias que vou rodar</label>
+          <input id="metaDiasMes" inputmode="numeric" value="${fmtN(dias,0)}"
+                 onchange="onMetaInput()" onblur="onMetaInput()" onfocus="this.select()"></div>
+      </div>
+      ${mm.metaManual?`<button class="a-meta-reset" onclick="resetMetaFat();abrirMetaMesModal()">voltar para a parcela do financiamento</button>`:
+        `<p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0">Sem valor definido, a meta segue a parcela do financiamento.</p>`}
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
+              onclick="fecharMetaMesModal()">Pronto</button>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharMetaMesModal(true));
+}
+function fecharMetaMesModal(fromBack){
+  const ov=document.getElementById('metaMesModal');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+  renderMetaDia();
 }
 
 function piscarAlerta(tipo,valor){
@@ -5217,80 +5285,10 @@ function renderOpWeekly(rows,tot){
 
 function renderMeta(){
   const el=document.getElementById('metaPanel'); if(!el)return;
-  /* ============================================================
-     META DO MÊS (redesign)
-     Antes a meta era a parcela do financiamento, calculada sozinha. Agora você
-     digita quanto quer faturar e em quantos dias vai rodar — pode existir outra
-     renda pagando o carro, e a meta não precisa estar amarrada à parcela.
-     A parcela continua aparecendo, mas como referência, não como a meta.
-     ============================================================ */
-  const m=state.uber.meta||(state.uber.meta={diasMes:22});
-  const mt=monthTotals(ensureMonth(state.uber.current));
-  const monthGanho=mt.ganho;
-  const monthDesp=mt.gastoUber;
-  const monthSaldo=monthGanho-monthDesp;
-  const parcela=parcelaFinMes(state.uber.current);
-
-  const dias=Number(m.diasMes)>0?Number(m.diasMes):22;
-  /* metaFat = o que você quer faturar no mês.
-     A flag metaManual separa "nunca mexi nisso" de "quis mesmo colocar esse valor".
-     Sem ela, digitar um valor e o cálculo cair em zero fazia a meta voltar
-     sozinha para a parcela, dando a impressão de campo travado. */
-  const metaFat = m.metaManual ? Number(m.metaFat)||0 : parcela;
-
-  const faltaFat=Math.max(0,metaFat-monthGanho);
-  const pct=metaFat>0?Math.min(100,monthGanho/metaFat*100):0;
-  const bateu=monthGanho>=metaFat && metaFat>0;
-
-  /* por dia: o bruto é a meta dividida pelos dias. O "livre" desconta a despesa
-     média por dia já observada no mês — é o que sobra de fato no bolso. */
-  const diasFeitos=ensureMonth(state.uber.current).filter(r=>{const c=rowCalc(r);return (r.corridas||0)>0||c.ganho>0;}).length;
-  const despDia=diasFeitos>0?monthDesp/diasFeitos:0;
-  const porDiaBruto=dias>0?metaFat/dias:0;
-  const porDiaLivre=Math.max(0,porDiaBruto-despDia);
-  const diasRestantes=Math.max(0,dias-diasFeitos);
-  const porDiaRestante=diasRestantes>0?faltaFat/diasRestantes:0;
-
-  el.innerHTML=`
-  <div class="a-card">
-    <h3>Meta do mês</h3>
-    <div class="a-hero-k" style="margin-bottom:2px">Faturar em ${monthLabel()}</div>
-    <div class="a-hero-v" style="font-size:38px;color:var(--neutral)">${fmt(metaFat)}</div>
-    <div class="a-bar" style="margin:12px 0 7px"><i style="width:${pct}%"></i></div>
-    <div class="a-bar-lg">
-      <span style="color:${bateu?'var(--gain)':'inherit'}">${fmtN(pct,1)}% ${bateu?'· meta batida':''}</span>
-      <span>${bateu?fmt(monthGanho)+' faturados':'falta '+fmt(faltaFat)}</span>
-    </div>
-
-    <div class="a-mfields">
-      <div class="a-mfield">
-        <label>Quero faturar no mês</label>
-        <input inputmode="decimal" id="metaFatMes" value="${fmtN(metaFat,2)}"
-               onchange="onMetaInput()" onblur="onMetaInput()">
-        ${m.metaManual?`<button class="a-meta-reset" onclick="resetMetaFat()">voltar para a parcela</button>`:''}
-      </div>
-      <div class="a-mfield">
-        <label>Dias que vou rodar</label>
-        <input inputmode="numeric" id="metaDiasMes" value="${fmtN(dias,0)}"
-               onchange="onMetaInput()" onblur="onMetaInput()">
-      </div>
-    </div>
-
-    <div class="a-grid3" style="margin:12px 0 0">
-      <div class="a-tile"><div class="t">Por dia</div><div class="v" style="color:var(--neutral)">${fmt(porDiaBruto)}</div><div class="s">faturamento</div></div>
-      <div class="a-tile"><div class="t">Livre por dia</div><div class="v" style="color:var(--gain)">${fmt(porDiaLivre)}</div><div class="s">sem despesas</div></div>
-      <div class="a-tile"><div class="t">${bateu?'Já feito':'Falta por dia'}</div><div class="v">${bateu?'✓':fmt(porDiaRestante)}</div><div class="s">${bateu?'meta batida':`${diasRestantes} dia(s)`}</div></div>
-    </div>
-
-    ${secWrap('op-meta-mais','Detalhes do mês',`<div class="a-grid3" style="margin:0">
-      <div class="a-tile"><div class="t">Entradas do mês</div><div class="v" style="color:var(--gain)">${fmt(monthGanho)}</div></div>
-      <div class="a-tile"><div class="t">Despesas do mês</div><div class="v" style="color:var(--expense)">${fmt(monthDesp)}</div></div>
-      <div class="a-tile"><div class="t">Ainda falta</div><div class="v">${fmt(faltaFat)}</div></div>
-      <div class="a-tile"><div class="t">Saldo do mês</div><div class="v" style="color:${monthSaldo>=0?'var(--gain)':'var(--expense)'}">${fmt(monthSaldo)}</div></div>
-      <div class="a-tile"><div class="t">Parcela financ.</div><div class="v">${fmt(parcela)}</div><div class="s">referência</div></div>
-      <div class="a-tile"><div class="t">Despesa por dia</div><div class="v">${fmt(despDia)}</div><div class="s">média observada</div></div>
-    </div>`)}
-  </div>`;
+  /* a meta do mês virou um bloco dentro do card de metas do dia — este painel
+     ficou vazio de propósito, para não repetir a mesma informação duas vezes */
+  el.innerHTML='';
+  renderMetaDia();
 }
 function onMetaInput(){
   const m=state.uber.meta||(state.uber.meta={});
