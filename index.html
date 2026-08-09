@@ -852,22 +852,26 @@ table.sched{min-width:0}
 .md-card.md-ok{border-color:var(--gain);box-shadow:0 0 0 1px var(--gain) inset,0 8px 24px rgba(15,157,88,.12)}
 .md-card.md-alerta{border-color:var(--expense);box-shadow:0 0 0 1px var(--expense) inset,0 8px 24px rgba(229,72,77,.14)}
 .md-edit{border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);
-  font:600 11px Manrope,sans-serif;padding:5px 11px;border-radius:9px;cursor:pointer;text-transform:none;letter-spacing:0}
-.md-linha{margin-bottom:14px}
+  font:600 10px Manrope,sans-serif;padding:4px 9px;border-radius:9px;cursor:pointer;text-transform:none;letter-spacing:0}
+.md-card{padding:12px 13px 12px 17px}
+.md-card h3{margin-bottom:8px;font-size:10px}
+.md-linha{margin-bottom:9px}
 .md-linha:last-of-type{margin-bottom:0}
-.md-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
-.md-lbl{font-size:12.5px;font-weight:600;color:var(--txt-dim)}
-.md-val{font-family:'Barlow Condensed','Sora',sans-serif;font-size:22px;font-weight:700;
+.md-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.md-lbl{font-size:11.5px;font-weight:600;color:var(--txt-dim)}
+.md-val{font-family:'Barlow Condensed','Sora',sans-serif;font-size:17px;font-weight:700;
   font-variant-numeric:tabular-nums;white-space:nowrap}
 .md-val i{font-style:normal;font-size:14px;color:var(--txt-faint);font-weight:600}
-.md-bar{height:9px;border-radius:6px;background:var(--bg2);overflow:hidden}
+.md-bar{height:6px;border-radius:6px;background:var(--bg2);overflow:hidden}
 .md-bar span{display:block;height:100%;border-radius:6px;transition:width .5s ease}
-.md-sub{font-size:11.5px;color:var(--txt-faint);margin-top:5px}
+.md-sub{font-size:10.5px;color:var(--txt-faint);margin-top:3px;line-height:1.35}
 .md-saldo{display:flex;justify-content:space-between;align-items:center;
-  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--txt-dim)}
-.md-saldo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-variant-numeric:tabular-nums}
-.md-mes{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
-.md-mes .md-sub{overflow:hidden}
+  margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--txt-dim)}
+.md-saldo b{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-variant-numeric:tabular-nums}
+.md-mes{margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.md-subrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px}
+.md-subrow .md-sub{flex:1;min-width:0}
+.md-edit{flex-shrink:0}
 
 /* ---------- comparativo do Resumo: leitura direta, placar e trilha ---------- */
 .rs-frase{background:var(--bg2);border-radius:13px;padding:13px 14px;margin-bottom:12px;
@@ -985,6 +989,21 @@ table.sched{min-width:0}
 .md-card{--faixa:var(--neutral)}
 .md-card.md-ok{--faixa:var(--gain)}
 .md-card.md-alerta{--faixa:var(--expense)}
+
+/* cada destino da barra com a cor da sua guia: o ativo acende na própria cor,
+   o que ajuda a saber onde se está sem depender só do rótulo pequeno */
+#mobileNav button[data-tab="veiculo"].active{color:var(--roxo)}
+#mobileNav button[data-tab="finance"].active{color:var(--neutral)}
+#mobileNav button[data-tab="operacao"].active{color:var(--gain)}
+#mobileNav button[data-tab="uber"].active{color:var(--electric)}
+#mobileNav button[data-tab="pessoal"].active{color:var(--roxo)}
+#mobileNav button[data-tab="abastecimento"].active{color:var(--hybrid)}
+#mobileNav button[data-tab="manutencao"].active{color:var(--expense)}
+#mobileNav button[data-tab="resumo"].active{color:var(--neutral)}
+/* no claro o âmbar puro some no branco: usa o tom fechado */
+[data-theme="light"] #mobileNav button[data-tab="abastecimento"].active{color:#b45309}
+/* a pílula de fundo acompanha a cor do destino */
+#mobileNav button.active::before{background:currentColor;opacity:.12}
 
 /* ---------- alerta em tela cheia (3 segundos) ---------- */
 #alertaFlash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
@@ -4980,8 +4999,10 @@ function metaMesBloco(){
       <span class="md-val" style="color:var(--neutral)">${fmt(feito)} <i>/ ${fmt(metaFat)}</i></span>
     </div>
     <div class="md-bar"><span style="width:${pct}%;background:var(--neutral)"></span></div>
-    <div class="md-sub">${bateu?'meta do mês batida':`faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))} por dia em ${dias} dias`}
-      <button class="md-edit" style="float:right;margin-top:-4px" onclick="abrirMetaMesModal()">ajustar</button></div>
+    <div class="md-subrow">
+      <span class="md-sub" style="margin:0">${bateu?'meta do mês batida':`faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))}/dia em ${dias} dias`}</span>
+      <button class="md-edit" onclick="abrirMetaMesModal()">ajustar</button>
+    </div>
   </div>`;
 }
 
@@ -8152,19 +8173,33 @@ function resPainelHtml(lado,itens){
     const on=cfg.fontes[f];
     return `<button class="per-chip${on?' active':''}" onclick="toggleResFonte('${lado}','${f}')">${on?'✓ ':''}${fontes[f].label}</button>`;
   }).join('');
-  const detalhes=Object.keys(fontes).filter(f=>cfg.fontes[f]&&dados[f].n>0).map(f=>{
-    const d=dados[f], meta=fontes[f];
+  /* detalhe por fonte no formato novo: barra, participação e as métricas
+     em linha, sem os emojis que poluíam a leitura */
+  const listaFontes=Object.keys(fontes).filter(f=>cfg.fontes[f]&&dados[f].n>0)
+    .map(f=>({f,d:dados[f],meta:fontes[f]}))
+    .sort((a,b)=>b.d.valor-a.d.valor);
+  const maiorFonte=listaFontes.length?listaFontes[0].d.valor:0;
+  const detalhes=listaFontes.map(({f,d,meta},idx)=>{
     const extras=[];
-    if(d.km>0)extras.push(`🛣️ ${fmtN(d.km,0)} km`);
-    if(d.litros>0)extras.push(`⛽ ${fmtN(d.litros,2)} L`);
-    if(d.kwh>0)extras.push(`⚡ ${fmtN(d.kwh,2)} kWh`);
-    if(d.km>0&&d.litros>0)extras.push(`📊 ${fmtN(d.km/d.litros,2)} km/l`);
-    if(d.corridas>0)extras.push(`🚕 ${fmtN(d.corridas,0)} corridas`);
+    if(d.km>0)extras.push(`${fmtN(d.km,0)} km`);
+    if(d.litros>0)extras.push(`${fmtN(d.litros,2)} L`);
+    if(d.kwh>0)extras.push(`${fmtN(d.kwh,2)} kWh`);
+    if(d.km>0&&d.litros>0)extras.push(`${fmtN(d.km/d.litros,2)} km/l`);
+    if(d.corridas>0)extras.push(`${fmtN(d.corridas,0)} corridas`);
     const pct=total>0?(d.valor/total*100):0;
-    return `<div class="res-det">
-      <div class="res-det-h"><span>${meta.label}</span><b style="color:${meta.cor||cor}">${fmt(d.valor)}</b></div>
-      <div class="res-det-bar"><span style="width:${pct}%;background:${meta.cor||cor}"></span></div>
-      <div class="res-det-s">${fmtN(pct,0)}% · ${d.n} lançamento(s)${extras.length?` · ${extras.join(' · ')}`:''}</div>
+    const rel=maiorFonte>0?(d.valor/maiorFonte*100):0;
+    const c=meta.cor||cor;
+    return `<div class="rs-item">
+      <div class="rs-dot${idx===0?' top':''}" style="${idx===0?`background:${c}22;color:${c};border-color:${c}`:''}">${idx+1}</div>
+      <div class="rs-body">
+        <div class="rs-top">
+          <b>${meta.label}${idx===0&&listaFontes.length>1?' <i class="rs-tag ok">maior</i>':''}</b>
+          <span class="rs-v" style="color:${c}">${fmt(d.valor)}</span>
+        </div>
+        <div class="rs-bar"><i style="width:${rel}%;background:${c}"></i></div>
+        <div class="rs-ft"><span>${fmtN(pct,0)}% do total</span><span>${d.n} lançamento(s)</span></div>
+        ${extras.length?`<div class="rs-ft" style="margin-top:3px"><span>${extras.join(' · ')}</span></div>`:''}
+      </div>
     </div>`;
   }).join('') || `<div class="lanc-empty">Nada lançado nesse período com as fontes marcadas.</div>`;
 
@@ -8204,7 +8239,7 @@ function resPainelHtml(lado,itens){
       ${lado==='saida'?`<p class="sub" style="margin:2px 0 0;font-size:11px">💡 Manutenções já entram dentro de Trabalho/Corp/Pessoal (foram rateadas lá). Marcar as duas conta em dobro.</p>`:''}
 
       <div class="res-cfg-t" style="margin-top:14px">${_resCmp[lado].ativo?'📊 Comparativo':'📋 Detalhe'}</div>
-      ${_resCmp[lado].ativo?resCmpHtml(lado,itens):detalhes}
+      ${_resCmp[lado].ativo?resCmpHtml(lado,itens):`<div class="rs-trilha">${detalhes}</div>`}
     </div>
   </div>`;
 }
