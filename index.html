@@ -869,6 +869,58 @@ table.sched{min-width:0}
 .md-mes{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
 .md-mes .md-sub{overflow:hidden}
 
+/* ---------- comparativo do Resumo: leitura direta, placar e trilha ---------- */
+.rs-frase{background:var(--bg2);border-radius:13px;padding:13px 14px;margin-bottom:12px;
+  font-size:13.5px;line-height:1.55;color:var(--txt-dim)}
+.rs-frase b{color:var(--txt);font-weight:700}
+.rs-frase b.ok{color:var(--gain)} .rs-frase b.ruim{color:var(--expense)}
+
+.rs-placar{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:12px}
+.rs-lado{background:var(--bg2);border-radius:14px;padding:13px;text-align:center;position:relative;overflow:hidden}
+.rs-lado::before{content:"";position:absolute;left:0;right:0;top:0;height:3px}
+.rs-lado.a::before{background:var(--neutral)} .rs-lado.b::before{background:var(--roxo)}
+.rs-lado .t{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--txt-faint)}
+.rs-lado .v{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;
+  margin-top:4px;font-variant-numeric:tabular-nums;line-height:1.05}
+.rs-lado.a .v{color:var(--neutral)} .rs-lado.b .v{color:var(--roxo)}
+.rs-vs{font-family:'Sora';font-size:11px;font-weight:800;color:var(--txt-faint)}
+.rs-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
+  padding:10px 12px;background:var(--bg2);border-radius:11px;margin-bottom:8px}
+.rs-lbl{font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--txt-faint);text-align:center}
+.rs-n{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;
+  font-variant-numeric:tabular-nums;position:relative}
+.rs-n.l{text-align:left;color:var(--neutral)} .rs-n.r{text-align:right;color:var(--roxo)}
+.rs-n.win::after{content:"▲";font-size:8px;color:var(--gain);position:absolute;top:0}
+.rs-n.l.win::after{margin-left:4px} .rs-n.r.win::after{margin-left:4px}
+.rs-veredito{margin-top:6px;padding:12px 13px;border-radius:12px;background:var(--bg2);
+  font-size:13px;line-height:1.5;color:var(--txt-dim)}
+.rs-veredito b{color:var(--txt)} .rs-veredito b.ok{color:var(--gain)} .rs-veredito b.ruim{color:var(--expense)}
+
+.rs-trilha{margin-top:2px}
+.rs-item{display:flex;gap:12px;position:relative;padding-bottom:14px}
+.rs-item::after{content:"";position:absolute;left:17px;top:38px;bottom:0;width:2px;background:var(--line)}
+.rs-item:last-child{padding-bottom:0}
+.rs-item:last-child::after{display:none}
+.rs-dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+  font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;z-index:1;
+  background:var(--bg2);color:var(--txt-dim);border:1px solid var(--line)}
+.rs-dot.top{background:var(--gain-bg);color:var(--gain);border-color:var(--gain)}
+.rs-body{flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:11px 13px}
+.rs-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
+.rs-top b{font-size:13.5px;font-weight:700}
+.rs-v{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.rs-bar{height:8px;border-radius:5px;background:var(--panel-solid);overflow:hidden}
+.rs-bar i{display:block;height:100%;border-radius:5px;transition:width .5s ease}
+.rs-ft{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--txt-faint);margin-top:6px}
+.rs-ft .ok{color:var(--gain);font-weight:700} .rs-ft .ruim{color:var(--expense);font-weight:700}
+.rs-base{opacity:.7}
+.rs-tag{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;
+  padding:2px 6px;border-radius:5px;margin-left:5px;vertical-align:middle}
+.rs-tag.ok{background:var(--gain-bg);color:var(--gain)}
+.rs-tag.ruim{background:var(--expense-bg);color:var(--expense)}
+
 /* ============================================================
    FAIXAS DE COR POR CATEGORIA (cenário 3)
    Card neutro com uma tarja colorida à esquerda. A cor identifica do que se
@@ -7848,87 +7900,27 @@ function renderResCmpSel(){
 }
 
 /* ---- render do comparativo ---- */
-function resCmpHtml(lado,itens){
-  const cfg=_resCfg[lado], cmp=_resCmp[lado];
-  const cor=lado==='entrada'?'var(--gain)':'var(--expense)';
-  if(!cmp.chaves.length){
-    return `<div class="lanc-empty">Nenhum período escolhido ainda.
-      Toque em <b>escolher períodos</b> para montar a comparação.</div>`;
-  }
-  const linhas=cmp.chaves.slice().sort().map(k=>({
-    key:k, label:resLabel(k), valor:resTotalPeriodo(itens,lado,k,cfg.gran)
-  }));
-  const max=Math.max(...linhas.map(l=>l.valor),0);
-  const soma=linhas.reduce((s,l)=>s+l.valor,0);
-  const media=linhas.length?soma/linhas.length:0;
-  const base=linhas[0].valor;
-
-  const barras=linhas.map((l,i)=>{
-    const pct=max>0?(l.valor/max*100):0;
-    let delta='';
-    if(i>0){
-      if(base>0){
-        const d=(l.valor-base)/base*100;
-        const sinal=d>=0?'▲':'▼';
-        // em despesa, subir é ruim; em entrada, subir é bom
-        const bom=(lado==='entrada')?(d>=0):(d<=0);
-        delta=`<span style="color:${bom?'var(--gain)':'var(--expense)'};font-weight:700">
-          ${sinal} ${fmtN(Math.abs(d),1)}%</span>`;
-      }else{
-        delta=`<span style="color:var(--txt-faint)">—</span>`;
-      }
-    }else{
-      delta=`<span style="color:var(--txt-faint)">base</span>`;
-    }
-    return `<div class="res-det">
-      <div class="res-det-h"><span>${l.label}</span><b style="color:${cor}">${fmt(l.valor)}</b></div>
-      <div class="res-det-bar"><span style="width:${pct}%;background:${cor}"></span></div>
-      <div class="res-det-s">${delta} · vs ${linhas[0].label}</div>
-    </div>`;
-  }).join('');
-
-  const maiorL=linhas.reduce((a,b)=>b.valor>a.valor?b:a,linhas[0]);
-  const menorL=linhas.reduce((a,b)=>b.valor<a.valor?b:a,linhas[0]);
-
-  return `<div class="res-cmp-resumo" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
-      <div class="kpi"><div class="k-label">Σ Total</div><div class="k-val" style="font-size:16px;color:${cor}">${fmt(soma)}</div><div class="k-sub">${linhas.length} período(s)</div></div>
-      <div class="kpi"><div class="k-label">Média</div><div class="k-val" style="font-size:16px">${fmt(media)}</div><div class="k-sub">por período</div></div>
-      <div class="kpi"><div class="k-label">Maior</div><div class="k-val" style="font-size:15px">${fmt(maiorL.valor)}</div><div class="k-sub">${maiorL.label}</div></div>
-      <div class="kpi"><div class="k-label">Menor</div><div class="k-val" style="font-size:15px">${fmt(menorL.valor)}</div><div class="k-sub">${menorL.label}</div></div>
-    </div>${barras}`;
-}
-
 /* ============================================================
-   PAINEL GERAL — ganhos, gastos e saldo no mesmo lugar
-   Os painéis Entrada e Saída respondem "quanto entrou" e "quanto saiu" separados.
-   Este responde a pergunta que junta os dois: sobrou ou faltou, em cada período.
-   Tem granularidade e seleção de períodos próprias, para poder comparar
-   janeiro de anos diferentes sem mexer nos outros painéis.
+   PAINEL GERAL — ganhos, gastos e saldo juntos
+   (restaurado: um recorte anterior levou este bloco junto com o comparativo)
    ============================================================ */
 const _resGeral={
   gran:'mes', aberto:true,
-  /* saídas com o mesmo default do painel Saída: abastecimento, manutenção e
-     financiamento entram desligados porque já foram rateados em Trabalho/Corp/Pessoal
-     e marcá-los junto contaria o mesmo gasto duas vezes */
   fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}
 };
 _resCmp.geral={ativo:true,chaves:[]};
-_resCfg.geral=_resGeral;   // deixa a granularidade acessível pelo seletor compartilhado
+_resCfg.geral=_resGeral;
 
 function toggleResGeral(){ _resGeral.aberto=!_resGeral.aberto; renderResumoTab(); }
 function setResGeralGran(g){ _resGeral.gran=g; _resCmp.geral.chaves=[]; renderResumoTab(); }
 function toggleResGeralFonte(f){ _resGeral.fontes[f]=!_resGeral.fontes[f]; renderResumoTab(); }
 
-/* entradas: todas as fontes. saídas: só as marcadas aqui. */
 function resGeralPeriodo(itens,key,gran){
   const ent=resAgrega(itens,'entrada',key,gran);
   const sai=resAgrega(itens,'saida',key,gran);
   let entrada=0, saida=0;
   Object.keys(RES_FONTES_ENT).forEach(f=>{ entrada+=ent[f].valor; });
   Object.keys(RES_FONTES_SAI).forEach(f=>{ if(_resGeral.fontes[f])saida+=sai[f].valor; });
-
-  /* métricas físicas saem só das saídas marcadas — km e litros aparecem também
-     nos itens de entrada (mesmo dia, outro lado), e somar os dois contaria dobrado */
   let km=0,litros=0,kwh=0,corridas=0;
   Object.keys(RES_FONTES_SAI).forEach(f=>{
     if(!_resGeral.fontes[f])return;
@@ -7949,9 +7941,8 @@ function resGeralHtml(itens){
 
   if(!_resGeral.aberto){
     return `<div class="res-big" onclick="toggleResGeral()" style="cursor:pointer">
-      <div class="res-big-h"><span>📊 Geral</span><span class="res-big-arrow">▾</span></div>
-      <div class="res-big-s">ganhos, gastos e saldo lado a lado</div>
-    </div>`;
+      <div class="res-big-h"><span>Geral</span><span class="res-big-arrow">▾</span></div>
+      <div class="res-big-s">ganhos, gastos e saldo lado a lado</div></div>`;
   }
 
   let corpo;
@@ -7965,41 +7956,45 @@ function resGeralHtml(itens){
       km:a.km+l.km,litros:a.litros+l.litros,kwh:a.kwh+l.kwh,corridas:a.corridas+l.corridas}),
       {entrada:0,saida:0,km:0,litros:0,kwh:0,corridas:0});
     const saldoTot=tot.entrada-tot.saida;
+    const melhor=linhas.reduce((a,b)=>b.saldo>a.saldo?b:a,linhas[0]);
 
-    const blocos=linhas.map(l=>{
+    const blocos=linhas.map((l,i)=>{
       const pe=maxAbs>0?(l.entrada/maxAbs*100):0;
       const ps=maxAbs>0?(l.saida/maxAbs*100):0;
       const corSaldo=l.saldo>=0?'var(--gain)':'var(--expense)';
       const extras=[];
-      if(l.km>0)extras.push(`🛣️ ${fmtN(l.km,0)} km`);
-      if(l.litros>0)extras.push(`⛽ ${fmtN(l.litros,2)} L`);
-      if(l.kwh>0)extras.push(`⚡ ${fmtN(l.kwh,2)} kWh`);
-      if(l.km>0&&l.litros>0)extras.push(`📊 ${fmtN(l.km/l.litros,2)} km/l`);
-      if(l.corridas>0)extras.push(`🚕 ${fmtN(l.corridas,0)} corridas`);
-      if(l.corridas>0)extras.push(`💰 ${fmt(l.saldo/l.corridas)}/corrida`);
-      if(l.km>0)extras.push(`📍 ${fmt(l.saldo/l.km)}/km`);
-      return `<div class="res-det">
-        <div class="res-det-h"><span><b>${l.label}</b></span>
-          <b style="color:${corSaldo}">${fmt(l.saldo)}</b></div>
-        <div class="res-det-s" style="display:flex;justify-content:space-between;margin:2px 0">
-          <span style="color:var(--gain)">💵 ${fmt(l.entrada)}</span>
-          <span style="color:var(--expense)">💸 ${fmt(l.saida)}</span></div>
-        <div class="res-det-bar"><span style="width:${pe}%;background:var(--gain)"></span></div>
-        <div class="res-det-bar" style="margin-top:3px"><span style="width:${ps}%;background:var(--expense)"></span></div>
-        ${extras.length?`<div class="res-det-s">${extras.join(' · ')}</div>`:''}
+      if(l.km>0)extras.push(`${fmtN(l.km,0)} km`);
+      if(l.litros>0)extras.push(`${fmtN(l.litros,2)} L`);
+      if(l.kwh>0)extras.push(`${fmtN(l.kwh,2)} kWh`);
+      if(l.km>0&&l.litros>0)extras.push(`${fmtN(l.km/l.litros,2)} km/l`);
+      if(l.corridas>0)extras.push(`${fmt(l.saldo/l.corridas)}/corrida`);
+      const eMelhor=linhas.length>1&&l.k===melhor.k;
+      return `<div class="rs-item">
+        <div class="rs-dot${eMelhor?' top':''}">${i+1}</div>
+        <div class="rs-body">
+          <div class="rs-top">
+            <b>${l.label}${eMelhor?' <i class="rs-tag ok">melhor</i>':''}</b>
+            <span class="rs-v" style="color:${corSaldo}">${fmt(l.saldo)}</span>
+          </div>
+          <div class="rs-bar"><i style="width:${pe}%;background:var(--gain)"></i></div>
+          <div class="rs-bar" style="margin-top:3px"><i style="width:${ps}%;background:var(--expense)"></i></div>
+          <div class="rs-ft"><span>entrou ${fmt(l.entrada)}</span><span>saiu ${fmt(l.saida)}</span></div>
+          ${extras.length?`<div class="rs-ft" style="margin-top:3px"><span>${extras.join(' · ')}</span></div>`:''}
+        </div>
       </div>`;
     }).join('');
 
-    corpo=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
-        <div class="kpi gain"><div class="k-label">Entrou</div><div class="k-val" style="font-size:15px;color:var(--gain)">${fmt(tot.entrada)}</div></div>
-        <div class="kpi expense"><div class="k-label">Saiu</div><div class="k-val" style="font-size:15px;color:var(--expense)">${fmt(tot.saida)}</div></div>
-        <div class="kpi"><div class="k-label">Saldo</div><div class="k-val" style="font-size:15px;color:${saldoTot>=0?'var(--gain)':'var(--expense)'}">${fmt(saldoTot)}</div></div>
-      </div>${blocos}`;
+    corpo=`<div class="a-grid3" style="margin-bottom:12px">
+        <div class="a-tile f-gain"><div class="t">Entrou</div><div class="v">${fmt(tot.entrada)}</div></div>
+        <div class="a-tile f-cost"><div class="t">Saiu</div><div class="v">${fmt(tot.saida)}</div></div>
+        <div class="a-tile ${saldoTot>=0?'f-gain':'f-cost'}"><div class="t">Saldo</div><div class="v">${fmt(saldoTot)}</div></div>
+      </div>
+      <div class="rs-trilha">${blocos}</div>`;
   }
 
   return `<div class="res-big aberto" style="grid-column:1/-1">
     <div class="res-big-h" onclick="toggleResGeral()" style="cursor:pointer">
-      <span>📊 Geral</span><span class="res-big-arrow">▴</span></div>
+      <span>Geral</span><span class="res-big-arrow">▴</span></div>
     <div class="res-big-s">ganhos, gastos e saldo nos períodos escolhidos</div>
     <div class="res-cfg">
       <div class="res-cfg-t">Unidade</div>
@@ -8011,11 +8006,112 @@ function resGeralHtml(itens){
       </div>
       <div class="res-cfg-t" style="margin-top:14px">Gastos considerados</div>
       <div class="per-grid">${chipsFonte}</div>
-      <p class="sub" style="margin:2px 0 0;font-size:11px">💡 Entradas entram todas. Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
+      <p class="sub" style="margin:2px 0 0;font-size:11px">Entradas entram todas. Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
       <div class="res-cfg-t" style="margin-top:14px">Comparativo</div>
       ${corpo}
     </div>
   </div>`;
+}
+
+function resCmpHtml(lado,itens){
+  /* ============================================================
+     APRESENTAÇÃO DO COMPARATIVO (redesign)
+     Os controles acima — mês, granularidade, fontes, seleção múltipla — continuam
+     exatamente como estavam. O que muda é como o resultado é mostrado:
+       · 2 períodos  → placar frente a frente, com o vencedor de cada linha
+       · 3 ou mais   → trilha vertical na ordem do tempo, com a variação
+     Antes de qualquer um dos dois, uma leitura direta em uma frase.
+     ============================================================ */
+  const cfg=_resCfg[lado], cmp=_resCmp[lado];
+  const cor=lado==='entrada'?'var(--gain)':'var(--expense)';
+  if(!cmp.chaves.length){
+    return `<div class="lanc-empty">Nenhum período escolhido ainda.
+      Toque em <b>escolher períodos</b> para montar a comparação.</div>`;
+  }
+  const linhas=cmp.chaves.slice().sort().map(k=>({
+    key:k, label:resLabel(k), valor:resTotalPeriodo(itens,lado,k,cfg.gran)
+  }));
+  const max=Math.max(...linhas.map(l=>l.valor),0);
+  const soma=linhas.reduce((s,l)=>s+l.valor,0);
+  const media=linhas.length?soma/linhas.length:0;
+  const maiorL=linhas.reduce((a,b)=>b.valor>a.valor?b:a,linhas[0]);
+  const menorL=linhas.reduce((a,b)=>b.valor<a.valor?b:a,linhas[0]);
+  const base=linhas[0].valor;
+  const ultimo=linhas[linhas.length-1];
+  /* em entrada, subir é bom; em saída, subir é ruim */
+  const bom=d=>lado==='entrada'?(d>=0):(d<=0);
+
+  /* ---------- leitura direta ---------- */
+  let frase='';
+  if(linhas.length>1 && base>0){
+    const d=(ultimo.valor-base)/base*100;
+    const subiu=d>=0;
+    const verbo = lado==='entrada' ? (subiu?'rendeu mais':'rendeu menos') : (subiu?'custou mais':'custou menos');
+    frase=`<div class="rs-frase">
+      <b>${ultimo.label}</b> ${verbo} que <b>${linhas[0].label}</b>:
+      <b class="${bom(d)?'ok':'ruim'}">${fmt(Math.abs(ultimo.valor-base))}</b>
+      de diferença (${fmtN(Math.abs(d),1)}%).
+      ${maiorL.key!==ultimo.key?` O melhor da série foi ${maiorL.label}, com ${fmt(maiorL.valor)}.`:''}
+    </div>`;
+  }
+
+  const kpis=`<div class="a-grid3" style="margin-bottom:12px">
+      <div class="a-tile ${lado==='entrada'?'f-gain':'f-cost'}"><div class="t">Total</div><div class="v">${fmt(soma)}</div><div class="s">${linhas.length} período(s)</div></div>
+      <div class="a-tile f-neutral"><div class="t">Média</div><div class="v">${fmt(media)}</div><div class="s">por período</div></div>
+      <div class="a-tile f-roxo"><div class="t">Maior</div><div class="v">${fmt(maiorL.valor)}</div><div class="s">${maiorL.label}</div></div>
+    </div>`;
+
+  /* ---------- 2 períodos: placar ---------- */
+  if(linhas.length===2){
+    const a=linhas[0], b=linhas[1];
+    const dif=b.valor-a.valor;
+    const venceA = lado==='entrada' ? a.valor>b.valor : a.valor<b.valor;
+    return frase+kpis+`
+    <div class="rs-placar">
+      <div class="rs-lado a"><div class="t">${a.label}</div><div class="v">${fmt(a.valor)}</div></div>
+      <div class="rs-vs">VS</div>
+      <div class="rs-lado b"><div class="t">${b.label}</div><div class="v">${fmt(b.valor)}</div></div>
+    </div>
+    <div class="rs-row">
+      <div class="rs-n l${venceA?' win':''}">${fmt(a.valor)}</div>
+      <div class="rs-lbl">${lado==='entrada'?'Faturamento':'Gasto'}</div>
+      <div class="rs-n r${!venceA?' win':''}">${fmt(b.valor)}</div>
+    </div>
+    <div class="rs-row">
+      <div class="rs-n l">${fmtN(max>0?a.valor/max*100:0,0)}%</div>
+      <div class="rs-lbl">do maior</div>
+      <div class="rs-n r">${fmtN(max>0?b.valor/max*100:0,0)}%</div>
+    </div>
+    <div class="rs-veredito">
+      ${dif===0?'Os dois períodos empataram.':
+        `<b>${b.label}</b> ficou <b class="${bom(dif)?'ok':'ruim'}">${fmt(Math.abs(dif))}</b>
+         ${dif>0?'acima':'abaixo'} de ${a.label}.`}
+    </div>`;
+  }
+
+  /* ---------- 3 ou mais: trilha ---------- */
+  const trilha=linhas.map((l,i)=>{
+    const pct=max>0?(l.valor/max*100):0;
+    let delta='<span class="rs-base">primeiro</span>';
+    if(i>0 && base>0){
+      const d=(l.valor-base)/base*100;
+      delta=`<span class="${bom(d)?'ok':'ruim'}">${d>=0?'▲':'▼'} ${fmtN(Math.abs(d),1)}%</span>`;
+    }
+    const eMaior=l.key===maiorL.key, eMenor=l.key===menorL.key && linhas.length>2;
+    return `<div class="rs-item">
+      <div class="rs-dot${eMaior?' top':''}">${i+1}</div>
+      <div class="rs-body">
+        <div class="rs-top">
+          <b>${l.label}${eMaior?' <i class="rs-tag ok">melhor</i>':''}${eMenor?' <i class="rs-tag ruim">menor</i>':''}</b>
+          <span class="rs-v" style="color:${cor}">${fmt(l.valor)}</span>
+        </div>
+        <div class="rs-bar"><i style="width:${pct}%;background:${cor}"></i></div>
+        <div class="rs-ft">${delta}<span>${fmtN(pct,0)}% do maior</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return frase+kpis+`<div class="rs-trilha">${trilha}</div>`;
 }
 
 /* ---- interações ---- */
