@@ -5014,10 +5014,22 @@ function renderMetaDia(){
 /* meta do mês, agora dentro do mesmo card do dia — antes era um painel próprio
    repetindo barra, rótulo e campos. Uma tela, um lugar para olhar. */
 function metaMesBloco(){
+  /* ============================================================
+     A meta do mês é SÓ da pessoa — não segue mais a parcela do financiamento.
+     Antes, sem valor definido, ela caía na parcela; isso misturava duas coisas
+     diferentes: quanto você quer faturar e quanto o banco cobra. Financiamento
+     é financiamento; meta é meta.
+     ============================================================ */
   const mm=state.uber.meta||{};
-  const parcela=parcelaFinMes(state.uber.current);
-  const metaFat = mm.metaManual ? Number(mm.metaFat)||0 : parcela;
-  if(!(metaFat>0))return '';
+  const metaFat = Number(mm.metaFat)||0;
+  if(!(metaFat>0)){
+    return `<div class="md-mes">
+      <div class="md-subrow">
+        <span class="md-sub" style="margin:0">Nenhuma meta definida para o mês</span>
+        <button class="md-edit" onclick="abrirMetaMesModal()">definir</button>
+      </div>
+    </div>`;
+  }
   const mt=monthTotals(ensureMonth(state.uber.current));
   const feito=mt.ganho, falta=Math.max(0,metaFat-feito);
   const pct=Math.min(100,feito/metaFat*100);
@@ -5039,8 +5051,7 @@ function metaMesBloco(){
 /* o ajuste da meta mensal vira modal, já que o painel saiu da tela */
 function abrirMetaMesModal(){
   const mm=state.uber.meta||(state.uber.meta={});
-  const parcela=parcelaFinMes(state.uber.current);
-  const metaFat = mm.metaManual ? Number(mm.metaFat)||0 : parcela;
+  const metaFat = Number(mm.metaFat)||0;
   const dias=Number(mm.diasMes)>0?Number(mm.diasMes):22;
   let ov=document.getElementById('metaMesModal');
   if(!ov){
@@ -5055,16 +5066,15 @@ function abrirMetaMesModal(){
     <div class="a-sheet-b">
       <div class="a-mfields">
         <div class="a-mfield"><label>Quero faturar no mês</label>
-          <input id="metaFatMes" inputmode="decimal" value="${fmtN(metaFat,2)}"
-                 onchange="onMetaInput()" onblur="onMetaInput()" onfocus="this.select()"></div>
+          <input id="metaFatMes" inputmode="decimal" value="${metaFat>0?fmtN(metaFat,2):''}"
+                 placeholder="0,00" onfocus="this.select()"></div>
         <div class="a-mfield"><label>Dias que vou rodar</label>
-          <input id="metaDiasMes" inputmode="numeric" value="${fmtN(dias,0)}"
-                 onchange="onMetaInput()" onblur="onMetaInput()" onfocus="this.select()"></div>
+          <input id="metaDiasMes" inputmode="numeric" value="${dias}" onfocus="this.select()"></div>
       </div>
-      ${mm.metaManual?`<button class="a-meta-reset" onclick="resetMetaFat();abrirMetaMesModal()">voltar para a parcela do financiamento</button>`:
-        `<p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0">Sem valor definido, a meta segue a parcela do financiamento.</p>`}
+      <p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0;line-height:1.5">
+        Deixe o valor em branco para remover a meta do mês.</p>
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
-              onclick="fecharMetaMesModal()">Pronto</button>
+              onclick="salvarMetaMes()">Salvar</button>
     </div>
   </div>`;
   requestAnimationFrame(()=>ov.classList.add('open'));
@@ -5461,25 +5471,25 @@ function renderMeta(){
   el.innerHTML='';
   renderMetaDia();
 }
-function onMetaInput(){
+/* salva o que está nos campos, inclusive vazio — apagar o valor remove a meta.
+   Antes o campo em branco era ignorado e o valor antigo voltava, dando a
+   impressão de que o salvar não funcionava. */
+function salvarMetaMes(){
   const m=state.uber.meta||(state.uber.meta={});
-  const d=document.getElementById('metaDiasMes');
   const f=document.getElementById('metaFatMes');
-  if(d){ const v=parseNum(d.value); if(v>0)m.diasMes=v; }
+  const d=document.getElementById('metaDiasMes');
   if(f){
-    const v=parseNum(f.value);
-    const antes=Number(m.metaFat)||0;
-    if(v>0){ m.metaFat=v; m.metaManual=true; }
-    /* campo apagado: mantém o último valor em vez de zerar e voltar para a parcela */
-    else if(antes>0){ m.metaFat=antes; }
+    const txt=(f.value||'').trim();
+    m.metaFat = txt==='' ? 0 : (parseNum(txt)||0);
   }
-  save(); renderMeta();
+  if(d){ const v=parseNum(d.value); m.diasMes = v>0?Math.round(v):22; }
+  delete m.metaManual;          /* a flag não faz mais sentido: meta é sempre manual */
+  save();
+  fecharMetaMesModal();
+  toast(m.metaFat>0?'Meta do mês salva':'Meta do mês removida');
 }
-function resetMetaFat(){
-  const m=state.uber.meta||(state.uber.meta={});
-  m.metaManual=false; m.metaFat=0;
-  save(); renderMeta();
-}
+/* mantida por compatibilidade com chamadas antigas */
+function onMetaInput(){ salvarMetaMes(); }
 function toggleFixas(){
   const d=document.getElementById('fixasDetail'); if(!d)return;
   d.style.display=(d.style.display==='none')?'block':'none';
