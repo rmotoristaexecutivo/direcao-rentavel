@@ -1444,6 +1444,42 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   .hdr-menu-sheet button.danger{color:var(--expense)}
   .hdr-menu-sheet button.cancel{text-align:center;color:var(--txt-faint);margin-top:6px}
 
+  /* ---- menu de configurações agrupado (prefixo hm-) ----
+     Prefixo próprio de propósito: .hdr-menu-sheet button tem regras antigas que
+     zeram raio e borda, e sem o prefixo os estilos se anulariam entre si. */
+  .hdr-menu-sheet{max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .hm-grupo{font-family:'Sora',system-ui,sans-serif;font-size:11px;font-weight:700;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--txt-faint);margin:16px 2px 7px}
+  .hm-grupo:first-of-type{margin-top:2px}
+  .hm-conta{display:flex;align-items:center;gap:11px;padding:11px 12px;cursor:pointer;
+    background:var(--bg2);border:1px solid var(--line);border-radius:14px}
+  .hm-conta:active{background:var(--panel)}
+  .hm-conta-tx{flex:1;min-width:0}
+  .hm-av{width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--neutral),var(--gain));color:#fff;
+    font-family:'Sora',system-ui,sans-serif;font-weight:800;font-size:15px}
+  .hm-av-off{background:var(--neutral-bg);color:var(--neutral);font-size:17px}
+  .hm-nome{font-family:'Sora',system-ui,sans-serif;font-size:14px;font-weight:700;line-height:1.25}
+  .hm-mail{font-size:11.5px;color:var(--txt-dim);line-height:1.35;word-break:break-all;margin-top:1px}
+  .hm-sync{font-size:11px;font-weight:600;margin-top:2px;color:var(--gain)}
+  .hm-lista{background:var(--bg2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .hm-row{display:flex;align-items:center;gap:12px;padding:12px 13px;cursor:pointer;
+    border-bottom:1px solid var(--line)}
+  .hm-row:last-child{border-bottom:0}
+  .hm-row:active{background:var(--panel)}
+  .hm-ic{width:32px;height:32px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:15px}
+  .hm-tx{flex:1;min-width:0}
+  .hm-tt{font-size:14px;font-weight:600;line-height:1.25}
+  .hm-sb{font-size:11.5px;color:var(--txt-dim);margin-top:2px;line-height:1.3}
+  .hm-ch{color:var(--txt-faint);font-size:17px;flex:none}
+  .hdr-menu-sheet button.hm-danger{width:100%;margin-top:14px;padding:13px;border-radius:13px;
+    border:0;border-bottom:0;text-align:center;background:var(--expense-bg);color:var(--expense);
+    font-weight:700;font-size:14px}
+  .hdr-menu-sheet button.hm-fechar{width:100%;margin-top:8px;padding:12px;border-radius:13px;
+    border:0;border-bottom:0;text-align:center;background:transparent;color:var(--txt-faint);
+    font-weight:600;font-size:14px}
+  .hm-ver{text-align:center;font-size:11px;color:var(--txt-faint);margin:12px 0 0}
+
   /* painéis sem margem lateral pesada */
   .panel{padding:14px;border-radius:14px;margin-bottom:12px}
   .view{padding:12px 12px 0}
@@ -1842,16 +1878,81 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <div id="hdrMenu" onclick="if(event.target===this)closeHdrMenu()">
     <div class="hdr-menu-sheet">
       <div class="sheet-grip"></div>
-      <button onclick="toggleTheme()">🌙 <span id="hdrThemeLbl">Tema escuro/claro</span></button>
-      <button onclick="exportJSON();closeHdrMenu()">⬇ Exportar backup (JSON)</button>
-      <button onclick="document.getElementById('imp').click();closeHdrMenu()">⬆ Importar backup (JSON)</button>
-      <button onclick="openHistoryModal();closeHdrMenu()">🕘 Histórico de versões (recuperar dados)</button>
-      <button onclick="openSyncKeyModal();closeHdrMenu()">🔑 Código de sincronização</button>
-      <button onclick="abrirLockCfg()">🔒 Bloqueio do app (PIN / biometria)</button>
-      <button id="btnGoogleAuth" onclick="googleAuthMenuClick()">🔒 Entrar com Google</button>
-      <button class="danger" onclick="resetAll()">↺ Zerar tudo</button>
-      <button class="cancel" onclick="closeHdrMenu()">Fechar</button>
-      <p style="text-align:center;font-size:11px;opacity:.6;margin:6px 0 0" id="verTagMenu"></p>
+
+      <p class="hm-grupo">Login</p>
+
+      <!-- conectado: preenchido por updateAuthUI() -->
+      <div class="hm-conta" id="hmContaOn" onclick="googleAuthMenuClick()" style="display:none">
+        <div class="hm-av" id="hmAvatar">·</div>
+        <div class="hm-conta-tx">
+          <div class="hm-nome" id="hmNome">Conta Google</div>
+          <div class="hm-mail" id="hmMail"></div>
+          <div class="hm-sync" id="hmSync"></div>
+        </div>
+        <span class="hm-ch">›</span>
+      </div>
+
+      <!-- desconectado -->
+      <div class="hm-conta hm-conta-off" id="hmContaOff" onclick="googleAuthMenuClick()" style="display:none">
+        <div class="hm-av hm-av-off">👤</div>
+        <div class="hm-conta-tx">
+          <div class="hm-nome">Entrar com o Google</div>
+          <div class="hm-sb">Seus dados ficam salvos e voltam em qualquer aparelho</div>
+        </div>
+        <span class="hm-ch">›</span>
+      </div>
+
+      <p class="hm-grupo">Segurança</p>
+      <div class="hm-lista">
+        <div class="hm-row" onclick="abrirLockCfg()">
+          <div class="hm-ic" style="background:var(--gain-bg);color:var(--gain)">🔒</div>
+          <div class="hm-tx"><div class="hm-tt">Bloqueio do app</div>
+            <div class="hm-sb">PIN ou biometria ao abrir</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+      </div>
+
+      <p class="hm-grupo">Seus dados</p>
+      <div class="hm-lista">
+        <div class="hm-row" onclick="openHistoryModal();closeHdrMenu()">
+          <div class="hm-ic" style="background:var(--roxo-bg);color:var(--roxo)">🕘</div>
+          <div class="hm-tx"><div class="hm-tt">Histórico de versões</div>
+            <div class="hm-sb">Recuperar lançamentos apagados</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+        <div class="hm-row" onclick="exportJSON();closeHdrMenu()">
+          <div class="hm-ic" style="background:var(--electric-bg);color:var(--electric)">⬇</div>
+          <div class="hm-tx"><div class="hm-tt">Exportar backup</div>
+            <div class="hm-sb">Salva um arquivo no aparelho</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+        <div class="hm-row" onclick="document.getElementById('imp').click();closeHdrMenu()">
+          <div class="hm-ic" style="background:var(--electric-bg);color:var(--electric)">⬆</div>
+          <div class="hm-tx"><div class="hm-tt">Importar backup</div>
+            <div class="hm-sb">Substitui pelos dados do arquivo</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+        <div class="hm-row" onclick="openSyncKeyModal();closeHdrMenu()">
+          <div class="hm-ic" style="background:var(--hybrid-bg);color:var(--hybrid)">🔑</div>
+          <div class="hm-tx"><div class="hm-tt">Código de sincronização</div>
+            <div class="hm-sb">Para usar em outro aparelho</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+      </div>
+
+      <p class="hm-grupo">Aparência</p>
+      <div class="hm-lista">
+        <div class="hm-row" onclick="toggleTheme()">
+          <div class="hm-ic" style="background:var(--neutral-bg);color:var(--neutral)" id="hmTemaIc">🌙</div>
+          <div class="hm-tx"><div class="hm-tt">Tema</div>
+            <div class="hm-sb" id="hdrThemeLbl">Escuro</div></div>
+          <span class="hm-ch">›</span>
+        </div>
+      </div>
+
+      <button class="hm-danger" onclick="resetAll()">↺ Zerar tudo</button>
+      <button class="hm-fechar" onclick="closeHdrMenu()">Fechar</button>
+      <p class="hm-ver" id="verTagMenu"></p>
     </div>
   </div>
 
@@ -8918,16 +9019,23 @@ function applyTheme(t){
   document.documentElement.setAttribute('data-theme',t);
   const btn=document.getElementById('themeBtn');
   if(btn) btn.textContent = t==='light'?'☀️ Claro':'🌙 Escuro';
-  // rótulo do menu "⋯" do mobile — antes nunca era atualizado
+  /* No menu ⋯ a linha de baixo mostra o ESTADO atual, não a ação: o título da
+     linha já é "Tema", e um rótulo dizendo "Mudar para…" ali embaixo faria a
+     mesma linha ter dois papéis. */
   const lbl=document.getElementById('hdrThemeLbl');
-  if(lbl) lbl.textContent = t==='light'?'Mudar para tema escuro':'Mudar para tema claro';
+  if(lbl) lbl.textContent = t==='light'?'Claro':'Escuro';
+  const tic=document.getElementById('hmTemaIc');
+  if(tic) tic.textContent = t==='light'?'☀️':'🌙';
   // barra de status do Android acompanha o tema
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute('content', t==='light'?'#f4f7fb':'#0a0e14');
   localStorage.setItem('cv_theme',t);
 }
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');}
-function toggleHdrMenu(){ const m=document.getElementById('hdrMenu'); const abrindo=!m.classList.contains('open'); m.classList.toggle('open'); if(abrindo)navPush(()=>closeHdrMenu(true)); else navPop(); }
+function toggleHdrMenu(){ const m=document.getElementById('hdrMenu'); const abrindo=!m.classList.contains('open'); m.classList.toggle('open');
+  /* redesenha o cartão de conta ao abrir: os dois estados nascem ocultos, e o
+     status da nuvem muda o tempo todo — precisa refletir o momento da abertura */
+  if(abrindo){ try{ updateAuthUI(); }catch(e){} navPush(()=>closeHdrMenu(true)); } else navPop(); }
 function closeHdrMenu(fromBack){ document.getElementById('hdrMenu').classList.remove('open'); if(!fromBack&&_navStack.length)navPop(); }
 
 /* mede a altura real do header (sticky) e expõe como --hdrH, pra que a navbar
@@ -9678,19 +9786,50 @@ function estadoContaNova(){
 }
 
 function updateAuthUI(){
-  // dois lugares: o cabeçalho (desktop) e o menu ⋯ (mobile)
-  const alvos=[document.getElementById('btnGoogleAuth'),document.getElementById('btnGoogleAuthTop')];
-  alvos.forEach(b=>{
-    if(!b)return;
+  /* Dois lugares muito diferentes:
+     - o cabeçalho do desktop, que continua sendo um botão simples;
+     - o menu ⋯ do celular, onde agora existe um cartão de conta com nome, e-mail
+       e status da nuvem. O cartão inteiro é clicável, então o botão antigo
+       #btnGoogleAuth deixou de existir lá — por isso todo acesso a elemento
+       aqui é defensivo. */
+  const btnTop=document.getElementById('btnGoogleAuthTop');
+  if(btnTop){
     if(_authUser){
       const email=(_authUser.email||'conta Google');
-      b.textContent=(b.id==='btnGoogleAuthTop')?'🔓 Sair':'🔓 Sair ('+email+')';
-      b.title='Conectado como '+email+'. Seus dados sincronizam por essa conta.';
+      btnTop.textContent='🔓 Sair';
+      btnTop.title='Conectado como '+email+'. Seus dados sincronizam por essa conta.';
     } else {
-      b.textContent='🔒 Entrar com Google';
-      b.title='Entrar faz seus dados seguirem sua conta Google em qualquer aparelho.';
+      btnTop.textContent='🔒 Entrar com Google';
+      btnTop.title='Entrar faz seus dados seguirem sua conta Google em qualquer aparelho.';
     }
-  });
+  }
+
+  const cOn=document.getElementById('hmContaOn'), cOff=document.getElementById('hmContaOff');
+  if(!cOn||!cOff) return;
+
+  if(_authUser){
+    const email=_authUser.email||'';
+    const meta=_authUser.user_metadata||{};
+    /* nome do perfil do Google; sem ele, usa a parte do e-mail antes do @ */
+    const nome=meta.full_name||meta.name||(email? email.split('@')[0] : 'Conta Google');
+    const ini=(nome||email||'?').trim().charAt(0).toUpperCase()||'?';
+
+    const elNome=document.getElementById('hmNome'); if(elNome) elNome.textContent=nome;
+    const elMail=document.getElementById('hmMail'); if(elMail) elMail.textContent=email;
+    const elAv=document.getElementById('hmAvatar'); if(elAv) elAv.textContent=ini;
+
+    /* o status repete o que o selo do topo diz — e pela mesma regra: se ainda
+       existe pendência gravada no aparelho, não escreve "Sincronizado" */
+    const elSync=document.getElementById('hmSync');
+    if(elSync){
+      const pend=(typeof localDirty==='function' && localDirty()) || _dirty;
+      elSync.textContent = pend ? '☁️ Salvando…' : '☁️ Sincronizado';
+      elSync.style.color = pend ? 'var(--hybrid)' : 'var(--gain)';
+    }
+    cOn.style.display='flex'; cOff.style.display='none';
+  } else {
+    cOn.style.display='none'; cOff.style.display='flex';
+  }
 }
 
 /* ==================================================================
