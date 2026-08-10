@@ -4300,9 +4300,13 @@ function uRenderDias(){
   const cardsHtml=rows.length
     ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="uberCards">${rows.map((r,vi)=>mobileDayCard(r,allRows.indexOf(r),'uber',ords[vi])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum dia lançado em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
+  /* Médias abrem expandidas (é o resumo do mês, o que se olha primeiro) e a lista
+     de dias vira "Valores diários", recolhida — ela é longa e só interessa quando
+     a pessoa vai conferir ou editar um dia específico. */
+  if(_secAberta['u-medias']===undefined)_secAberta['u-medias']=true;   /* aberta por padrão; respeita quem fechar */
   document.getElementById('uNavBody').innerHTML=kpisHtml+manutTrabPanelHtml(allRows)
-    +(uStatsPanelHtml(allRows,'uber')?secWrap('u-medias','📊 Médias do mês',uStatsPanelHtml(allRows,'uber')):'')
-    +cardsHtml;
+    +(uStatsPanelHtml(allRows,'uber')?secWrap('u-medias','Médias do mês',uStatsPanelHtml(allRows,'uber')):'')
+    +secWrap('u-dias',`Valores diários${rows.length?` · ${rows.length}`:''}`,cardsHtml);
 }
 /* Linha compacta de dia (Trabalho e Pessoal): mostra só data, resumo em chips e total.
    Tocar abre o modal completo de edição — a lista fica limpa e rápida de percorrer. */
@@ -6747,9 +6751,10 @@ function pRenderDias(){
   const cardsHtml=rows.length
     ? (()=>{ const ords=ordinaisPorData(rows); return `<div class="panel" style="padding:4px 0;margin-top:12px" id="pessoalCards">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal',ords[i])).join('')}</div>`; })()
     : `<div class="m-empty-state">Nenhum lançamento em ${MESES[m-1]}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
+  if(_secAberta['p-medias']===undefined)_secAberta['p-medias']=true;   /* aberta por padrão; respeita quem fechar */
   document.getElementById('pNavBody').innerHTML=kpisHtml
-    +(uStatsPanelHtml(rows,'pessoal')?secWrap('p-medias','📊 Médias do mês',uStatsPanelHtml(rows,'pessoal')):'')
-    +cardsHtml;
+    +(uStatsPanelHtml(rows,'pessoal')?secWrap('p-medias','Médias do mês',uStatsPanelHtml(rows,'pessoal')):'')
+    +secWrap('p-dias',`Valores diários${rows.length?` · ${rows.length}`:''}`,cardsHtml);
 }
 
 /* navegação de mês mobile (mantida para compatibilidade — não usada pela navbar de 3 níveis) */
