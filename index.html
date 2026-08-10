@@ -10195,40 +10195,14 @@ async function adoptAuthSyncKey(user){
     _syncKey=newId; _dirty=true; markLocalDirty();
     await flushToCloud(false);
     toast('Dados unidos: nuvem + este aparelho');
-  } else if(localCount>0){
-    /* Conta nova SEMPRE começa zerada. A opção de importar existe, mas não é o
-       padrão: o caso comum é outra pessoa entrando com a conta dela, e herdar os
-       números de quem usava o aparelho antes é pior do que começar limpo.
-       Rede de segurança: backupLocalState() e pushSnapshot() já rodaram acima,
-       então os lançamentos continuam recuperáveis pelo histórico do aparelho. */
-    const trazer = !confirm(
-      'Conta nova. Ela vai começar zerada.\n\n'+
-      'OK — começar do zero (recomendado).\n'+
-      'Cancelar — trazer para esta conta os '+localCount+' lançamento(s) que já estão neste aparelho.'
-    );
-    if(trazer){
-      _syncKey=newId; _dirty=true; markLocalDirty();
-      await flushToCloud(false);
-      toast('Conta criada com seus '+localCount+' lançamentos');
-    } else {
-      const zerado=estadoContaNova();
-      state=hydrate(JSON.parse(JSON.stringify(zerado)))||zerado;
-      try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
-      _syncKey=newId; _dirty=true; markLocalDirty();
-      await flushToCloud(false);
-      try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
-      try{
-        if(!sessionStorage.getItem('cv_zerou_conta')){
-          sessionStorage.setItem('cv_zerou_conta','1');
-          location.reload();
-          return;
-        }
-      }catch(e){}
-      toast('Conta nova, começando do zero.');
-    }
   } else {
-    // conta realmente nova e aparelho sem nada: começa ZERADO.
-    // (sem isso, a pessoa herdaria os números de exemplo que vêm no defaultState)
+    /* CONTA NOVA SEMPRE COMEÇA ZERADA — em qualquer aparelho, sem perguntar.
+       Não importa se este aparelho tem lançamentos de outra conta: quem entra
+       com uma conta quer os dados DAQUELA conta. Se ela é nova, começa limpa.
+       Sem isso, a pessoa herdaria tanto os números de exemplo do defaultState
+       quanto os lançamentos de quem usou o aparelho antes.
+       Nada é perdido: backupLocalState() e pushSnapshot() rodaram acima, e os
+       dados da outra conta continuam intactos na nuvem, sob a chave dela. */
     const zerado=estadoContaNova();
     state=hydrate(JSON.parse(JSON.stringify(zerado)))||zerado;
     try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
@@ -10238,7 +10212,7 @@ async function adoptAuthSyncKey(user){
 
     /* RECARGA OBRIGATÓRIA AQUI.
        Quando a sessão já existe no carregamento, a tela é desenhada com os valores
-       de exemplo ANTES deste zeramento. Repintar não basta: os campos já preenchidos
+       anteriores ANTES deste zeramento. Repintar não basta: os campos já preenchidos
        gravam os valores antigos de volta no primeiro evento. Recarregar faz tudo
        nascer do estado limpo. O sessionStorage evita qualquer risco de laço. */
     try{
@@ -10250,6 +10224,7 @@ async function adoptAuthSyncKey(user){
     }catch(e){}
     toast('Tudo pronto! É só começar a lançar.');
   }
+
 
   try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
   const inp=document.getElementById('loginKey');
