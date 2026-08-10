@@ -2754,7 +2754,10 @@ function hydrateManut(s){
 }
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));const h=hydrate(s);if(h)return h;}catch(e){}
-  return JSON.parse(JSON.stringify(defaultState));
+  /* Sem nada salvo no aparelho (instalação nova, ou logo depois de sair da conta)
+     o app começa ZERADO — não com o defaultState, que traz os números do carro do
+     desenvolvedor. Era a última porta por onde esses valores chegavam a outra pessoa. */
+  return JSON.parse(JSON.stringify(estadoContaNova()));
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));scheduleCloudSync();}
 
@@ -10257,13 +10260,44 @@ async function signInWithGoogleOutraConta(){
 
 async function signOutGoogle(){
   if(!confirm('Sair da sua conta? Seus dados continuam salvos na nuvem e voltam quando você entrar de novo.'))return;
+
+  /* 1) ENVIA O QUE AINDA NÃO SUBIU, ANTES DE QUALQUER COISA.
+     A promessa feita no aviso acima ("seus dados continuam salvos na nuvem") só é
+     verdadeira se não houver pendência local. Sem isso, sair com o app offline
+     perderia os últimos lançamentos junto com a limpeza do passo 3. */
+  try{
+    if(_syncKey && (_dirty || (typeof localDirty==='function' && localDirty()))){
+      await flushToCloud(false);
+    }
+  }catch(e){}
+
   const sb=getSb();
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
+
+  /* 2) DERRUBA A IDENTIDADE DE SINCRONIZAÇÃO.
+     Antes isso restaurava 'cv_synckey_prev' — a chave anterior — o que fazia o
+     aparelho voltar a apontar para os dados de outra conta. */
+  _authUser=null; _authToken=null; _syncKey=null; _dirty=false;
   try{
     localStorage.removeItem(PREF_GOOGLE_EMAIL);
-    const prev=localStorage.getItem('cv_synckey_prev');
-    if(prev) localStorage.setItem('cv_synckey_raw',prev);
+    localStorage.removeItem('cv_synckey_raw');
+    localStorage.removeItem('cv_synckey_prev');
   }catch(e){}
+
+  /* 3) APAGA OS DADOS DO APARELHO.
+     Este é o ponto que causava dados de uma conta aparecerem em outra: o state
+     ficava no localStorage depois do logout, e a próxima conta a entrar herdava.
+     A fonte da verdade é a nuvem — ao entrar de novo, tudo volta de lá.
+     Os backups e o histórico (BACKUP_KEY/SNAP_KEY) são preservados de propósito:
+     são a rede de segurança de quem sair por engano. */
+  try{
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(DIRTY_KEY);
+    localStorage.removeItem(LOCAL_AT_KEY);
+    sessionStorage.removeItem('cv_zerou_conta');
+    sessionStorage.removeItem('cv_build_reload');
+  }catch(e){}
+
   location.reload();
 }
 
