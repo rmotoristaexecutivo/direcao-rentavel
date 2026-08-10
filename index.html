@@ -10056,12 +10056,43 @@ async function emailReset(){
   }catch(e){ authMsg(traduzErroAuth(e)); }
 }
 
+/* Qual conta Google foi usada neste aparelho da última vez.
+   Serve só para o login_hint abaixo — não guarda senha nem token. */
+const PREF_GOOGLE_EMAIL='cv_google_email';
+
 async function signInWithGoogle(){
   const sb=getSb();
   if(!sb){ toast('Sem conexão com a nuvem — tente de novo em instantes'); return; }
   try{
     const redirectTo=location.origin+location.pathname;
-    const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo}});
+    const opts={redirectTo};
+
+    /* Quem tem várias contas Google logadas no navegador vê a tela "Escolha uma
+       conta" TODA vez, porque o Google não sabe qual delas é a do app. Mandando
+       login_hint com o e-mail usado da última vez aqui, ele já vai direto para
+       essa conta. Se a conta não estiver logada no navegador, o Google
+       simplesmente ignora a dica e mostra o seletor normalmente — ou seja, não
+       existe cenário em que isso prenda a pessoa fora do login. */
+    let hint=null;
+    try{ hint=localStorage.getItem(PREF_GOOGLE_EMAIL); }catch(e){}
+    if(hint) opts.queryParams={login_hint:hint};
+
+    const {error}=await sb.auth.signInWithOAuth({provider:'google',options:opts});
+    if(error) throw error;
+  }catch(e){ toast('Não foi possível abrir o login do Google'); }
+}
+
+/* Trocar de conta de propósito: apaga a dica e força o seletor do Google. */
+async function signInWithGoogleOutraConta(){
+  try{ localStorage.removeItem(PREF_GOOGLE_EMAIL); }catch(e){}
+  const sb=getSb();
+  if(!sb){ toast('Sem conexão com a nuvem — tente de novo em instantes'); return; }
+  try{
+    const redirectTo=location.origin+location.pathname;
+    const {error}=await sb.auth.signInWithOAuth({
+      provider:'google',
+      options:{redirectTo, queryParams:{prompt:'select_account'}}
+    });
     if(error) throw error;
   }catch(e){ toast('Não foi possível abrir o login do Google'); }
 }
@@ -10071,6 +10102,7 @@ async function signOutGoogle(){
   const sb=getSb();
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
   try{
+    localStorage.removeItem(PREF_GOOGLE_EMAIL);
     const prev=localStorage.getItem('cv_synckey_prev');
     if(prev) localStorage.setItem('cv_synckey_raw',prev);
   }catch(e){}
@@ -10086,6 +10118,8 @@ function googleAuthMenuClick(){
 async function adoptAuthSyncKey(user){
   _authUser=user;
   updateAuthUI();
+  /* guarda o e-mail para o login_hint da próxima vez (ver signInWithGoogle) */
+  try{ if(user && user.email) localStorage.setItem(PREF_GOOGLE_EMAIL,user.email); }catch(e){}
   const newRaw=authKeyFor(user);
   let cur=null;
   try{ cur=localStorage.getItem('cv_synckey_raw'); }catch(e){}
@@ -10319,6 +10353,48 @@ function temSessaoGuardada(){
       keys.forEach(k=>caches.delete(k));
     }).catch(()=>{});
   }
+
+  /* ---- CHECAGEM DE VERSÃO NOVA (cache HTTP do WebView) ----
+     Sem service worker o app ainda ficava preso em versões antigas: o GitHub
+     Pages manda o index.html com validade de alguns minutos, e o WebView do
+     Android serve a cópia guardada sem sequer perguntar ao servidor. Era por
+     isso que a atualização só aparecia depois de sair/entrar com o Google —
+     as duas coisas fazem uma navegação completa, que revalida o arquivo.
+
+     Aqui a gente pergunta ao servidor, com um HEAD minúsculo e sem cache, qual
+     é a "impressão digital" (ETag) do index.html publicado. Se mudou desde a
+     última abertura, força o navegador a rebaixar o arquivo e recarrega. Como
+     isso acontece enquanto a splash está na tela, a pessoa não vê nada além do
+     app abrindo normalmente.
+
+     Usa ETag em vez de um número de versão de propósito: assim você não precisa
+     lembrar de bumpar nada a cada publicação — basta subir o index.html novo. */
+  (function checarVersaoNova(){
+    var TAG='cv_build_tag';
+    // trava de segurança: no máximo um recarregamento por sessão, nunca um laço
+    try{ if(sessionStorage.getItem('cv_build_reload')) return; }catch(e){}
+    if(!('fetch' in window)) return;
+
+    var url=location.pathname + (location.pathname.slice(-1)==='/' ? 'index.html' : '');
+
+    fetch(url,{method:'HEAD',cache:'no-store'}).then(function(r){
+      if(!r.ok) return;
+      var tag=r.headers.get('ETag')||r.headers.get('Last-Modified');
+      if(!tag) return;                       // servidor não informou: não faz nada
+
+      var ant=null;
+      try{ ant=localStorage.getItem(TAG); }catch(e){}
+      try{ localStorage.setItem(TAG,tag); }catch(e){}
+
+      if(!ant) return;                       // primeira vez: só registra
+      if(ant===tag) return;                  // nada mudou
+
+      // versão nova publicada: rebaixa o arquivo por cima do cache e recarrega
+      try{ sessionStorage.setItem('cv_build_reload','1'); }catch(e){}
+      fetch(url,{cache:'reload'}).then(function(){ location.reload(); })
+                                 .catch(function(){ location.reload(); });
+    }).catch(function(){});
+  })();
 
   // ---- esconder splash quando o app estiver pronto ----
   function hideSplash(){
