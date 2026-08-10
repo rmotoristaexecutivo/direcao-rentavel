@@ -8425,7 +8425,10 @@ function importJSON(e){
 function resetAll(){
   if(!confirm('Isso apaga TODOS os dados e volta aos valores iniciais. Continuar?'))return;
   pushSnapshot('antes-de-zerar');
-  state=JSON.parse(JSON.stringify(defaultState));_forcePush=true;save();
+  /* estadoContaNova() e nao defaultState: o defaultState traz os numeros de
+     exemplo do desenvolvedor (valor do carro, entrada, financiamento). Zerar
+     com ele fazia a pessoa herdar esses valores em vez de comecar limpa. */
+  state=JSON.parse(JSON.stringify(estadoContaNova()));_forcePush=true;save();
   renderFinanceInputs();renderFinance();renderUber();renderPessoal();renderAbastecimento();renderManutencao();renderCompareInputs();renderCompare();renderDailyConfig();renderDaily();renderResumo();toast('Dados reiniciados');
 }
 
@@ -9654,6 +9657,22 @@ function estadoContaNova(){
       if('months' in s[bloco]) s[bloco].months={};
     }
   });
+  /* Parâmetros técnicos do veículo: cada pessoa tem o seu carro.
+     Antes ficavam com os valores do carro do desenvolvedor (híbrido, 20 km/l,
+     bateria de 18,3 kWh) — quem tem carro a combustível via campos de bateria
+     preenchidos sem entender de onde vinham.
+     Zerar é seguro porque todas as divisões usam reserva (cf.kmL||20,
+     cf.bateriaKwh||18.3), então nada vira Infinity enquanto a pessoa não
+     preencher os dados do próprio veículo. */
+  if(s.uber && s.uber.config){
+    ['consumoEl','tarifa','consumoHib','preco','kwhKm','kmL','bateriaKwh']
+      .forEach(k=>{ if(k in s.uber.config) s.uber.config[k]=0; });
+  }
+
+  /* cadastro do veículo e histórico de trocas não pertencem à conta nova */
+  delete s.veiculo;
+  delete s.veiculosHist;
+
   s.despesas={};
   return s;
 }
@@ -10177,10 +10196,36 @@ async function adoptAuthSyncKey(user){
     await flushToCloud(false);
     toast('Dados unidos: nuvem + este aparelho');
   } else if(localCount>0){
-    // conta nova, mas este aparelho já tinha lançamentos: eles viram o ponto de partida
-    _syncKey=newId; _dirty=true; markLocalDirty();
-    await flushToCloud(false);
-    toast('Conta criada com seus '+localCount+' lançamentos');
+    /* Conta nova SEMPRE começa zerada. A opção de importar existe, mas não é o
+       padrão: o caso comum é outra pessoa entrando com a conta dela, e herdar os
+       números de quem usava o aparelho antes é pior do que começar limpo.
+       Rede de segurança: backupLocalState() e pushSnapshot() já rodaram acima,
+       então os lançamentos continuam recuperáveis pelo histórico do aparelho. */
+    const trazer = !confirm(
+      'Conta nova. Ela vai começar zerada.\n\n'+
+      'OK — começar do zero (recomendado).\n'+
+      'Cancelar — trazer para esta conta os '+localCount+' lançamento(s) que já estão neste aparelho.'
+    );
+    if(trazer){
+      _syncKey=newId; _dirty=true; markLocalDirty();
+      await flushToCloud(false);
+      toast('Conta criada com seus '+localCount+' lançamentos');
+    } else {
+      const zerado=estadoContaNova();
+      state=hydrate(JSON.parse(JSON.stringify(zerado)))||zerado;
+      try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
+      _syncKey=newId; _dirty=true; markLocalDirty();
+      await flushToCloud(false);
+      try{ localStorage.setItem('cv_synckey_raw',newRaw); }catch(e){}
+      try{
+        if(!sessionStorage.getItem('cv_zerou_conta')){
+          sessionStorage.setItem('cv_zerou_conta','1');
+          location.reload();
+          return;
+        }
+      }catch(e){}
+      toast('Conta nova, começando do zero.');
+    }
   } else {
     // conta realmente nova e aparelho sem nada: começa ZERADO.
     // (sem isso, a pessoa herdaria os números de exemplo que vêm no defaultState)
