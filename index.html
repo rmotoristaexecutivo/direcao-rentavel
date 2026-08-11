@@ -317,6 +317,30 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .lanc-tab{flex:1;padding:10px;border-radius:10px 10px 0 0;border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);font-weight:700;font-size:13.5px;cursor:pointer;border-bottom:none}
 .lanc-tab.active{background:var(--panel);color:var(--txt);border-color:var(--line-strong)}
 .lanc-empty{padding:40px 20px;text-align:center;color:var(--txt-faint);font-size:13.5px}
+/* ===== LISTA DE LANÇAMENTOS (cartões) =====
+   A lista era uma tabela de linhas apertadas, com a data espremida à esquerda e
+   tudo em uma linha só — difícil de ler no celular e sem indicar que dava para
+   tocar e editar. Vira cartão com faixa lateral colorida, no mesmo padrão dos
+   cards do app: verde para entrada, vermelho para saída. */
+.lc-wrap{padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.lc-dia{font-family:'Sora',system-ui,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);margin:10px 2px 2px}
+.lc-dia:first-child{margin-top:0}
+.lc-card{position:relative;display:flex;align-items:center;gap:11px;padding:12px 12px 12px 15px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:14px;cursor:pointer;overflow:hidden}
+.lc-card:active{background:var(--panel)}
+.lc-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.lc-tx{flex:1;min-width:0}
+.lc-tt{font-size:14px;font-weight:700;line-height:1.25;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.lc-sb{font-size:11.5px;color:var(--txt-dim);margin-top:3px;line-height:1.35}
+.lc-val{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;flex:none}
+.lc-x{flex:none;width:28px;height:28px;border-radius:8px;border:0;background:transparent;
+  color:var(--txt-faint);font-size:14px;cursor:pointer;line-height:1}
+.lc-x:active{background:var(--expense-bg);color:var(--expense)}
+.lc-tot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 14px;margin:0 0 2px;background:var(--panel);border-bottom:1px solid var(--line)}
+.lc-tot b{font-size:15px;font-variant-numeric:tabular-nums}
+.lc-tot span{font-size:12px;color:var(--txt-dim)}
 .modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel-solid)}
 .modal-head h3{margin:0;font-family:'Sora';font-size:17px}
 .modal-close{background:transparent;border:none;color:var(--txt-dim);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:8px}
@@ -3436,6 +3460,34 @@ function addUberRow(){
   rows.push(emptyRow(`${y}-${pad(m)}-${pad(day)}`));
   save();renderUber();
 }
+/* ===== MOVER UM LANÇAMENTO DE DATA =====
+   A data pertence à LINHA, não ao lançamento: cada linha é um dia, e ganhos e
+   gastos são filhos dela. Mudar a data, então, não é editar um campo — é mover
+   o lançamento para a linha daquele dia, criando-a se não existir, inclusive em
+   outro mês. Por isso a edição de data faltava.
+   Devolve {rows, ri} da linha de destino. */
+function linhaDaData(date){
+  const monthKey=date.slice(0,7);
+  const rows=ensureMonth(monthKey);
+  let ri=rows.findIndex(r=>r.data===date);
+  if(ri<0){
+    rows.push(emptyRow(date));
+    rows.sort((a,b)=>a.data.localeCompare(b.data));
+    ri=rows.findIndex(r=>r.data===date);
+  }
+  return {rows, ri, monthKey};
+}
+
+/* Remove a linha se ela ficou sem nada — evita acumular dias vazios ao mover
+   lançamentos para outras datas. Só apaga o que não tem lançamento NEM
+   deslocamento próprio lançado. */
+function limparLinhaSeVazia(rows,ri){
+  const r=rows[ri]; if(!r)return;
+  const semLanc = !(r.ganhos||[]).length && !(r.gastosExtra||[]).length;
+  const semTrecho = !(r.kmIda>0) && !(r.kmVolta>0) && !(r.pedagioIda>0) && !(r.pedagioVolta>0);
+  if(semLanc && semTrecho) rows.splice(ri,1);
+}
+
 function addUberRowForDate(){
   const k=state.uber.current;const{y,m}=monthKeyParts(k);
   // sugere o próximo dia livre do mês selecionado como ponto de partida
@@ -5710,35 +5762,58 @@ function renderLancList(){
     wrap.innerHTML=`<div class="lanc-empty">Nenhum${_lancTab==='entrada'?' ganho':'a saída'} lançado em ${monthLabel()} ainda.</div>`;
     return;
   }
-  wrap.innerHTML=items.map(it=>{
-    const dataBR=fmtDateBR(it.data);
-    const wdChip=`<span class="wd-chip" title="${diaSemanaDe(it.data)}">${diaSemanaCurto(it.data)}</span>`;
-    if(_lancTab==='entrada'){
-      let corridasTxt;
-      if(it.categorias){
-        const parts=(catsDoApp(it.app)||UBER_CATS).filter(c=>it.categorias[c.key]>0).map(c=>`${c.label} ${it.categorias[c.key]}`);
-        corridasTxt=parts.join(' · ');
-      } else if(it.corridas){
-        corridasTxt=`${fmtN(it.corridas,0)} corridas`;
+  /* Agrupa por dia: a data vira cabeçalho, não coluna. Assim o cartão fica com
+     espaço para o que interessa (app, categoria, km, horas) e a leitura no
+     celular deixa de ser uma linha comprida cortada por reticências. */
+  const porDia={};
+  items.forEach(it=>{ (porDia[it.data]=porDia[it.data]||[]).push(it); });
+  const dias=Object.keys(porDia).sort().reverse();
+  const total=items.reduce((s,it)=>s+(it.valor||0),0);
+  const cor=_lancTab==='entrada'?'var(--gain)':'var(--expense)';
+
+  wrap.innerHTML=`
+    <div class="lc-tot">
+      <span>${items.length} lançamento${items.length>1?'s':''} em ${monthLabel()}</span>
+      <b style="color:${cor}">${fmt(total)}</b>
+    </div>
+    <div class="lc-wrap">`+dias.map(dia=>{
+    const cab=`<div class="lc-dia">${fmtDateBR(dia)} · ${diaSemanaDe(dia)}</div>`;
+    const cards=porDia[dia].map(it=>{
+      if(_lancTab==='entrada'){
+        let corridasTxt;
+        if(it.categorias){
+          corridasTxt=(catsDoApp(it.app)||UBER_CATS).filter(c=>it.categorias[c.key]>0)
+            .map(c=>`${c.label} ${it.categorias[c.key]}`).join(' · ');
+        } else if(it.corridas){ corridasTxt=`${fmtN(it.corridas,0)} corridas`; }
+        const sub=[corridasTxt, it.km?`${fmtN(it.km,0)} km`:null,
+                   it.horas?`${fmtHoras(it.horas)}h`:null].filter(Boolean).join(' · ');
+        return `<div class="lc-card" style="--c:var(--gain)" onclick="editLancamento('entrada',${it.ri},${it.gi})">
+          <div class="lc-tx">
+            <div class="lc-tt">${it.app}</div>
+            ${sub?`<div class="lc-sb">${sub}</div>`:''}
+          </div>
+          <span class="lc-val" style="color:var(--gain)">${fmt(it.valor)}</span>
+          <button class="lc-x" title="Excluir"
+            onclick="event.stopPropagation();delLancamento('entrada',${it.ri},${it.gi})">✕</button>
+        </div>`;
       }
-      const mid=[corridasTxt, it.km?`${fmtN(it.km,0)} km`:null, it.horas?`${fmtHoras(it.horas)}h`:null].filter(Boolean).join(' · ');
-      return `<div class="lanc-row lanc-clickable" onclick="editLancamento('entrada',${it.ri},${it.gi})">
-        <span class="lanc-date">${dataBR}${wdChip}</span>
-        <span class="lanc-mid"><b style="color:var(--txt)">${it.app}</b>${mid?' · '+mid:''}</span>
-        <span class="lanc-val" style="color:var(--gain)">${fmt(it.valor)}</span>
-        <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delLancamento('entrada',${it.ri},${it.gi})" title="Excluir">✕</button></span>
+      const isComb = it.categoria==='Combustível' && it.km!=null;
+      const titulo = isComb ? (it.tipo==='el'?'⚡ Elétrico':'⛽ Combustível') : it.categoria;
+      const sub = isComb
+        ? [`${fmtN(it.km,0)} km`, `${fmtN(it.qtda,2)} ${it.tipo==='el'?'kWh':'L'}`, it.forma, it.obs].filter(Boolean).join(' · ')
+        : [it.forma, it.obs].filter(Boolean).join(' · ');
+      return `<div class="lc-card" style="--c:var(--expense)" onclick="editLancamento('saida',${it.ri},${it.gi})">
+        <div class="lc-tx">
+          <div class="lc-tt">${titulo}</div>
+          ${sub?`<div class="lc-sb">${sub}</div>`:''}
+        </div>
+        <span class="lc-val" style="color:var(--expense)">${fmt(it.valor)}</span>
+        <button class="lc-x" title="Excluir"
+          onclick="event.stopPropagation();delLancamento('saida',${it.ri},${it.gi})">✕</button>
       </div>`;
-    }else{
-      const isComb=it.categoria==='Combustível' && it.km!=null;
-      const midComb=isComb?`<b style="color:var(--txt)">${it.tipo==='el'?'⚡ Elétrico':'⛽ Combustível'}</b> · ${fmtN(it.km,0)}km · ${fmtN(it.qtda,2)}${it.tipo==='el'?'kWh':'L'} · ${it.forma}${it.obs?' · '+it.obs:''}`:`<b style="color:var(--txt)">${it.categoria}</b> · ${it.forma}${it.obs?' · '+it.obs:''}`;
-      return `<div class="lanc-row lanc-clickable" onclick="editLancamento('saida',${it.ri},${it.gi})">
-        <span class="lanc-date">${dataBR}${wdChip}</span>
-        <span class="lanc-mid">${midComb}</span>
-        <span class="lanc-val" style="color:var(--expense)">${fmt(it.valor)}</span>
-        <span class="lanc-actions"><button class="row-del" onclick="event.stopPropagation();delLancamento('saida',${it.ri},${it.gi})" title="Excluir">✕</button></span>
-      </div>`;
-    }
-  }).join('');
+    }).join('');
+    return cab+cards;
+  }).join('')+`</div>`;
 }
 function delLancamento(kind,ri,gi){
   const rows=ensureMonth(state.uber.current);
@@ -5765,6 +5840,8 @@ function renderEditLancSheet(kind,it,data){
     box.innerHTML=`
       <div class="sheet-grip"></div>
       <h3>✏️ Editar ganho</h3>
+      <div class="m-field"><label>Data</label>
+        <input type="date" id="elData" value="${data}"></div>
       <div class="m-field"><label>App / Origem</label>
         <select id="elApp" onchange="onEditLancAppChange()">${APP_LIST.map(a=>`<option value="${a}"${a===it.app?' selected':''}>${a}</option>`).join('')}</select></div>
       <div class="m-field-row">
@@ -5793,6 +5870,8 @@ function renderEditLancSheet(kind,it,data){
     box.innerHTML=`
       <div class="sheet-grip"></div>
       <h3>✏️ Editar saída</h3>
+      <div class="m-field"><label>Data</label>
+        <input type="date" id="elData" value="${data}"></div>
       <div class="m-field"><label>Categoria</label>
         <select id="elCat" onchange="onEditSaidaCatChange()">${GASTO_CATS.map(c=>`<option value="${c}"${c===it.categoria?' selected':''}>${c}</option>`).join('')}</select></div>
       <div id="elCombFields" style="display:${isComb?'':'none'}">
@@ -5921,6 +6000,44 @@ function saveEditLanc(){
       delete it.tipo; delete it.km; delete it.rend; delete it.qtda; delete it.valorUnit;
     }
   }
+  /* ===== MUDANÇA DE DATA =====
+     Feita por último, depois de os campos já estarem gravados no objeto: assim o
+     que se move para a nova data é o lançamento já atualizado. Mover é tirar da
+     lista da linha atual e colocar na lista da linha de destino — que pode estar
+     em outro mês. */
+  const novaData=(document.getElementById('elData')||{}).value||'';
+  if(novaData && novaData!==r.data){
+    const lista = kind==='entrada' ? r.ganhos : r.gastosExtra;
+    const item  = lista[gi];
+    if(item){
+      lista.splice(gi,1);
+      recalcRowFromLists(r);
+
+      const dest=linhaDaData(novaData);
+      const alvo=dest.rows[dest.ri];
+      if(kind==='entrada'){ (alvo.ganhos=alvo.ganhos||[]).push(item); }
+      else { (alvo.gastosExtra=alvo.gastosExtra||[]).push(item); }
+      recalcRowFromLists(alvo);
+
+      /* a linha de origem pode ter ficado sem nada */
+      const riOrigem=rows.indexOf(r);
+      if(riOrigem>=0) limparLinhaSeVazia(rows,riOrigem);
+
+      /* mudou de mês: leva a tela junto, senão o lançamento "some" da lista */
+      if(dest.monthKey!==state.uber.current){
+        state.uber.current=dest.monthKey;
+        state.uber.year=Number(dest.monthKey.slice(0,4));
+        save(); closeEditLanc(); renderLancList(); renderUber();
+        const _ll=document.getElementById('lancMesLabel'); if(_ll)_ll.textContent=monthLabel();
+        toast('Lançamento movido para '+monthLabel());
+        return;
+      }
+      save(); closeEditLanc(); renderLancList(); renderUber();
+      toast('Lançamento movido para '+fmtDateBR(novaData));
+      return;
+    }
+  }
+
   recalcRowFromLists(r);
   save(); closeEditLanc(); renderLancList(); renderUber();
   toast('Lançamento atualizado');
