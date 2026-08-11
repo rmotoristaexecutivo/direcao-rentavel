@@ -317,6 +317,107 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .lanc-tab{flex:1;padding:10px;border-radius:10px 10px 0 0;border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);font-weight:700;font-size:13.5px;cursor:pointer;border-bottom:none}
 .lanc-tab.active{background:var(--panel);color:var(--txt);border-color:var(--line-strong)}
 .lanc-empty{padding:40px 20px;text-align:center;color:var(--txt-faint);font-size:13.5px}
+/* ===== FINANÇAS: tela principal ===== */
+.fin-topo{display:flex;align-items:center;gap:10px;padding:10px 2px 12px}
+.fin-nav{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--txt);font-size:17px;cursor:pointer;flex:none}
+.fin-mes{flex:1;text-align:center;font-family:'Sora',system-ui,sans-serif;
+  font-size:15px;font-weight:700;text-transform:capitalize}
+.fin-saldos{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;margin-bottom:12px}
+.fin-sal{background:var(--bg2);border:1px solid var(--line);border-radius:13px;
+  padding:10px 8px;text-align:center}
+.fin-sal span{display:block;font-size:10.5px;color:var(--txt-faint);
+  text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.fin-sal b{display:block;margin-top:3px;font-size:14px;font-variant-numeric:tabular-nums}
+.fin-sal-main b{font-size:19px}
+.fin-alerta{display:flex;align-items:center;gap:10px;background:var(--expense-bg);
+  border:1px solid var(--expense);border-radius:14px;padding:12px 13px;margin-bottom:12px;cursor:pointer}
+.fin-alerta-tx{flex:1;font-size:12.5px;line-height:1.45;color:var(--txt)}
+.fin-alerta-btn{flex:none;border:0;background:var(--expense);color:#fff;font-weight:700;
+  font-size:12px;padding:8px 13px;border-radius:9px;cursor:pointer}
+.fin-visao{background:var(--bg2);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;margin-bottom:12px}
+.fin-vrow{display:flex;align-items:center;gap:11px;padding:12px 13px;cursor:pointer;
+  border-bottom:1px solid var(--line)}
+.fin-vrow:last-child{border-bottom:0}
+.fin-vic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  font-size:15px;font-weight:800;flex:none}
+.fin-vtx{flex:1;min-width:0}
+.fin-vtx b{display:block;font-size:14px}
+.fin-vtx i{display:block;font-style:normal;font-size:11px;color:var(--txt-faint);margin-top:1px}
+.fin-vval{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+.fin-acoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fin-add{padding:12px;border-radius:12px;border:0;font-family:'Manrope',system-ui,sans-serif;
+  font-weight:700;font-size:13.5px;cursor:pointer;color:#fff}
+.fin-add-e{background:var(--gain)}
+.fin-add-s{background:var(--expense)}
+.fin-seg{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:12px;padding:4px;margin-bottom:10px}
+.fin-seg button{flex:1;border:0;background:transparent;color:var(--txt-dim);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:13px;
+  padding:9px 4px;border-radius:9px;cursor:pointer}
+.fin-seg button.on{background:var(--neutral);color:#fff}
+.fin-seg-sm{margin-top:8px}
+.fin-seg-sm button{font-size:12px;padding:8px 4px}
+.fin-filtros{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:2px;
+  -webkit-overflow-scrolling:touch}
+.fin-filtros button{flex:none;border:1px solid var(--line);background:var(--bg2);
+  color:var(--txt-dim);font-family:'Manrope',system-ui,sans-serif;font-weight:600;
+  font-size:11.5px;padding:7px 12px;border-radius:99px;cursor:pointer;white-space:nowrap}
+.fin-filtros button.on{background:var(--neutral);border-color:var(--neutral);color:#fff}
+.fin-vazio{padding:34px 16px;text-align:center;color:var(--txt-faint);font-size:13px}
+.fin-card{gap:9px}
+.fin-chk{flex:none;width:26px;height:26px;border-radius:50%;cursor:pointer;
+  border:2px solid var(--line-strong);background:transparent;color:#fff;
+  font-size:13px;font-weight:800;line-height:1;display:grid;place-items:center}
+.fin-chk.on{background:var(--gain);border-color:var(--gain)}
+.fin-rodape{display:flex;gap:8px;margin-top:16px}
+.fin-rodape .btn{flex:1;justify-content:center}
+.fin-sec{font-family:'Sora',system-ui,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint);margin:16px 2px 6px}
+.fin-hint{font-size:11px;color:var(--txt-faint);margin:7px 0 0;line-height:1.45}
+.fin-switch{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px;
+  font-weight:600;cursor:pointer}
+.fin-switch input{width:18px;height:18px}
+.a-hero-link{background:none;border:0;padding:0;font:inherit;color:var(--neutral);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.fin-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.fin-presets button{border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:600;font-size:11.5px;
+  padding:6px 11px;border-radius:99px;cursor:pointer}
+.fin-presets button:active{background:var(--neutral);border-color:var(--neutral);color:#fff}
+.fin-escopo{display:block;width:100%;text-align:left;background:var(--bg2);
+  border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.fin-escopo:active{background:var(--panel)}
+.fin-escopo b{display:block;font-size:14px;font-weight:700;color:var(--txt)}
+.fin-escopo i{display:block;font-style:normal;font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+
+/* ===== FINANÇAS: categorias ===== */
+.fc-seg{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:12px;padding:4px;margin-bottom:14px}
+.fc-seg button{flex:1;border:0;background:transparent;color:var(--txt-dim);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:13px;
+  padding:9px 4px;border-radius:9px;cursor:pointer}
+.fc-seg button.on{background:var(--neutral);color:#fff}
+.fc-list{display:flex;flex-direction:column;gap:8px}
+.fc-cat{position:relative;background:var(--bg2);border:1px solid var(--line);
+  border-radius:13px;padding:11px 12px 11px 15px;overflow:hidden}
+.fc-cat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c)}
+.fc-cat-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fc-cat-n{font-size:14px;font-weight:700}
+.fc-tag{font-style:normal;font-size:10px;font-weight:600;color:var(--hybrid);
+  background:var(--hybrid-bg);padding:2px 6px;border-radius:99px;margin-left:6px;white-space:nowrap}
+.fc-cat-acts button{border:0;background:transparent;color:var(--txt-faint);
+  font-size:13px;cursor:pointer;padding:4px 5px}
+.fc-cat-acts button:active{color:var(--txt)}
+.fc-subs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.fc-sub{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  color:var(--txt-dim);background:var(--panel);border:1px solid var(--line);
+  padding:4px 8px;border-radius:99px;cursor:pointer}
+.fc-sub i{font-style:normal;color:var(--txt-faint);font-size:10px}
+.fc-sub i:active{color:var(--expense)}
+.fc-sub-add{font-size:11.5px;font-weight:600;color:var(--neutral);background:transparent;
+  border:1px dashed var(--line-strong);padding:4px 9px;border-radius:99px;cursor:pointer}
 /* ===== LISTA DE LANÇAMENTOS (cartões) =====
    A lista era uma tabela de linhas apertadas, com a data espremida à esquerda e
    tudo em uma linha só — difícil de ler no celular e sem indicar que dava para
@@ -2271,6 +2372,14 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <!-- =================== ABA DESPESA PESSOAL (uso particular do carro) =================== -->
   <section class="view" id="view-pessoal">
 
+    <!-- ===== FINANÇAS PESSOAIS (tela nova) ===== -->
+    <div id="finRoot"></div>
+
+    <!-- A aba antiga continua no DOM, oculta: a migração lê os dados dela, e o
+         renderPessoal() legado ainda procura estes elementos. Removê-los daria
+         erro de elemento inexistente sem ganho nenhum. -->
+    <div id="pessoalLegacy" style="display:none">
+
     <!-- ===== MOBILE: navegação Anos → Meses → Dias ===== -->
     <div class="mobile-only">
       <div class="m-navbar" id="pNavbar">
@@ -2281,7 +2390,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <div id="pNavBody"></div>
     </div>
 
-    <!-- ===== DESKTOP: nav + tabela (inalterado) ===== -->
+    <!-- ===== DESKTOP: nav + tabela (legado) ===== -->
     <div class="desktop-only">
     <div id="pessoalNav"></div>
 
@@ -2317,6 +2426,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     </div>
     <div class="hbar" id="pessoalHbar"><div id="pessoalHbarInner"></div></div>
     </div>
+    </div><!-- /pessoalLegacy -->
+
   </section>
 
   <!-- =================== ABA ABASTECIMENTOS =================== -->
@@ -4850,6 +4961,28 @@ function diasTrabMes(){
   return d>0?d:22;
 }
 
+/* A base de dias é a mesma do card "quanto o carro precisa render", no
+   Financiamento — os dois dividem o mesmo número por design. Só que aqui a
+   pessoa não tinha como saber disso nem como mudar, e ficava com a dúvida
+   "base de 30 dias, de onde saiu?". Agora o próprio texto abre o ajuste. */
+function ajustarDiasTrab(){
+  const atual=diasTrabMes();
+  const txt=prompt(
+    'Quantos dias por mês você roda?\n\n'+
+    'É por esse número que o app divide IPVA, licenciamento, manutenção e\n'+
+    'imprevistos para dizer quanto separar por dia trabalhado.\n\n'+
+    'O mesmo número vale no Financiamento.', String(atual));
+  if(txt===null)return;
+  const n=Math.round(parseNum(txt));
+  if(!(n>0) || n>31){ toast('Informe um número de 1 a 31'); return; }
+  state.finance=state.finance||{};
+  state.finance.diasUteis=n;
+  save();
+  try{ renderVeiculo(); }catch(e){}
+  try{ renderFinance(); }catch(e){}
+  toast('Base ajustada para '+n+' dias por mês');
+}
+
 function calcReservas(){
   const v=veic(), dias=diasTrabMes(), diasAno=dias*12;
   const fipe=v.valorFipe||0;
@@ -4918,7 +5051,8 @@ function renderVeiculo(){
   <div class="a-hero f-roxo">
     <div class="a-hero-k">Separar por dia trabalhado</div>
     <div class="a-hero-v" style="color:var(--hybrid)">${fmt(r.totalDia)}</div>
-    <div class="a-hero-s">${fmt(r.totalMes)} por mês · base de ${r.dias} dias</div>
+    <div class="a-hero-s">${fmt(r.totalMes)} por mês ·
+      <button class="a-hero-link" onclick="ajustarDiasTrab()">base de ${r.dias} dias que você roda</button></div>
   </div>
 
   <div class="a-grid3 two">
@@ -6816,7 +6950,1041 @@ function clearObsNotaP(){ document.getElementById('pObsTexto').value=''; saveObs
 function closeObsNotaP(fromBack){ document.getElementById('pObsModal').classList.remove('open'); _obsRowP=null; _obsLadoP=null; if(!fromBack)navPop(); }
 
 /* --- render principal (tabela idêntica ao Uber) --- */
+/* ============================================================================
+   FINANÇAS PESSOAIS — FASE 1: modelo de dados, categorias e conta
+   ----------------------------------------------------------------------------
+   Escopo decidido com o uso real: uma conta corrente só, cartão de crédito
+   lançado como despesa mensal comum (sem fatura fechando sozinha), e nada de
+   ganhos do APP aqui — trabalho é trabalho, pessoal é pessoal.
+
+   O bloco vive em state.financas, CHAVE NOVA: nenhuma estrutura existente é
+   tocada, então o rollback continua valendo e o Resumo segue lendo o que lê hoje
+   até a fase de integração.
+   ============================================================================ */
+
+function novoId(p){ return p+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* Categorias iniciais. Servem de ponto de partida — tudo é editável e apagável.
+   'Combustível' nasce com form:'combustivel': é ela que troca a cara do
+   formulário e traz km, tipo e rendimento, herdando o cálculo da aba Pessoal. */
+function _catsIniciais(){
+  const C=(nome,tipo,cor,subs,form)=>({
+    id:novoId('cat'), nome, tipo, cor, form:form||'padrao',
+    subs:(subs||[]).map(s=>({id:novoId('sub'), nome:s}))
+  });
+  /* Lista genérica de propósito: ela nasce em TODA conta nova, inclusive na dos
+     testadores. Categorias muito pessoais (nome de pet, congregação, nome da
+     própria empresa) ficam de fora — cada um cria as suas em segundos.
+     O que era lista solta virou categoria + subcategoria: Dentista dentro de
+     Saúde, Calçados dentro de Vestuário, Nubank dentro de Cartão. */
+  return [
+    /* ---------- entradas ---------- */
+    C('Salário','entrada','var(--gain)',['Mensal','Adiantamento','13º','Férias']),
+    C('Benefícios','entrada','var(--gain)',['Vale-alimentação','Vale-transporte','Ajuda de custo']),
+    C('Vendas','entrada','var(--roxo)',['Produtos','Serviços']),
+    C('Outras receitas','entrada','var(--neutral)',['Reembolso','Estorno','Presente','FGTS','Rendimentos']),
+
+    /* ---------- saídas ---------- */
+    C('Combustível','saida','var(--hybrid)',['Ida','Volta','Outro'],'combustivel'),
+    C('Pedágio','saida','var(--hybrid)',['Ida','Volta']),
+    C('Veículo','saida','var(--electric)',['Manutenção','Estacionamento','Lavagem','Documentação','Seguro','Multa']),
+    C('Alimentação','saida','var(--expense)',['Mercado','Feira','Restaurante','Padaria','Lanche']),
+    C('Moradia','saida','var(--neutral)',['Aluguel','Condomínio','Luz','Água','Gás','Internet']),
+    C('Saúde','saida','var(--gain)',['Farmácia','Consulta','Dentista','Plano de saúde','Exames']),
+    C('Cuidados pessoais','saida','var(--roxo)',['Cabelo','Higiene','Academia']),
+    C('Vestuário','saida','var(--roxo)',['Roupas','Calçados','Acessórios']),
+    C('Educação','saida','var(--neutral)',['Curso','Material escolar','Livraria','Papelaria']),
+    C('Lazer','saida','var(--roxo)',['Passeio','Festa','Viagem','Assinaturas','Brinquedos']),
+    C('Família','saida','var(--gain)',['Mesada','Presente','Filhos']),
+    C('Pets','saida','var(--electric)',['Ração','Veterinário','Acessórios']),
+    C('Transporte','saida','var(--electric)',['Aplicativo','Ônibus','Viagem']),
+    C('Cartão de crédito','saida','var(--expense)',['Fatura','Parcelamento']),
+    C('Dívidas','saida','var(--expense)',['Empréstimo','Financiamento','Renegociação','Acordo']),
+    C('Serviços','saida','var(--txt-dim)',['Telefonia','Streaming','Manutenção','Outros']),
+    C('Seguros','saida','var(--neutral)',['Vida','Residencial']),
+    C('Impostos e taxas','saida','var(--txt-dim)',['MEI','Tarifas bancárias','IPTU']),
+    C('Outras despesas','saida','var(--txt-dim)',['Diversos'])
+  ];
+}
+
+function financas(){
+  if(!state.financas){
+    state.financas={
+      conta:{ nome:'Minha Conta Corrente', saldoInicial:0 },
+      categorias:_catsIniciais(),
+      lancamentos:[]
+    };
+  }
+  const f=state.financas;
+  if(!f.conta) f.conta={nome:'Minha Conta Corrente', saldoInicial:0};
+  if(!Array.isArray(f.categorias)||!f.categorias.length) f.categorias=_catsIniciais();
+  if(!Array.isArray(f.lancamentos)) f.lancamentos=[];
+  f.categorias.forEach(c=>{ if(!Array.isArray(c.subs)) c.subs=[]; if(!c.form) c.form='padrao'; });
+  return f;
+}
+
+function catsPorTipo(tipo){ return financas().categorias.filter(c=>c.tipo===tipo); }
+function catPorId(id){ return financas().categorias.find(c=>c.id===id)||null; }
+
+/* ============================================================================
+   MOTOR DAS FINANÇAS: mês, saldos e totais
+   ----------------------------------------------------------------------------
+   O mês de um lançamento é o do VENCIMENTO. Compra à vista lançada hoje tem
+   vencimento hoje; conta de luz que vence dia 10 cai no mês do dia 10, mesmo
+   que você lance dia 2. Foi a regra escolhida com o uso real.
+   ============================================================================ */
+
+function finMesDe(l){ return (l.venc||l.dataLanc||'').slice(0,7); }
+let _finMes = null;                                   // mês em exibição
+function finMesAtual(){
+  if(!_finMes) _finMes=(state.uber&&state.uber.current)||_mesHoje();
+  return _finMes;
+}
+function finTrocarMes(dir){
+  const [y,m]=finMesAtual().split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  _finMes=d.getFullYear()+'-'+pad(d.getMonth()+1);
+  renderFinancas();
+}
+
+function finLancamentosDoMes(mes){
+  return financas().lancamentos.filter(l=>finMesDe(l)===mes);
+}
+
+/* Saldos.
+   inicial  = saldo da conta na virada do mês (saldo inicial + tudo EFETIVADO antes)
+   saldo    = inicial + o que foi efetivado no mês        (o dinheiro que existe)
+   previsto = inicial + tudo do mês, pago ou não          (onde você termina o mês) */
+function finSaldos(mes){
+  const f=financas();
+  let inicial=Number(f.conta.saldoInicial)||0;
+  f.lancamentos.forEach(l=>{
+    if(finMesDe(l)>=mes) return;
+    if(!l.efetivada) return;
+    inicial += (l.tipo==='entrada' ? 1 : -1) * (Number(l.valor)||0);
+  });
+  let entR=0,entP=0,saiR=0,saiP=0;
+  finLancamentosDoMes(mes).forEach(l=>{
+    const v=Number(l.valor)||0;
+    if(l.tipo==='entrada'){ entP+=v; if(l.efetivada) entR+=v; }
+    else { saiP+=v; if(l.efetivada) saiR+=v; }
+  });
+  return {
+    inicial,
+    saldo:    inicial + entR - saiR,
+    previsto: inicial + entP - saiP,
+    receitaReal:entR, receitaPrev:entP,
+    despesaReal:saiR, despesaPrev:saiP
+  };
+}
+
+/* Situação de um lançamento — é o que colore a lista e alimenta os filtros. */
+function finStatus(l){
+  if(l.efetivada) return 'pago';
+  const hoje=_hojeISO();
+  const v=l.venc||l.dataLanc||'';
+  if(v && v<hoje) return 'vencida';
+  const d=_diasEntre(hoje,v);
+  if(d<=3) return 'proxima';
+  return 'aberta';
+}
+function _hojeISO(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function _diasEntre(a,b){
+  if(!a||!b) return 999;
+  const da=new Date(a+'T00:00:00'), db=new Date(b+'T00:00:00');
+  return Math.round((db-da)/86400000);
+}
+function finPendentes(mes){
+  return finLancamentosDoMes(mes).filter(l=>l.tipo==='saida' && !l.efetivada);
+}
+
+/* ---------- criar, editar e apagar ---------- */
+
+function finNovoLancamento(tipo){ _finEdit=null; abrirLancFinModal(tipo); }
+
+function finExcluir(id){
+  const f=financas();
+  const l=f.lancamentos.find(x=>x.id===id); if(!l)return;
+  /* Parcela de um grupo: pergunta se apaga só esta ou a série inteira — apagar
+     as 42 parcelas sem avisar seria irreversível. */
+  if(l.grupoId){
+    finEscolherEscopo(l,'apagar',escopo=>{
+      const alvo=finAlvosDaSerie(l,escopo).map(x=>x.id);
+      f.lancamentos=f.lancamentos.filter(x=>!alvo.includes(x.id));
+      save(); renderFinancas();
+      toast(alvo.length+' lançamento'+(alvo.length>1?'s apagados':' apagado'));
+    });
+    return;
+  } else {
+    if(!confirm('Apagar “'+(l.desc||'lançamento')+'”?'))return;
+    f.lancamentos=f.lancamentos.filter(x=>x.id!==id);
+  }
+  save(); renderFinancas();
+}
+
+function finAlternarEfetiva(id){
+  const f=financas();
+  const l=f.lancamentos.find(x=>x.id===id); if(!l)return;
+  const novo=!l.efetivada;
+
+  /* Numa série, marcar como pago costuma valer só para a parcela do mês — mas
+     quitar antecipado e acertar meses atrasados de uma vez também acontecem.
+     Por isso a mesma escolha de escopo do apagar. */
+  if(l.grupoId && finAlvosDaSerie(l,'todas').length>1){
+    finEscolherEscopo(l, novo?'marcar como paga':'desmarcar', escopo=>{
+      const alvo=finAlvosDaSerie(l,escopo);
+      alvo.forEach(x=>{ x.efetivada=novo; x.dataEfet=novo?_hojeISO():null; });
+      save(); renderFinancas();
+      toast(alvo.length+' lançamento'+(alvo.length>1?'s atualizados':' atualizado'));
+    });
+    return;
+  }
+  l.efetivada=novo;
+  l.dataEfet = novo ? _hojeISO() : null;
+  save(); renderFinancas();
+}
+
+/* Quais lançamentos da série o escopo alcança.
+   'proximas' inclui o próprio e todos com vencimento igual ou posterior —
+   é o que faz sentido ao renegociar ou cancelar uma assinatura a partir de um mês. */
+function finAlvosDaSerie(l,escopo){
+  const f=financas();
+  const serie=f.lancamentos.filter(x=>x.grupoId===l.grupoId);
+  if(escopo==='esta')     return serie.filter(x=>x.id===l.id);
+  if(escopo==='proximas') return serie.filter(x=>(x.venc||'')>=(l.venc||''));
+  return serie;
+}
+
+/* Folha de escolha do escopo. Um confirm() com três opções não existe, e
+   encadear dois confirms faria a pessoa responder "cancelar" para chegar na
+   opção do meio — confuso num gesto destrutivo. */
+function finEscolherEscopo(l, acaoTxt, cb){
+  const serie=finAlvosDaSerie(l,'todas');
+  const proximas=finAlvosDaSerie(l,'proximas');
+  let ov=document.getElementById('finEscopoOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='finEscopoOv'; ov.className='a-sheet-ov';
+    document.body.appendChild(ov);
+  }
+  const fechar=()=>{ ov.classList.remove('open'); };
+  ov.onclick=e=>{ if(e.target===ov)fechar(); };
+  window._finEscopoCb=escopo=>{ fechar(); cb(escopo); };
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>${acaoTxt[0].toUpperCase()+acaoTxt.slice(1)}</b>
+      <button class="a-sheet-x" onclick="document.getElementById('finEscopoOv').classList.remove('open')">✕</button></div>
+    <div class="a-sheet-b">
+      <p style="font-size:13px;color:var(--txt-dim);margin:0 0 14px;line-height:1.5">
+        “${l.desc||'Lançamento'}” faz parte de uma série de ${serie.length}
+        ${l.parcelas>1?'parcelas':'ocorrências'}. O que você quer ${acaoTxt}?</p>
+      <button class="fin-escopo" onclick="_finEscopoCb('esta')">
+        <b>Só esta</b><i>${fmtDateBR(l.venc)}${l.parcelas>1?' · parcela '+l.parcela+'/'+l.parcelas:''}</i></button>
+      <button class="fin-escopo" onclick="_finEscopoCb('proximas')">
+        <b>Esta e as próximas</b><i>${proximas.length} lançamento${proximas.length>1?'s':''}, a partir de ${fmtDateBR(l.venc)}</i></button>
+      <button class="fin-escopo" onclick="_finEscopoCb('todas')">
+        <b>A série inteira</b><i>${serie.length} lançamento${serie.length>1?'s':''}, do início ao fim</i></button>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+}
+
+/* ---------- parcelamento ----------
+   Os dois sentidos que você pediu: informa o total e ele divide, ou informa o
+   valor da parcela e ele multiplica. A diferença de centavos da divisão vai
+   toda na ÚLTIMA parcela, senão a soma das parcelas não fecha com o total. */
+function finGerarParcelas(base, nParc, modo, valorInformado){
+  const out=[];
+  const n=Math.max(1,Math.round(nParc));
+  let valorParcela, total;
+  if(modo==='total'){
+    total=valorInformado;
+    valorParcela=Math.floor((total/n)*100)/100;
+  } else {
+    valorParcela=valorInformado;
+    total=Math.round(valorParcela*n*100)/100;
+  }
+  const soma=Math.round(valorParcela*(n-1)*100)/100;
+  const ultima=Math.round((total-soma)*100)/100;
+  const grupoId=novoId('grp');
+  for(let i=0;i<n;i++){
+    const venc=_somarMeses(base.venc,i);
+    out.push(Object.assign({},base,{
+      id:novoId('lan'), grupoId, parcela:i+1, parcelas:n,
+      valor: i===n-1 ? ultima : valorParcela,
+      venc,
+      dataLanc: i===0 ? base.dataLanc : venc,
+      efetivada: i===0 ? base.efetivada : false,
+      dataEfet:  i===0 ? base.dataEfet  : null
+    }));
+  }
+  return out;
+}
+
+/* ---------- recorrência ----------
+   Gera 12 ocorrências à frente. Poderia ser infinito e calculado na hora, mas aí
+   editar ou pagar UMA ocorrência viraria exceção guardada à parte — mais código e
+   mais lugar para errar. Com lançamentos reais, cada mês é independente. */
+function finGerarRecorrentes(base, meses){
+  const out=[]; const n=meses||12; const grupoId=novoId('rec');
+  for(let i=0;i<n;i++){
+    const venc=_somarMeses(base.venc,i);
+    out.push(Object.assign({},base,{
+      id:novoId('lan'), grupoId, recorrente:true,
+      venc,
+      dataLanc: i===0 ? base.dataLanc : venc,
+      efetivada: i===0 ? base.efetivada : false,
+      dataEfet:  i===0 ? base.dataEfet  : null
+    }));
+  }
+  return out;
+}
+
+/* Soma meses preservando o dia. Dia 31 em mês de 30 cai no último dia — é o que
+   bancos fazem com vencimento, e evita pular para o mês seguinte. */
+function _somarMeses(iso,n){
+  if(!iso) return iso;
+  const [y,m,d]=iso.split('-').map(Number);
+  const alvo=new Date(y, m-1+n, 1);
+  const ultimo=new Date(alvo.getFullYear(), alvo.getMonth()+1, 0).getDate();
+  return alvo.getFullYear()+'-'+pad(alvo.getMonth()+1)+'-'+pad(Math.min(d,ultimo));
+}
+
+/* ============================================================================
+   TELA DAS FINANÇAS
+   ============================================================================ */
+let _finAba='saida';                 // lista em exibição
+let _finFiltro='todas';              // filtro de situação
+
+const _FIN_MESES=['janeiro','fevereiro','março','abril','maio','junho','julho',
+                  'agosto','setembro','outubro','novembro','dezembro'];
+function finMesLabel(mes){
+  const [y,m]=mes.split('-').map(Number);
+  return _FIN_MESES[m-1]+' de '+y;
+}
+
+function renderFinancas(){
+  const root=document.getElementById('finRoot'); if(!root)return;
+  const f=financas();
+  const mes=finMesAtual();
+  const s=finSaldos(mes);
+  const pend=finPendentes(mes);
+  const totPend=pend.reduce((a,l)=>a+(Number(l.valor)||0),0);
+  const corSaldo = s.saldo<0?'var(--expense)':'var(--gain)';
+  const corPrev  = s.previsto<0?'var(--expense)':'var(--gain)';
+
+  root.innerHTML=`
+    <div class="fin-topo">
+      <button class="fin-nav" onclick="finTrocarMes(-1)">‹</button>
+      <div class="fin-mes">${finMesLabel(mes)}</div>
+      <button class="fin-nav" onclick="finTrocarMes(1)">›</button>
+    </div>
+
+    <div class="fin-saldos">
+      <div class="fin-sal"><span>Inicial</span><b>${fmt(s.inicial)}</b></div>
+      <div class="fin-sal fin-sal-main"><span>Saldo</span>
+        <b style="color:${corSaldo}">${fmt(s.saldo)}</b></div>
+      <div class="fin-sal"><span>Previsto</span>
+        <b style="color:${corPrev}">${fmt(s.previsto)}</b></div>
+    </div>
+
+    ${pend.length?`
+      <div class="fin-alerta" onclick="finVerPendentes()">
+        <div class="fin-alerta-tx">
+          Você tem <b>${pend.length} despesa${pend.length>1?'s':''} pendente${pend.length>1?'s':''}</b>
+          no total de <b>${fmt(totPend)}</b>
+        </div>
+        <button class="fin-alerta-btn">Verificar</button>
+      </div>`:''}
+
+    <div class="fin-visao">
+      <div class="fin-vrow" onclick="finAbrirAba('entrada')">
+        <span class="fin-vic" style="background:var(--gain-bg);color:var(--gain)">＋</span>
+        <span class="fin-vtx"><b>Receitas</b><i>previsto ${fmt(s.receitaPrev)}</i></span>
+        <span class="fin-vval" style="color:var(--gain)">${fmt(s.receitaReal)}</span>
+      </div>
+      <div class="fin-vrow" onclick="finAbrirAba('saida')">
+        <span class="fin-vic" style="background:var(--expense-bg);color:var(--expense)">－</span>
+        <span class="fin-vtx"><b>Despesas</b><i>previsto ${fmt(s.despesaPrev)}</i></span>
+        <span class="fin-vval" style="color:var(--expense)">${fmt(s.despesaReal)}</span>
+      </div>
+    </div>
+
+    <div class="fin-acoes">
+      <button class="fin-add fin-add-e" onclick="finNovoLancamento('entrada')">＋ Receita</button>
+      <button class="fin-add fin-add-s" onclick="finNovoLancamento('saida')">－ Despesa</button>
+    </div>
+
+    <div class="fin-seg">
+      <button class="${_finAba==='saida'?'on':''}" onclick="finAbrirAba('saida')">Despesas</button>
+      <button class="${_finAba==='entrada'?'on':''}" onclick="finAbrirAba('entrada')">Receitas</button>
+    </div>
+
+    <div class="fin-filtros">
+      ${[['todas','Todas'],['pendente','Não efetivadas'],['pago','Pagas'],
+         ['vencida','Vencidas'],['proxima','Próx. vencimento']]
+        .map(([k,r])=>`<button class="${_finFiltro===k?'on':''}" onclick="finSetFiltro('${k}')">${r}</button>`).join('')}
+    </div>
+
+    <div id="finLista"></div>
+
+    <div class="fin-rodape">
+      <button class="btn" onclick="abrirCategoriasModal()">🏷️ Categorias</button>
+      <button class="btn" onclick="abrirContaModal()">🏦 ${f.conta.nome}</button>
+    </div>`;
+
+  renderFinLista();
+}
+
+function finAbrirAba(t){ _finAba=t; renderFinancas(); }
+function finSetFiltro(k){ _finFiltro=k; renderFinancas(); }
+function finVerPendentes(){ _finAba='saida'; _finFiltro='pendente'; renderFinancas(); }
+
+function renderFinLista(){
+  const el=document.getElementById('finLista'); if(!el)return;
+  const mes=finMesAtual();
+  let itens=finLancamentosDoMes(mes).filter(l=>l.tipo===_finAba);
+
+  itens=itens.filter(l=>{
+    const st=finStatus(l);
+    if(_finFiltro==='todas')return true;
+    if(_finFiltro==='pendente')return !l.efetivada;
+    if(_finFiltro==='pago')return l.efetivada;
+    return st===_finFiltro;
+  });
+  itens.sort((a,b)=>(a.venc||'').localeCompare(b.venc||''));
+
+  if(!itens.length){
+    el.innerHTML=`<div class="fin-vazio">Nenhum lançamento com este filtro em ${finMesLabel(mes)}.</div>`;
+    return;
+  }
+
+  const total=itens.reduce((s,l)=>s+(Number(l.valor)||0),0);
+  const cor=_finAba==='entrada'?'var(--gain)':'var(--expense)';
+
+  el.innerHTML=`
+    <div class="lc-tot"><span>${itens.length} lançamento${itens.length>1?'s':''}</span>
+      <b style="color:${cor}">${fmt(total)}</b></div>
+    <div class="lc-wrap">`+itens.map(l=>{
+      const c=catPorId(l.catId);
+      const sub=c&&l.subId ? (c.subs.find(s=>s.id===l.subId)||{}).nome : '';
+      const st=finStatus(l);
+      const stCor={pago:'var(--gain)',vencida:'var(--expense)',proxima:'var(--hybrid)',aberta:'var(--txt-faint)'}[st];
+      const stTxt={pago:'pago',vencida:'vencida',proxima:'vence em breve',aberta:'em aberto'}[st];
+      const parc=l.parcelas>1?` · ${l.parcela}/${l.parcelas}`:'';
+      const combTx = l.comb ? ` · ${fmtN(l.comb.km,0)} km · ${fmtN(l.comb.qtda,2)} ${l.comb.tipo==='el'?'kWh':'L'}` : '';
+      return `<div class="lc-card fin-card" style="--c:${c?c.cor:'var(--txt-dim)'}">
+        <button class="fin-chk ${l.efetivada?'on':''}" title="${l.efetivada?'Marcar como não paga':'Marcar como paga'}"
+                onclick="event.stopPropagation();finAlternarEfetiva('${l.id}')">${l.efetivada?'✓':''}</button>
+        <div class="lc-tx" onclick="finEditar('${l.id}')">
+          <div class="lc-tt">${l.desc||(c?c.nome:'Lançamento')}${parc}</div>
+          <div class="lc-sb">${c?c.nome:''}${sub?' · '+sub:''}${combTx}
+            · <i style="color:${stCor};font-style:normal">${stTxt} ${fmtDateBR(l.venc)}</i></div>
+        </div>
+        <span class="lc-val" style="color:${l.tipo==='entrada'?'var(--gain)':'var(--expense)'}">${fmt(l.valor)}</span>
+        <button class="lc-x" onclick="event.stopPropagation();finExcluir('${l.id}')">✕</button>
+      </div>`;
+    }).join('')+`</div>`;
+}
+
+/* ============================================================================
+   FORMULÁRIO DE LANÇAMENTO
+   ============================================================================ */
+let _finEdit=null;      // id em edição, ou null para novo
+let _finTipo='saida';
+let _finRepet='nao';    // 'nao' | 'parcelado' | 'recorrente'
+
+function abrirLancFinModal(tipo, id){
+  _finTipo=tipo||'saida'; _finEdit=id||null; _finCatManual=false;
+  const l = id ? financas().lancamentos.find(x=>x.id===id) : null;
+  _finRepet = l ? (l.parcelas>1?'parcelado':(l.recorrente?'recorrente':'nao')) : 'nao';
+
+  let ov=document.getElementById('lancFinModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='lancFinModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharLancFin(); });
+    document.body.appendChild(ov);
+  }
+  renderLancFinForm(l);
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharLancFin(true));
+}
+function fecharLancFin(fromBack){
+  const ov=document.getElementById('lancFinModal');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+function finEditar(id){
+  const l=financas().lancamentos.find(x=>x.id===id); if(!l)return;
+  abrirLancFinModal(l.tipo,id);
+}
+
+function renderLancFinForm(l){
+  const ov=document.getElementById('lancFinModal'); if(!ov)return;
+  const hoje=_hojeISO();
+  const cats=catsPorTipo(_finTipo);
+  /* Nem a primeira da lista (que era Combustível e abria os campos de km em toda
+     despesa), nem uma fixa: a última que a pessoa usou naquele tipo. Na primeira
+     vez, cai na genérica. */
+  const f0=financas();
+  const ultima=(f0.ultimaCat||{})[_finTipo];
+  const generica=cats.find(c=>/^Outras?/i.test(c.nome));
+  const catId = l ? l.catId
+    : ( (ultima && cats.some(c=>c.id===ultima)) ? ultima
+        : (generica||cats[0]||{}).id );
+  const cat   = catPorId(catId);
+  const ehComb = cat && cat.form==='combustivel';
+  const subs = cat?cat.subs:[];
+
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h">
+      <b>${l?'Editar':'Nova'} ${_finTipo==='entrada'?'receita':'despesa'}</b>
+      <button class="a-sheet-x" onclick="fecharLancFin()">✕</button></div>
+    <div class="a-sheet-b">
+
+      <div class="a-mfield"><label>Descrição</label>
+        <input id="flDesc" value="${l?(l.desc||''):''}" placeholder="ex.: conta de luz"
+               oninput="onFinDescInput()"></div>
+      <p class="fin-hint" id="flCatDica" style="display:none;color:var(--neutral)"></p>
+
+      <div class="a-mfields" style="margin-top:12px">
+        <div class="a-mfield"><label>Categoria</label>
+          <select id="flCat" onchange="_finCatManual=true;onFinCatChange()">
+            ${cats.map(c=>`<option value="${c.id}"${c.id===catId?' selected':''}>${c.nome}</option>`).join('')}
+          </select></div>
+        <div class="a-mfield"><label>Subcategoria</label>
+          <select id="flSub">
+            <option value="">—</option>
+            ${subs.map(s=>`<option value="${s.id}"${l&&l.subId===s.id?' selected':''}>${s.nome}</option>`).join('')}
+          </select></div>
+      </div>
+
+      <!-- campos que só existem na categoria marcada como combustível -->
+      <div id="flCombBox" style="display:${ehComb?'':'none'}">
+        <div class="fin-sec">⛽ Abastecimento</div>
+        <div class="a-mfields">
+          <div class="a-mfield"><label>Tipo</label>
+            <select id="flCombTipo" onchange="onFinCombInput()">
+              <option value="comb"${l&&l.comb&&l.comb.tipo==='el'?'':' selected'}>⛽ Combustível</option>
+              <option value="el"${l&&l.comb&&l.comb.tipo==='el'?' selected':''}>⚡ Elétrico</option>
+            </select></div>
+          <div class="a-mfield"><label>KM rodados</label>
+            <input id="flCombKm" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.km,1):''}" placeholder="0"></div>
+        </div>
+        <div class="a-mfields" style="margin-top:10px">
+          <div class="a-mfield"><label id="flCombQtdaLbl">Litros</label>
+            <input id="flCombQtda" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.qtda,2):''}"
+                   placeholder="0,00" oninput="onFinCombInput()"></div>
+          <div class="a-mfield"><label>Preço por unidade</label>
+            <input id="flCombUnit" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.valorUnit,2):''}"
+                   placeholder="0,00" oninput="onFinCombInput()"></div>
+        </div>
+        <p class="fin-hint">O valor é calculado: quantidade × preço.</p>
+      </div>
+
+      <div class="a-mfield" style="margin-top:12px"><label>Valor</label>
+        <input id="flValor" inputmode="decimal" value="${l?vzn(l.valor,2):''}" placeholder="0,00"
+               onfocus="this.select()" ${ehComb?'readonly':''}></div>
+
+      <div class="a-mfields" style="margin-top:12px">
+        <div class="a-mfield"><label>Data do lançamento</label>
+          <input type="date" id="flDataLanc" value="${l?(l.dataLanc||hoje):hoje}"></div>
+        <div class="a-mfield"><label>Vencimento</label>
+          <input type="date" id="flVenc" value="${l?(l.venc||hoje):hoje}"></div>
+      </div>
+      <p class="fin-hint">O mês do lançamento é o do vencimento.</p>
+
+      <label class="fin-switch">
+        <input type="checkbox" id="flEfet" ${(!l||l.efetivada)?'checked':''}>
+        <span>${_finTipo==='entrada'?'Já recebida':'Já paga'}</span>
+      </label>
+
+      ${l?'':`
+      <div class="fin-sec">Repetição</div>
+      <div class="fin-seg fin-seg-sm">
+        ${[['nao','Única'],['parcelado','Parcelada'],['recorrente','Recorrente']]
+          .map(([k,r])=>`<button class="${_finRepet===k?'on':''}" onclick="setFinRepet('${k}')">${r}</button>`).join('')}
+      </div>
+
+      <div id="flParcBox" style="display:${_finRepet==='parcelado'?'':'none'}">
+        <div class="a-mfields" style="margin-top:10px">
+          <div class="a-mfield"><label>Nº de parcelas</label>
+            <input id="flParcN" inputmode="numeric" value="2"></div>
+          <div class="a-mfield"><label>O valor acima é</label>
+            <select id="flParcModo">
+              <option value="total">o total</option>
+              <option value="parcela">o de cada parcela</option>
+            </select></div>
+        </div>
+        <p class="fin-hint">Total 1.000 em 5x vira 5 de 200. Ou 200 por mês em 5x vira 1.000 no total.</p>
+      </div>
+
+      <div id="flRecBox" style="display:${_finRepet==='recorrente'?'':'none'}">
+        <div class="a-mfield" style="margin-top:10px"><label>Repetir por quantos meses</label>
+          <input id="flRecN" inputmode="numeric" value="12"></div>
+        <div class="fin-presets">
+          ${[12,24,36,60,120,240,360,480].map(x=>
+            `<button onclick="setRecN(${x})">${x>=120?(x/12)+' anos':x+'x'}</button>`).join('')}
+        </div>
+        <p class="fin-hint">Cria uma ocorrência por mês, sempre no mesmo dia do vencimento.
+          Serve para financiamento longo — 480 meses são 40 anos.</p>
+      </div>`}
+
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
+              onclick="salvarLancFin()">Salvar</button>
+    </div>
+  </div>`;
+  onFinCombInput();
+}
+
+/* ============================================================================
+   CATEGORIA AUTOMÁTICA PELA DESCRIÇÃO
+   ----------------------------------------------------------------------------
+   Digitar "luz" e ter que abrir dois seletores para achar Moradia → Luz é o
+   atrito que faz a pessoa parar de lançar. Aqui a descrição sugere a categoria.
+
+   A busca é feita nos nomes que a PRÓPRIA pessoa criou — subcategoria primeiro,
+   porque é mais específica ("Luz" acha Moradia→Luz, não só Moradia). Só depois
+   vem a lista de sinônimos, para o que se chama diferente do nome da categoria
+   (gasolina, alcool, mercado, uber).
+
+   Nunca sobrescreve escolha manual: se a pessoa mexeu no seletor, o automático
+   se cala. Errar a categoria de quem já decidiu é pior do que não sugerir nada.
+   ============================================================================ */
+const _FIN_SINONIMOS={
+  'Combustível':['gasolina','alcool','álcool','etanol','diesel','posto','abastec','carga','recarga','eletroposto','gnv'],
+  'Pedágio':['pedagio','sem parar','conectcar','veloe'],
+  'Alimentação':['mercado','supermercado','feira','padaria','lanche','almoco','almoço','janta','jantar','restaurante','ifood','pizza','cafe','café','acougue','açougue','hortifruti','sorvete','doce','esfiha','mcdonald','burger'],
+  'Moradia':['luz','energia','agua','água','internet','wifi','condominio','condomínio','aluguel','gas','gás','iptu','sabesp','copel','enel','cemig','vivo','claro','net','oi '],
+  'Saúde':['farmacia','farmácia','remedio','remédio','medico','médico','dentista','consulta','exame','plano de saude','drogaria','psicolog'],
+  'Cuidados pessoais':['cabelo','barbeiro','salao','salão','academia','higiene','manicure','perfume'],
+  'Vestuário':['roupa','calcado','calçado','tenis','tênis','sapato','camisa','calca','calça','loja'],
+  'Educação':['escola','faculdade','curso','livro','livraria','papelaria','material escolar','mensalidade'],
+  'Lazer':['cinema','show','viagem','passeio','netflix','spotify','streaming','jogo','festa','bar','balada','brinquedo'],
+  'Família':['mesada','presente','filho','filha','aniversario','aniversário'],
+  'Pets':['racao','ração','veterinario','veterinário','petshop','pet shop','banho e tosa','cachorro','gato'],
+  'Transporte':['uber','99','onibus','ônibus','metro','metrô','taxi','táxi','estacionamento','zona azul'],
+  'Veículo':['oleo','óleo','pneu','revisao','revisão','oficina','mecanico','mecânico','lavagem','lava rapido','seguro','multa','licenciamento','ipva','detran'],
+  'Cartão de crédito':['fatura','cartao','cartão','nubank','itau','itaú','inter','c6','bradesco'],
+  'Dívidas':['emprestimo','empréstimo','financiamento','parcela','renegocia','acordo','consignado'],
+  'Serviços':['telefone','celular','assinatura','streaming','manutencao','manutenção'],
+  'Seguros':['seguro de vida','seguro residencial'],
+  'Impostos e taxas':['imposto','taxa','tarifa','das','mei','darf'],
+  /* entradas */
+  'Salário':['salario','salário','pagamento','holerite','adiantamento','13','ferias','férias'],
+  'Benefícios':['vale','va','vr','vt','ajuda de custo','beneficio','benefício'],
+  'Vendas':['venda','vendi','servico prestado','serviço prestado','freela'],
+  'Outras receitas':['reembolso','estorno','fgts','rendimento','pix recebido','presente']
+};
+
+function _semAcento(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+
+/* Casamento por PALAVRA, não por pedaço solto.
+   Sem isso, "gas" achava gaSOLINA e droGASil, e "net" achava NETflix — tudo
+   caía em Moradia. O termo precisa começar em início de palavra; continuar
+   dentro dela só vale para termos longos (abastec → abastecimento), onde a
+   chance de coincidência boba é pequena. */
+function _casaTermo(texto, termo){
+  const t=_semAcento(termo);
+  if(!t) return false;
+  const esc=t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const sufixo = t.length>=5 ? '[a-z0-9]*' : '';
+  return new RegExp('(^|[^a-z0-9])'+esc+sufixo+'([^a-z0-9]|$)').test(texto);
+}
+
+/* Devolve {catId, subId} ou null. */
+function finSugerirCategoria(texto, tipo){
+  const t=_semAcento(texto);
+  if(t.length<3) return null;
+  const cats=catsPorTipo(tipo);
+
+  /* 1) sinônimos, escolhendo o termo MAIS LONGO que casou.
+        Ordem de lista não pode decidir: em "emprestimo bradesco" batem
+        "bradesco" (Cartão) e "emprestimo" (Dívidas), e o termo mais longo é o
+        mais específico — ganha Dívidas, que é o certo. */
+  let melhor=null;
+  for(const c of cats){
+    for(const termo of (_FIN_SINONIMOS[c.nome]||[])){
+      if(_casaTermo(t,termo) && (!melhor || termo.length>melhor.len)){
+        const sub=c.subs.find(s=>_casaTermo(t,s.nome));
+        melhor={catId:c.id, subId:sub?sub.id:null, len:termo.length};
+      }
+    }
+  }
+  if(melhor) return {catId:melhor.catId, subId:melhor.subId};
+  /* 2) subcategoria pelo nome */
+  for(const c of cats){
+    for(const s of c.subs){
+      if(_semAcento(s.nome).length>=3 && _casaTermo(t,s.nome)) return {catId:c.id, subId:s.id};
+    }
+  }
+  /* 3) nome da categoria */
+  for(const c of cats){
+    if(_semAcento(c.nome).length>=3 && _casaTermo(t,c.nome)) return {catId:c.id, subId:null};
+  }
+  return null;
+}
+
+/* chamado enquanto a pessoa digita a descrição */
+let _finCatManual=false;
+function onFinDescInput(){
+  if(_finCatManual) return;              // respeita quem já escolheu à mão
+  if(_finEdit) return;                   // editar não mexe no que já está salvo
+  const desc=(document.getElementById('flDesc')||{}).value||'';
+  const s=finSugerirCategoria(desc,_finTipo);
+  if(!s) return;
+  const selC=document.getElementById('flCat');
+  if(!selC || selC.value===s.catId){
+    if(s.subId){ const selS=document.getElementById('flSub'); if(selS)selS.value=s.subId; }
+    return;
+  }
+  selC.value=s.catId;
+  onFinCatChange();                      // troca subcategorias e o formulário
+  if(s.subId){ const selS=document.getElementById('flSub'); if(selS)selS.value=s.subId; }
+  const dica=document.getElementById('flCatDica');
+  if(dica){
+    const c=catPorId(s.catId);
+    dica.textContent='Categoria sugerida: '+(c?c.nome:'');
+    dica.style.display='';
+  }
+}
+
+function setRecN(n){
+  const el=document.getElementById('flRecN');
+  if(el) el.value=n;
+}
+
+function setFinRepet(k){
+  _finRepet=k;
+  const p=document.getElementById('flParcBox'), r=document.getElementById('flRecBox');
+  if(p)p.style.display = k==='parcelado'?'':'none';
+  if(r)r.style.display = k==='recorrente'?'':'none';
+  document.querySelectorAll('.fin-seg-sm button').forEach((b,i)=>{
+    b.className = (['nao','parcelado','recorrente'][i]===k)?'on':'';
+  });
+}
+
+/* trocar a categoria troca as subcategorias e pode trocar a cara do formulário */
+function onFinCatChange(){
+  const sel=document.getElementById('flCat'); if(!sel)return;
+  const cat=catPorId(sel.value);
+  const sub=document.getElementById('flSub');
+  if(sub) sub.innerHTML='<option value="">—</option>'+
+    (cat?cat.subs:[]).map(s=>`<option value="${s.id}">${s.nome}</option>`).join('');
+  const box=document.getElementById('flCombBox');
+  const ehComb = cat && cat.form==='combustivel';
+  if(box) box.style.display = ehComb?'':'none';
+  const val=document.getElementById('flValor');
+  if(val){
+    if(ehComb){ val.setAttribute('readonly','readonly'); }
+    else {
+      val.removeAttribute('readonly');
+      /* saiu de combustível: o valor era calculado, não digitado — se ficasse,
+         a pessoa continuaria digitando por cima de um número que não é dela */
+      if(parseNum(val.value)===0) val.value='';
+    }
+  }
+  onFinCombInput();
+}
+
+/* quantidade × preço alimenta o valor, e o rótulo acompanha o tipo */
+function onFinCombInput(){
+  const box=document.getElementById('flCombBox');
+  if(!box || box.style.display==='none')return;
+  const t=(document.getElementById('flCombTipo')||{}).value||'comb';
+  const lbl=document.getElementById('flCombQtdaLbl');
+  if(lbl) lbl.textContent = t==='el'?'kWh':'Litros';
+  const q=parseNum((document.getElementById('flCombQtda')||{}).value);
+  const u=parseNum((document.getElementById('flCombUnit')||{}).value);
+  const val=document.getElementById('flValor');
+  if(!val)return;
+  /* Só escreve no campo quando há o que calcular. Antes ele preenchia "0,00"
+     sempre — e como o campo fica à espera de digitação, o próximo número era
+     ANEXADO ao zero: digitar 200 virava 0,00200. */
+  if(q>0 && u>0) val.value=fmtN(Math.round(q*u*100)/100,2);
+  else if(!val.value || parseNum(val.value)===0) val.value='';
+}
+
+function salvarLancFin(){
+  const f=financas();
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const n=id=>parseNum(g(id));
+
+  const catId=g('flCat');
+  const cat=catPorId(catId);
+  const venc=g('flVenc')||_hojeISO();
+  const efet=(document.getElementById('flEfet')||{}).checked;
+
+  const base={
+    tipo:_finTipo,
+    desc:(g('flDesc')||'').trim(),
+    catId, subId:g('flSub')||null,
+    valor:n('flValor'),
+    dataLanc:g('flDataLanc')||_hojeISO(),
+    venc,
+    efetivada:!!efet,
+    dataEfet: efet?_hojeISO():null
+  };
+  if(cat && cat.form==='combustivel'){
+    base.comb={tipo:g('flCombTipo')||'comb', km:n('flCombKm'),
+               qtda:n('flCombQtda'), valorUnit:n('flCombUnit')};
+  }
+  if(!(base.valor>0)){ alert('Informe um valor maior que zero.'); return; }
+  (f.ultimaCat=f.ultimaCat||{})[_finTipo]=catId;
+
+  if(_finEdit){
+    const l=f.lancamentos.find(x=>x.id===_finEdit);
+    if(l) Object.assign(l,base);
+    toast('Lançamento atualizado');
+  } else if(_finRepet==='parcelado'){
+    const nParc=Math.max(2,Math.round(n('flParcN'))||2);
+    const modo=g('flParcModo')||'total';
+    finGerarParcelas(base,nParc,modo,base.valor).forEach(x=>f.lancamentos.push(x));
+    toast(nParc+' parcelas criadas');
+  } else if(_finRepet==='recorrente'){
+    const meses=Math.max(2,Math.round(n('flRecN'))||12);
+    /* Sem teto: financiamento de imóvel chega a 480 meses. Mas cada mês é um
+       registro que vai para a nuvem, então acima de 120 vale confirmar — são
+       10 anos de lançamentos criados de uma vez. */
+    if(meses>120 && !confirm('Isso vai criar '+meses+' lançamentos ('+(meses/12).toFixed(0)+
+        ' anos).\n\nContinuar?')) return;
+    finGerarRecorrentes(base,meses).forEach(x=>f.lancamentos.push(x));
+    toast(meses+' meses criados');
+  } else {
+    f.lancamentos.push(Object.assign({id:novoId('lan')},base));
+    toast('Lançamento salvo');
+  }
+  /* mostra o mês do que acabou de ser lançado, senão o item some da tela */
+  _finMes=venc.slice(0,7);
+  save(); fecharLancFin(); renderFinancas();
+}
+
+/* ---------- tela de categorias ---------- */
+let _catTipo='saida';
+
+function abrirCategoriasModal(){
+  let ov=document.getElementById('catModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='catModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharCategoriasModal(); });
+    document.body.appendChild(ov);
+  }
+  renderCategoriasModal();
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharCategoriasModal(true));
+}
+function fecharCategoriasModal(fromBack){
+  const ov=document.getElementById('catModal');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+
+function renderCategoriasModal(){
+  const ov=document.getElementById('catModal'); if(!ov)return;
+  const lista=catsPorTipo(_catTipo);
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>Categorias</b>
+      <button class="a-sheet-x" onclick="fecharCategoriasModal()">✕</button></div>
+    <div class="a-sheet-b">
+      <div class="fc-seg">
+        <button class="${_catTipo==='saida'?'on':''}" onclick="setCatTipo('saida')">➖ Saídas</button>
+        <button class="${_catTipo==='entrada'?'on':''}" onclick="setCatTipo('entrada')">➕ Entradas</button>
+      </div>
+      <div class="fc-list">${lista.map(c=>`
+        <div class="fc-cat" style="--c:${c.cor}">
+          <div class="fc-cat-h">
+            <span class="fc-cat-n">${c.nome}${c.form==='combustivel'?' <i class="fc-tag">campos de km</i>':''}</span>
+            <span class="fc-cat-acts">
+              <button onclick="renomearCategoria('${c.id}')" title="Renomear">✎</button>
+              <button onclick="excluirCategoria('${c.id}')" title="Excluir">✕</button>
+            </span>
+          </div>
+          <div class="fc-subs">
+            ${c.subs.map(s=>`<span class="fc-sub" onclick="renomearSub('${c.id}','${s.id}')">${s.nome}
+              <i onclick="event.stopPropagation();excluirSub('${c.id}','${s.id}')">✕</i></span>`).join('')}
+            <button class="fc-sub-add" onclick="addSub('${c.id}')">+ subcategoria</button>
+          </div>
+        </div>`).join('')}
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px"
+              onclick="addCategoria()">＋ Nova categoria de ${_catTipo==='saida'?'saída':'entrada'}</button>
+    </div>
+  </div>`;
+}
+function setCatTipo(t){ _catTipo=t; renderCategoriasModal(); }
+
+const _CORES=['var(--gain)','var(--expense)','var(--neutral)','var(--roxo)','var(--hybrid)','var(--electric)'];
+
+function addCategoria(){
+  const nome=(prompt('Nome da nova categoria:')||'').trim();
+  if(!nome)return;
+  const f=financas();
+  const cor=_CORES[f.categorias.length%_CORES.length];
+  f.categorias.push({id:novoId('cat'),nome,tipo:_catTipo,cor,form:'padrao',subs:[]});
+  save(); renderCategoriasModal();
+}
+function renomearCategoria(id){
+  const c=catPorId(id); if(!c)return;
+  const nome=(prompt('Nome da categoria:',c.nome)||'').trim();
+  if(!nome)return;
+  c.nome=nome; save(); renderCategoriasModal();
+}
+function excluirCategoria(id){
+  const f=financas(); const c=catPorId(id); if(!c)return;
+  /* Categoria em uso não some sem aviso: os lançamentos dela ficariam órfãos e
+     sumiriam dos filtros e dos totais por categoria. */
+  const usos=f.lancamentos.filter(l=>l.catId===id).length;
+  if(usos>0){
+    alert('“'+c.nome+'” tem '+usos+' lançamento(s) e não pode ser excluída.\n\n'+
+          'Troque a categoria desses lançamentos antes, ou renomeie esta.');
+    return;
+  }
+  if(!confirm('Excluir a categoria “'+c.nome+'”?'))return;
+  f.categorias=f.categorias.filter(x=>x.id!==id);
+  save(); renderCategoriasModal();
+}
+function addSub(catId){
+  const c=catPorId(catId); if(!c)return;
+  const nome=(prompt('Nome da subcategoria:')||'').trim();
+  if(!nome)return;
+  c.subs.push({id:novoId('sub'),nome});
+  save(); renderCategoriasModal();
+}
+function renomearSub(catId,subId){
+  const c=catPorId(catId); if(!c)return;
+  const s=c.subs.find(x=>x.id===subId); if(!s)return;
+  const nome=(prompt('Nome da subcategoria:',s.nome)||'').trim();
+  if(!nome)return;
+  s.nome=nome; save(); renderCategoriasModal();
+}
+function excluirSub(catId,subId){
+  const f=financas(); const c=catPorId(catId); if(!c)return;
+  const usos=f.lancamentos.filter(l=>l.subId===subId).length;
+  if(usos>0){ alert('Esta subcategoria tem '+usos+' lançamento(s) e não pode ser excluída.'); return; }
+  c.subs=c.subs.filter(x=>x.id!==subId);
+  save(); renderCategoriasModal();
+}
+
+/* ============================================================================
+   MIGRAÇÃO DA ABA PESSOAL ANTIGA
+   ----------------------------------------------------------------------------
+   Cada linha antiga é um DIA com trecho de ida e de volta, cada um com seu
+   combustível, e mais o pedágio. Vira:
+     - um lançamento de Combustível por trecho que teve custo (sub Ida/Volta)
+     - um lançamento de Pedágio por trecho que teve pedágio
+   Roda uma vez só e guarda a marca em financas().migradoEm — reexecutar
+   duplicaria tudo.
+   ============================================================================ */
+function finMigrarPessoal(silencioso){
+  const f=financas();
+  if(f.migradoEm) return {ja:true, criados:0};
+
+  const cComb=f.categorias.find(c=>c.form==='combustivel');
+  const cPed =f.categorias.find(c=>c.nome==='Pedágio');
+  if(!cComb||!cPed) return {erro:true, criados:0};
+  const subDe=(cat,nome)=>{ const s=cat.subs.find(x=>x.nome===nome); return s?s.id:null; };
+
+  let criados=0;
+  const meses=(state.pessoal&&state.pessoal.months)||{};
+  Object.keys(meses).forEach(mk=>{
+    (meses[mk]||[]).forEach(r=>{
+      if(!r.data)return;
+      const c=rowCalcP(r);
+      [['ida',c.totalIda,r.kmIda,r.qtdaIda,r.valorIda,r.tipoIda,r.pedagioIda,'Ida'],
+       ['volta',c.totalVolta,r.kmVolta,r.qtdaVolta,r.valorVolta,r.tipoVolta,r.pedagioVolta,'Volta']]
+      .forEach(([lado,custo,km,qtda,unit,tipo,ped,subNome])=>{
+        if(custo>0){
+          f.lancamentos.push({
+            id:novoId('lan'), tipo:'saida',
+            desc:'Combustível ('+subNome.toLowerCase()+')',
+            catId:cComb.id, subId:subDe(cComb,subNome),
+            valor:Math.round(custo*100)/100,
+            dataLanc:r.data, venc:r.data,
+            efetivada:true, dataEfet:r.data,
+            comb:{tipo: tipo==='el'?'el':'comb', km:Number(km)||0,
+                  qtda:Number(qtda)||0, valorUnit:Number(unit)||0},
+            migrado:true
+          });
+          criados++;
+        }
+        if(Number(ped)>0){
+          f.lancamentos.push({
+            id:novoId('lan'), tipo:'saida', desc:'Pedágio ('+subNome.toLowerCase()+')',
+            catId:cPed.id, subId:subDe(cPed,subNome),
+            valor:Number(ped), dataLanc:r.data, venc:r.data,
+            efetivada:true, dataEfet:r.data, migrado:true
+          });
+          criados++;
+        }
+      });
+    });
+  });
+
+  f.migradoEm=_hojeISO();
+  save();
+  if(!silencioso && criados>0) toast(criados+' lançamentos trazidos da aba antiga');
+  return {criados};
+}
+
+/* refaz a migração do zero — útil se algo saiu errado no teste */
+function finRefazerMigracao(){
+  const f=financas();
+  const antes=f.lancamentos.length;
+  f.lancamentos=f.lancamentos.filter(l=>!l.migrado);
+  delete f.migradoEm;
+  const r=finMigrarPessoal(true);
+  save(); renderFinancas();
+  toast('Migração refeita: '+(antes-f.lancamentos.length+r.criados)+' registros');
+}
+
+/* ---------- conta e saldo inicial ---------- */
+function abrirContaModal(){
+  const f=financas();
+  let ov=document.getElementById('contaFinModal');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='contaFinModal'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharContaModal(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>Conta</b>
+      <button class="a-sheet-x" onclick="fecharContaModal()">✕</button></div>
+    <div class="a-sheet-b">
+      <div class="a-mfield"><label>Nome da conta</label>
+        <input id="fcNome" value="${f.conta.nome||''}" onfocus="this.select()"></div>
+      <div class="a-mfield" style="margin-top:12px"><label>Saldo inicial</label>
+        <input id="fcSaldo" inputmode="decimal" value="${fmtN(f.conta.saldoInicial||0,2)}" onfocus="this.select()"></div>
+      <p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0;line-height:1.5">
+        O saldo inicial é quanto havia na conta antes do primeiro lançamento aqui.
+        É a partir dele que o app calcula o saldo do mês.</p>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
+              onclick="salvarContaFin()">Salvar</button>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharContaModal(true));
+}
+function fecharContaModal(fromBack){
+  const ov=document.getElementById('contaFinModal');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+function salvarContaFin(){
+  const f=financas();
+  const n=document.getElementById('fcNome'), s=document.getElementById('fcSaldo');
+  if(n) f.conta.nome=(n.value||'').trim()||'Minha Conta Corrente';
+  if(s) f.conta.saldoInicial=parseNum(s.value);
+  save(); fecharContaModal(); toast('Conta salva');
+}
+
 function renderPessoal(){
+  /* a aba agora é Finanças Pessoais; o legado continua sendo renderizado
+     escondido porque a migração e o histórico ainda leem dele */
+  try{ financas(); finMigrarPessoal(true); renderFinancas(); }catch(e){ console.error(e); }
   hydratePessoal(state); // blindagem: garante shape mesmo se o state veio cru da nuvem
   const _kr=document.getElementById('pCfgBateria'); if(_kr)_kr.value=fmtN(state.pessoal.config.bateriaKwh||18.3,1);
   const _kl=document.getElementById('pCfgKmL'); if(_kl)_kl.value=fmtN(state.pessoal.config.kmL||20,0);
@@ -8063,6 +9231,11 @@ const RES_APPS=[['Uber','uber'],['99','g99'],['InDriver','indriver'],['Particula
                 ['Shopee','shopee'],['Mercado Livre','mercadolivre'],['iFood','ifood'],['Lalamove','lalamove']];
 const RES_FONTES_ENT={};
 RES_APPS.forEach(([nome,slug])=>{ RES_FONTES_ENT[slug]={label:nome,cor:'var(--gain)'}; });
+/* Receita pessoal é fonte PRÓPRIA, separada dos apps de corrida.
+   Sem isso, salário e reembolso entrariam no mesmo bolo do faturamento das
+   corridas, e todo indicador de trabalho (R$/km, R$/corrida, lucro da operação)
+   sairia inflado. São dinheiros de naturezas diferentes. */
+RES_FONTES_ENT['pessoal']={label:'👤 Pessoal',cor:'var(--roxo)',sub:'receitas fora do trabalho'};
 /* fontes de SAÍDA */
 const RES_FONTES_SAI={
   trabalho:     {label:'🏢 Corp',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
@@ -8126,12 +9299,25 @@ function resCollect(){
         km:c.kmTotal||0,corridas:r.corridas||0,horas:r.horas||0});
     });
   }));
-  Object.values(state.pessoal.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
-    if(!r.data)return;
-    const c=rowCalcP(r);
-    if(c.gastoDia>0)out.push({data:r.data,lado:'saida',fonte:'pessoal',valor:c.gastoDia,
-      km:(r.kmIda||0)+(r.kmVolta||0),litros:c.litros,kwh:c.kwh});
-  }));
+  /* A fonte "pessoal" do Resumo passou a ser o módulo de Finanças.
+     Ler os dois lados contaria em dobro: os lançamentos migrados são exatamente
+     os mesmos gastos que estavam em state.pessoal.months. */
+  financas().lancamentos.forEach(l=>{
+    if(!l.venc && !l.dataLanc) return;
+    const data=l.venc||l.dataLanc;
+    const v=Number(l.valor)||0;
+    if(!(v>0)) return;
+    if(l.tipo==='saida'){
+      out.push({data, lado:'saida', fonte:'pessoal', valor:v,
+        km:(l.comb&&l.comb.km)||0,
+        litros:(l.comb&&l.comb.tipo!=='el')?(l.comb.qtda||0):0,
+        kwh:(l.comb&&l.comb.tipo==='el')?(l.comb.qtda||0):0});
+    } else {
+      /* receitas pessoais entram como entrada da fonte 'pessoal' — os ganhos de
+         corrida continuam vindo da aba APP, sem mistura */
+      out.push({data, lado:'entrada', fonte:'pessoal', valor:v});
+    }
+  });
   Object.values(state.abastecimentos.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
     out.push({data:r.data,lado:'saida',fonte:'abastecimento',valor:r.valor||0,
@@ -8371,7 +9557,10 @@ function renderResCmpSel(){
    ============================================================ */
 const _resGeral={
   gran:'mes', aberto:false,
-  fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false}
+  fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false},
+  /* receita pessoal nasce DESMARCADA no Geral: quem abre o Resumo quer ver a
+     operação, não o salário do mês entrando como se fosse corrida */
+  fontesEnt:{pessoal:false}
 };
 _resCmp.geral={ativo:true,chaves:[]};
 _resCfg.geral=_resGeral;
@@ -8379,6 +9568,10 @@ _resCfg.geral=_resGeral;
 function toggleResGeral(){ _resGeral.aberto=!_resGeral.aberto; renderResumoTab(); }
 function setResGeralGran(g){ _resGeral.gran=g; _resCmp.geral.chaves=[]; renderResumoTab(); }
 function toggleResGeralFonte(f){ _resGeral.fontes[f]=!_resGeral.fontes[f]; renderResumoTab(); }
+function toggleResGeralFonteEnt(f){
+  _resGeral.fontesEnt[f] = (_resGeral.fontesEnt[f]===false);
+  renderResumoTab();
+}
 
 /* ============================================================
    PADRÃO DO GERAL: os últimos 3 meses, sempre atuais
@@ -8409,7 +9602,9 @@ function resGeralPeriodo(itens,key,gran){
   const ent=resAgrega(itens,'entrada',key,gran);
   const sai=resAgrega(itens,'saida',key,gran);
   let entrada=0, saida=0;
-  Object.keys(RES_FONTES_ENT).forEach(f=>{ entrada+=ent[f].valor; });
+  /* antes o Geral somava TODA entrada; agora respeita a marcação, igual às
+     saídas — é o que permite ver a operação sem a receita pessoal por cima */
+  Object.keys(RES_FONTES_ENT).forEach(f=>{ if(_resGeral.fontesEnt[f]!==false) entrada+=ent[f].valor; });
   Object.keys(RES_FONTES_SAI).forEach(f=>{ if(_resGeral.fontes[f])saida+=sai[f].valor; });
   let km=0,litros=0,kwh=0,corridas=0;
   Object.keys(RES_FONTES_SAI).forEach(f=>{
@@ -8429,6 +9624,12 @@ function resGeralHtml(itens){
     const on=_resGeral.fontes[f];
     return `<button class="per-chip${on?' active':''}" onclick="toggleResGeralFonte('${f}')">${on?'✓ ':''}${RES_FONTES_SAI[f].label}</button>`;
   }).join('');
+  /* entradas também ganham chip: por padrão o Geral mostra só a receita da
+     operação, e este botão traz a receita pessoal quando você quiser o quadro
+     completo da vida financeira */
+  const onEntPess=_resGeral.fontesEnt.pessoal!==false;
+  const chipEntrada=`<button class="per-chip${onEntPess?' active':''}"
+      onclick="toggleResGeralFonteEnt('pessoal')">${onEntPess?'✓ ':''}👤 Receita pessoal</button>`;
 
   if(!_resGeral.aberto){
     /* fechado, o card já mostra o saldo dos períodos escolhidos — antes era só um
@@ -8500,9 +9701,12 @@ function resGeralHtml(itens){
           escolher períodos${chaves.length?` (${chaves.length})`:''}</button>
         ${chaves.length?`<button class="per-chip" onclick="resCmpLimpar('geral')">limpar</button>`:''}
       </div>
+      <div class="res-cfg-t" style="margin-top:14px">Entradas consideradas</div>
+      <div class="per-grid">${chipEntrada}</div>
+      <p class="sub" style="margin:2px 0 0;font-size:11px">Os ganhos dos apps entram sempre. A receita pessoal (salário, reembolso) fica fora por padrão, para não inflar os indicadores da operação.</p>
       <div class="res-cfg-t" style="margin-top:14px">Gastos considerados</div>
       <div class="per-grid">${chipsFonte}</div>
-      <p class="sub" style="margin:2px 0 0;font-size:11px">Entradas entram todas. Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
+      <p class="sub" style="margin:2px 0 0;font-size:11px">Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
       <div class="res-cfg-t" style="margin-top:14px">Comparativo</div>
       ${corpo}
     </div>
@@ -9781,6 +10985,7 @@ function mergeStates(base, overlay){
 }
 
 function scheduleCloudSync(){
+  if(typeof modoLocal==='function' && modoLocal())return;  // modo local: nada sobe
   if(_applyingRemote)return;   // não marca como "sujo" o que acabou de vir da nuvem
   _dirty=true;
   markLocalDirty();            // grava a pendência no aparelho (sobrevive a fechar o app)
@@ -10338,6 +11543,8 @@ function authCampos(){
   return {email:email.trim(),pass:pass};
 }
 function mostrarTelaLogin(){
+  /* trava de segurança: no modo local o app nunca volta para a tela de login */
+  if(typeof modoLocal==='function' && modoLocal() && !_emRecuperacao) return;
   const ls=document.getElementById('loginScreen'); if(ls)ls.style.display='';
   const mw=document.getElementById('mainWrap'); if(mw)mw.style.display='none';
 }
@@ -10696,11 +11903,49 @@ function temSessaoGuardada(){
       if(data && data.session && data.session.user){
         _authToken=data.session.access_token||null;
         adoptAuthSyncKey(data.session.user);
-      } else { updateAuthUI(); mostrarTelaLogin(); }
-    }).catch(()=>{ updateAuthUI(); mostrarTelaLogin(); });
+      } else {
+        updateAuthUI();
+        /* Modo local não tem sessão nenhuma — e não deve ter. Sem esta guarda,
+           este bootstrap rodava 200ms depois do autoEnter e jogava a tela de
+           login por cima do app já aberto. */
+        if(!modoLocal()) mostrarTelaLogin();
+      }
+    }).catch(()=>{ updateAuthUI(); if(!modoLocal()) mostrarTelaLogin(); });
   }
   setTimeout(go,200);
 })();
+
+/* ===== MODO LOCAL (desenvolvimento) =====
+   Abrir o arquivo direto do computador para testar esbarrava na tela de login:
+   o OAuth do Google exige um domínio, e em file:// ele não funciona.
+
+   A saída NÃO é um usuário mestre: uma senha embutida viajaria dentro do
+   index.html publicado, que é um arquivo público — qualquer pessoa acharia, e o
+   app guarda dados financeiros. Aqui a condição é ONDE o app está rodando.
+   Em direcaorentavel.com.br isso nunca é verdade, então não há porta dos fundos
+   para explorar: no site publicado o login continua obrigatório.
+
+   Neste modo a nuvem fica desligada de propósito — os dados ficam só no
+   aparelho, e nada que você testar aqui pode sujar sua conta real. */
+function modoLocal(){
+  try{
+    if(location.protocol==='file:') return true;
+    const hn=location.hostname||'';
+    return hn==='localhost' || hn==='127.0.0.1' || hn==='' || hn.endsWith('.local');
+  }catch(e){ return false; }
+}
+
+function avisarModoLocal(){
+  if(document.getElementById('devBadge'))return;
+  const b=document.createElement('div');
+  b.id='devBadge';
+  b.textContent='MODO LOCAL · sem nuvem';
+  b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:70px;z-index:9999;'+
+    'background:var(--hybrid-bg);color:var(--hybrid);border:1px solid var(--hybrid);'+
+    'font:600 11px/1 Manrope,system-ui,sans-serif;letter-spacing:.06em;'+
+    'padding:6px 12px;border-radius:99px;pointer-events:none';
+  document.body.appendChild(b);
+}
 
 (function autoEnter(){
   let key=null;
@@ -10716,6 +11961,15 @@ function temSessaoGuardada(){
   // veio do link "esqueci minha senha"? não abre o app: vai direto pra troca de senha
   const veioDeRecuperacao=(location.hash||'').indexOf('type=recovery')>=0;
   if(veioDeRecuperacao){ _emRecuperacao=true; mostrarTelaLogin(); return; }
+
+  /* rodando do arquivo local: abre sem conta e sem nuvem (ver modoLocal acima) */
+  if(modoLocal()){
+    _syncKey=null; _dirty=false;
+    try{ setSyncBadge('off'); }catch(e){}
+    entrarNoApp();
+    avisarModoLocal();
+    return;
+  }
 
   if(!temSessaoGuardada()){
     mostrarTelaLogin();
