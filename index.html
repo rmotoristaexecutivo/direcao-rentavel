@@ -384,6 +384,61 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .rv-edit{display:block;font-size:10.5px;color:var(--neutral);font-weight:600;margin-top:2px}
 .a-hero-link{background:none;border:0;padding:0;font:inherit;color:var(--neutral);
   text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+/* ===== alerta de meta do dia ===== */
+.mal-ov{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,10,18,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;
+  transition:opacity .2s;padding:24px}
+.mal-ov.open{opacity:1;pointer-events:auto}
+.mal-card{width:100%;max-width:320px;background:var(--panel-solid);border:2px solid var(--c);
+  border-radius:22px;padding:24px 22px;text-align:center;
+  transform:scale(.92);transition:transform .22s cubic-bezier(.2,1.3,.4,1)}
+.mal-ov.open .mal-card{transform:scale(1)}
+.mal-ic{font-size:40px;line-height:1;margin-bottom:10px}
+.mal-tit{font-family:'Sora',system-ui,sans-serif;font-size:17px;font-weight:700;color:var(--c)}
+.mal-val{font-family:'Sora',system-ui,sans-serif;font-size:34px;font-weight:800;
+  color:var(--txt);margin:6px 0 12px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.mal-bar{height:7px;border-radius:99px;background:var(--bg);overflow:hidden;margin-bottom:11px}
+.mal-bar span{display:block;height:100%;background:var(--c);border-radius:99px;
+  transition:width .5s ease-out}
+.mal-lin{font-size:12.5px;color:var(--txt-dim);line-height:1.45}
+.mal-btn{margin-top:16px;width:100%;padding:11px;border:0;border-radius:12px;
+  background:var(--bg2);color:var(--txt-dim);font-family:'Manrope',system-ui,sans-serif;
+  font-weight:700;font-size:13px;cursor:pointer}
+.av-resumo{font-size:13.5px;color:var(--txt-dim);margin:0 0 14px;line-height:1.5}
+.av-resumo b{color:var(--txt);font-size:15px}
+.av-grupo{margin-bottom:14px}
+.av-tit{font-family:'Sora',system-ui,sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px}
+.av-item{display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:6px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:11px}
+.av-bar{width:3px;height:26px;border-radius:2px;flex:none}
+.av-tx{flex:1;min-width:0}
+.av-tx b{display:block;font-size:13.5px;font-weight:600}
+.av-tx i{display:block;font-style:normal;font-size:11px;color:var(--txt-faint);margin-top:1px}
+.av-val{font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;flex:none}
+#mobileNav button.tem-venc{position:relative}
+#mobileNav button.tem-venc::after{content:attr(data-venc);position:absolute;top:2px;right:50%;
+  transform:translateX(18px);min-width:15px;height:15px;padding:0 3px;border-radius:99px;
+  background:var(--expense);color:#fff;font-size:9.5px;font-weight:800;line-height:15px;
+  text-align:center;box-shadow:0 0 0 2px var(--panel-solid)}
+.fin-multi-l{display:flex;align-items:center;gap:7px;margin-top:8px}
+.fin-multi-bar{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.fin-multi-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.fin-multi-c select{width:100%}
+.fin-multi-v{width:88px;flex:none;text-align:right}
+.fin-multi-x{flex:none;width:28px;height:28px;border:0;background:transparent;
+  color:var(--txt-faint);font-size:13px;cursor:pointer;border-radius:8px}
+.fin-multi-x:active{background:var(--expense-bg);color:var(--expense)}
+.fin-multi-tot{display:flex;justify-content:space-between;align-items:center;
+  margin-top:12px;padding-top:10px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--txt-dim)}
+.fin-multi-tot b{font-size:15px;color:var(--txt);font-variant-numeric:tabular-nums}
+.fl-sel{display:flex;gap:6px;align-items:stretch}
+.fl-sel select{flex:1;min-width:0}
+.fl-add{flex:none;width:40px;border:1px solid var(--line);background:var(--bg2);
+  color:var(--neutral);font-size:17px;font-weight:700;border-radius:10px;cursor:pointer;line-height:1}
+.fl-add:active{background:var(--neutral);border-color:var(--neutral);color:#fff}
+.lc-obs{font-size:11.5px;color:var(--txt-faint);margin-top:3px;font-style:italic;line-height:1.35}
 .fin-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .fin-presets button{border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);
   font-family:'Manrope',system-ui,sans-serif;font-weight:600;font-size:11.5px;
@@ -6692,9 +6747,107 @@ function _saveLancamentoInterno(){
   /* zera a pilha ANTES de qualquer coisa assíncrona: mesmo que a função seja
      chamada de novo, não há mais o que regravar */
   _pendingItems=[];
+  const eraEntrada=(_modalKind==='entrada');
+  const dataLanc=(document.getElementById('mData')||{}).value||'';
   save(); closeLancModal(); renderUber();
   _salvandoLanc=false;
-  toast(_modalKind==='entrada'?'Entrada salva':'Saída salva');
+  toast(eraEntrada?'Entrada salva':'Saída salva');
+  /* o alerta de meta vem depois do toast, e só para lançamento de HOJE:
+     rever a meta de um dia passado ao corrigir um lançamento antigo não ajuda */
+  if(dataLanc===todayStr()) setTimeout(()=>{ try{ checarMetaDoDia(eraEntrada); }catch(e){} }, 350);
+}
+
+/* ============================================================================
+   ALERTA DE META DO DIA
+   ----------------------------------------------------------------------------
+   Dispara ao lançar, que é o momento em que a informação muda e a pessoa está
+   olhando a tela. Verde quando bate a meta de ganho, vermelho quando estoura o
+   teto de gasto, e um aviso neutro de progresso no meio do caminho.
+   ============================================================================ */
+let _metaBatidaEm=null;      // evita repetir o "parabéns" a cada lançamento
+
+function checarMetaDoDia(foiEntrada){
+  const m=metaDiaCfg();
+  if(!(m.ganho>0 || m.gasto>0)) return;      // sem meta definida, nada a dizer
+  const t=totaisDeHoje();
+  const hoje=todayStr();
+
+  const bateu   = m.ganho>0 && t.ganho>=m.ganho;
+  const estourou= m.gasto>0 && t.gasto>m.gasto;
+
+  /* Estouro de gasto tem prioridade: é a informação acionável — dá para parar
+     de gastar hoje, mas não dá para "desganhar". */
+  if(estourou && !foiEntrada){
+    mostrarAlertaMeta({
+      tom:'ruim',
+      titulo:'Passou do limite de gastos',
+      valor:fmt(t.gasto),
+      linha:'Seu teto de hoje era '+fmt(m.gasto)+' · passou '+fmt(t.gasto-m.gasto),
+      pct: Math.min(100, t.gasto/m.gasto*100)
+    });
+    return;
+  }
+
+  if(bateu){
+    if(_metaBatidaEm===hoje) return;          // já comemorou hoje
+    _metaBatidaEm=hoje;
+    const sobra=t.ganho-m.ganho;
+    mostrarAlertaMeta({
+      tom:'bom',
+      titulo:'Meta do dia batida!',
+      valor:fmt(t.ganho),
+      linha: sobra>0 ? 'Meta era '+fmt(m.ganho)+' · '+fmt(sobra)+' acima'
+                     : 'Meta era '+fmt(m.ganho),
+      pct:100
+    });
+    return;
+  }
+
+  /* No meio do caminho: mostra o quanto falta, sem interromper demais.
+     Só quando já passou de 60% — antes disso o aviso vira ruído. */
+  if(foiEntrada && m.ganho>0){
+    const pct=t.ganho/m.ganho*100;
+    if(pct>=60){
+      mostrarAlertaMeta({
+        tom:'meio',
+        titulo:'Quase lá',
+        valor:fmt(t.ganho),
+        linha:'Faltam '+fmt(m.ganho-t.ganho)+' para a meta de hoje',
+        pct
+      });
+    }
+  }
+}
+
+function mostrarAlertaMeta(o){
+  let ov=document.getElementById('metaAlertaOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='metaAlertaOv'; ov.className='mal-ov';
+    ov.addEventListener('click',()=>fecharAlertaMeta());
+    document.body.appendChild(ov);
+  }
+  const cor = o.tom==='bom'?'var(--gain)':o.tom==='ruim'?'var(--expense)':'var(--neutral)';
+  const bg  = o.tom==='bom'?'var(--gain-bg)':o.tom==='ruim'?'var(--expense-bg)':'var(--neutral-bg)';
+  const ic  = o.tom==='bom'?'🎯':o.tom==='ruim'?'⚠️':'📈';
+
+  ov.innerHTML=`<div class="mal-card" style="--c:${cor};--bg:${bg}">
+    <div class="mal-ic">${ic}</div>
+    <div class="mal-tit">${o.titulo}</div>
+    <div class="mal-val">${o.valor}</div>
+    <div class="mal-bar"><span style="width:${Math.min(100,o.pct)}%"></span></div>
+    <div class="mal-lin">${o.linha}</div>
+    <button class="mal-btn" onclick="fecharAlertaMeta()">Fechar</button>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  /* some sozinho: é um aviso, não uma decisão a tomar */
+  clearTimeout(window._metaAlertaTimer);
+  window._metaAlertaTimer=setTimeout(()=>fecharAlertaMeta(), o.tom==='meio'?3200:5000);
+}
+function fecharAlertaMeta(){
+  const ov=document.getElementById('metaAlertaOv');
+  if(ov)ov.classList.remove('open');
+  clearTimeout(window._metaAlertaTimer);
 }
 
 const APP_LIST=['Uber','99','InDriver','Particular','Shopee','Mercado Livre','iFood','Lalamove'];
@@ -7114,8 +7267,10 @@ function _catsIniciais(){
     C('Outras receitas','entrada','var(--neutral)',['Reembolso','Estorno','Presente','FGTS','Rendimentos']),
 
     /* ---------- saídas ---------- */
-    C('Combustível','saida','var(--hybrid)',['Ida','Volta','Outro'],'combustivel'),
-    C('Pedágio','saida','var(--hybrid)',['Ida','Volta']),
+    /* Sem Ida/Volta: isso era da planilha de deslocamento de trabalho. Numa
+       despesa pessoal, abastecer é abastecer. */
+    C('Combustível','saida','var(--hybrid)',['Gasolina','Etanol','Diesel','Elétrico','GNV'],'combustivel'),
+    C('Pedágio','saida','var(--hybrid)',[]),
     C('Veículo','saida','var(--electric)',['Manutenção','Estacionamento','Lavagem','Documentação','Seguro','Multa']),
     C('Alimentação','saida','var(--expense)',['Mercado','Feira','Restaurante','Padaria','Lanche']),
     C('Moradia','saida','var(--neutral)',['Aluguel','Condomínio','Luz','Água','Gás','Internet']),
@@ -7225,6 +7380,105 @@ function _diasEntre(a,b){
 }
 function finPendentes(mes){
   return finLancamentosDoMes(mes).filter(l=>l.tipo==='saida' && !l.efetivada);
+}
+
+/* ============================================================================
+   AVISO DE VENCIMENTOS
+   ----------------------------------------------------------------------------
+   Notificação com o app fechado exigiria service worker + Web Push + um servidor
+   disparando os envios — projeto próprio, e traria de volta o service worker que
+   removemos por causa do cache. Enquanto isso não existe, o aviso aparece ao
+   abrir o app, que é algo que se faz quase todo dia para lançar corrida.
+   Mostra uma vez por dia: repetir a cada aberturaveria o aviso em obstáculo.
+   ============================================================================ */
+const AVISO_KEY='cv_aviso_venc';
+
+/* Despesas não pagas vencendo de hoje até daqui a 2 dias, mais as atrasadas.
+   Atrasada entra junto porque é justamente a que a pessoa esqueceu. */
+function finVencimentosProximos(){
+  const hoje=_hojeISO();
+  const venceHoje=[], venceLogo=[], atrasadas=[];
+  financas().lancamentos.forEach(l=>{
+    if(l.tipo!=='saida' || l.efetivada) return;
+    const v=l.venc||l.dataLanc; if(!v) return;
+    const d=_diasEntre(hoje,v);
+    if(d<0) atrasadas.push(l);
+    else if(d===0) venceHoje.push(l);
+    else if(d<=2) venceLogo.push(l);
+  });
+  const soma=a=>a.reduce((s,l)=>s+(Number(l.valor)||0),0);
+  return {venceHoje, venceLogo, atrasadas,
+          total:venceHoje.length+venceLogo.length+atrasadas.length,
+          valor:soma(venceHoje)+soma(venceLogo)+soma(atrasadas)};
+}
+
+function checarVencimentos(){
+  try{
+    const hoje=_hojeISO();
+    if(localStorage.getItem(AVISO_KEY)===hoje) return;   // já avisou hoje
+    const v=finVencimentosProximos();
+    if(!v.total) return;
+    localStorage.setItem(AVISO_KEY,hoje);
+    mostrarAvisoVenc(v);
+  }catch(e){}
+}
+
+function mostrarAvisoVenc(v){
+  let ov=document.getElementById('avisoVencOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='avisoVencOv'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharAvisoVenc(); });
+    document.body.appendChild(ov);
+  }
+  const bloco=(titulo,lista,cor)=>{
+    if(!lista.length)return '';
+    return `<div class="av-grupo">
+      <div class="av-tit" style="color:${cor}">${titulo}</div>
+      ${lista.map(l=>{
+        const c=catPorId(l.catId);
+        return `<div class="av-item">
+          <span class="av-bar" style="background:${c?c.cor:'var(--txt-dim)'}"></span>
+          <span class="av-tx"><b>${l.desc||(c?c.nome:'Despesa')}</b>
+            <i>${fmtDateBR(l.venc)}${c?' · '+c.nome:''}</i></span>
+          <span class="av-val">${fmt(l.valor)}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>⏰ Contas a pagar</b>
+      <button class="a-sheet-x" onclick="fecharAvisoVenc()">✕</button></div>
+    <div class="a-sheet-b">
+      <p class="av-resumo">${v.total} despesa${v.total>1?'s':''} somando
+        <b>${fmt(v.valor)}</b></p>
+      ${bloco('Atrasadas', v.atrasadas, 'var(--expense)')}
+      ${bloco('Vencem hoje', v.venceHoje, 'var(--hybrid)')}
+      ${bloco('Vencem nos próximos dias', v.venceLogo, 'var(--txt-dim)')}
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:16px"
+              onclick="fecharAvisoVenc();mobileGoTab('pessoal');finVerPendentes()">Ver na lista</button>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:8px"
+              onclick="fecharAvisoVenc()">Agora não</button>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharAvisoVenc(true));
+}
+function fecharAvisoVenc(fromBack){
+  const ov=document.getElementById('avisoVencOv');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+
+/* ponto vermelho na aba Pessoal enquanto houver algo vencendo */
+function atualizarBadgeVenc(){
+  try{
+    const v=finVencimentosProximos();
+    document.querySelectorAll('[data-tab="pessoal"]').forEach(b=>{
+      b.classList.toggle('tem-venc', v.total>0);
+      b.setAttribute('data-venc', v.total>9?'9+':String(v.total||''));
+    });
+  }catch(e){}
 }
 
 /* ---------- criar, editar e apagar ---------- */
@@ -7462,6 +7716,7 @@ function renderFinancas(){
     </div>`;
 
   renderFinLista();
+  atualizarBadgeVenc();
 }
 
 function finAbrirAba(t){ _finAba=t; renderFinancas(); }
@@ -7508,6 +7763,10 @@ function renderFinLista(){
           <div class="lc-tt">${l.desc||(c?c.nome:'Lançamento')}${parc}</div>
           <div class="lc-sb">${c?c.nome:''}${sub?' · '+sub:''}${combTx}
             · <i style="color:${stCor};font-style:normal">${stTxt} ${fmtDateBR(l.venc)}</i></div>
+          ${l.multi&&l.partes?`<div class="lc-obs">dividido: ${
+            l.partes.map(p=>{const pc=catPorId(p.catId);return (pc?pc.nome:'?')+' '+fmt(p.valor);}).join(' · ')
+          }</div>`:''}
+          ${l.obs?`<div class="lc-obs">${l.obs}</div>`:''}
         </div>
         <span class="lc-val" style="color:${l.tipo==='entrada'?'var(--gain)':'var(--expense)'}">${fmt(l.valor)}</span>
         <button class="lc-x" onclick="event.stopPropagation();finExcluir('${l.id}')">✕</button>
@@ -7526,6 +7785,7 @@ function abrirLancFinModal(tipo, id){
   _finTipo=tipo||'saida'; _finEdit=id||null; _finCatManual=false;
   const l = id ? financas().lancamentos.find(x=>x.id===id) : null;
   _finRepet = l ? (l.parcelas>1?'parcelado':(l.recorrente?'recorrente':'nao')) : 'nao';
+  _multiLinhas = (l&&l.multi&&Array.isArray(l.partes)) ? l.partes.map(p=>Object.assign({},p)) : [];
 
   let ov=document.getElementById('lancFinModal');
   if(!ov){
@@ -7578,17 +7838,36 @@ function renderLancFinForm(l){
 
       <div class="a-mfields" style="margin-top:12px">
         <div class="a-mfield"><label>Categoria</label>
-          <select id="flCat" onchange="_finCatManual=true;onFinCatChange()">
-            ${cats.map(c=>`<option value="${c.id}"${c.id===catId?' selected':''}>${c.nome}</option>`).join('')}
-          </select></div>
+          <div class="fl-sel">
+            <select id="flCat" onchange="_finCatManual=true;onFinCatChange()">
+              ${cats.map(c=>`<option value="${c.id}"${c.id===catId?' selected':''}>${c.nome}</option>`).join('')}
+            </select>
+            <button class="fl-add" title="Nova categoria" onclick="novaCatNoForm()">＋</button>
+          </div></div>
         <div class="a-mfield"><label>Subcategoria</label>
-          <select id="flSub">
-            <option value="">—</option>
-            ${subs.map(s=>`<option value="${s.id}"${l&&l.subId===s.id?' selected':''}>${s.nome}</option>`).join('')}
-          </select></div>
+          <div class="fl-sel">
+            <select id="flSub">
+              <option value="">—</option>
+              ${subs.map(s=>`<option value="${s.id}"${l&&l.subId===s.id?' selected':''}>${s.nome}</option>`).join('')}
+            </select>
+            <button class="fl-add" title="Nova subcategoria" onclick="novaSubNoForm()">＋</button>
+          </div></div>
       </div>
 
       <!-- campos que só existem na categoria marcada como combustível -->
+      <label class="fin-switch" style="margin-top:12px">
+        <input type="checkbox" id="flMulti" ${l&&l.multi?'checked':''} onchange="toggleMulti()">
+        <span>Dividir entre categorias</span>
+      </label>
+      <div id="flMultiBox" style="display:${l&&l.multi?'':'none'}">
+        <p class="fin-hint">Uma compra que mistura coisas — no mercado, R$ 200 de comida e
+          R$ 50 de produto de limpeza. O valor total é a soma das partes.</p>
+        <div id="flMultiLinhas"></div>
+        <button class="btn" style="width:100%;justify-content:center;margin-top:8px"
+                onclick="addMultiLinha()">＋ Adicionar parte</button>
+        <div class="fin-multi-tot">Total das partes <b id="flMultiTotal">R$ 0,00</b></div>
+      </div>
+
       <div id="flCombBox" style="display:${ehComb?'':'none'}">
         <div class="fin-sec">⛽ Abastecimento</div>
         <div class="a-mfields">
@@ -7614,6 +7893,9 @@ function renderLancFinForm(l){
       <div class="a-mfield" style="margin-top:12px"><label>Valor</label>
         <input id="flValor" inputmode="decimal" value="${l?vzn(l.valor,2):''}" placeholder="0,00"
                onfocus="this.select()" ${ehComb?'readonly':''}></div>
+
+      <div class="a-mfield" style="margin-top:12px"><label>Observação (opcional)</label>
+        <input id="flObs" value="${l?(l.obs||''):''}" placeholder="anote o que quiser"></div>
 
       <div class="a-mfields" style="margin-top:12px">
         <div class="a-mfield"><label>Data do lançamento</label>
@@ -7664,6 +7946,7 @@ function renderLancFinForm(l){
     </div>
   </div>`;
   onFinCombInput();
+  if(_multiLinhas.length) renderMultiLinhas();
 }
 
 /* ============================================================================
@@ -7795,6 +8078,116 @@ function setFinRepet(k){
   });
 }
 
+/* Criar categoria e subcategoria SEM sair do lançamento.
+   Ter que abandonar o formulário, ir ao menu de categorias, criar, voltar e
+   digitar tudo de novo é o tipo de caminho que faz a pessoa escolher "Outros"
+   e perder a organização. Aqui cria e já deixa selecionado. */
+/* ============================================================================
+   MULTICATEGORIAS
+   ----------------------------------------------------------------------------
+   Uma compra que mistura assuntos: no mercado, parte é comida e parte é produto
+   de limpeza. Sem isso a pessoa escolhe uma categoria só e o relatório mente.
+
+   O lançamento continua sendo UM, com um array `partes`. Não viram vários
+   lançamentos: a lista encheria de fragmentos e apagar um deixaria os outros
+   órfãos. O valor total é sempre a soma das partes.
+   ============================================================================ */
+let _multiLinhas=[];
+
+function toggleMulti(){
+  const on=(document.getElementById('flMulti')||{}).checked;
+  const box=document.getElementById('flMultiBox');
+  if(box) box.style.display = on?'':'none';
+  const val=document.getElementById('flValor');
+  if(val){ if(on) val.setAttribute('readonly','readonly'); else val.removeAttribute('readonly'); }
+  if(on && !_multiLinhas.length){
+    const catAtual=(document.getElementById('flCat')||{}).value;
+    _multiLinhas=[{catId:catAtual,subId:null,valor:0},{catId:catAtual,subId:null,valor:0}];
+  }
+  renderMultiLinhas();
+}
+function addMultiLinha(){
+  const catAtual=(document.getElementById('flCat')||{}).value;
+  _multiLinhas.push({catId:catAtual,subId:null,valor:0});
+  renderMultiLinhas();
+}
+function delMultiLinha(i){
+  if(_multiLinhas.length<=2){ toast('Precisa de pelo menos duas partes'); return; }
+  _multiLinhas.splice(i,1); renderMultiLinhas();
+}
+function setMultiCat(i,v){ _multiLinhas[i].catId=v; _multiLinhas[i].subId=null; renderMultiLinhas(); }
+function setMultiSub(i,v){ _multiLinhas[i].subId=v||null; }
+function setMultiValor(i,v){ _multiLinhas[i].valor=parseNum(v); somarMulti(); }
+
+function renderMultiLinhas(){
+  const box=document.getElementById('flMultiLinhas'); if(!box)return;
+  const cats=catsPorTipo(_finTipo);
+  box.innerHTML=_multiLinhas.map((p,i)=>{
+    const c=catPorId(p.catId)||cats[0];
+    return `<div class="fin-multi-l">
+      <span class="fin-multi-bar" style="background:${c?c.cor:'var(--txt-dim)'}"></span>
+      <div class="fin-multi-c">
+        <select onchange="setMultiCat(${i},this.value)">
+          ${cats.map(x=>`<option value="${x.id}"${x.id===p.catId?' selected':''}>${x.nome}</option>`).join('')}
+        </select>
+        <select onchange="setMultiSub(${i},this.value)">
+          <option value="">—</option>
+          ${(c?c.subs:[]).map(s=>`<option value="${s.id}"${s.id===p.subId?' selected':''}>${s.nome}</option>`).join('')}
+        </select>
+      </div>
+      <input class="fin-multi-v" inputmode="decimal" value="${p.valor>0?fmtN(p.valor,2):''}"
+             placeholder="0,00" onfocus="this.select()" oninput="setMultiValor(${i},this.value)">
+      <button class="fin-multi-x" onclick="delMultiLinha(${i})">✕</button>
+    </div>`;
+  }).join('');
+  somarMulti();
+}
+/* O total é sempre a soma; por isso o campo de valor fica somente leitura aqui. */
+function somarMulti(){
+  const t=_multiLinhas.reduce((s,p)=>s+(Number(p.valor)||0),0);
+  const el=document.getElementById('flMultiTotal');
+  if(el) el.textContent=fmt(t);
+  const val=document.getElementById('flValor');
+  if(val && (document.getElementById('flMulti')||{}).checked) val.value=fmtN(t,2);
+}
+
+function novaCatNoForm(){
+  const nome=(prompt('Nome da nova categoria de '+(_finTipo==='entrada'?'receita':'despesa')+':')||'').trim();
+  if(!nome)return;
+  const f=financas();
+  const cor=_CORES[f.categorias.length%_CORES.length];
+  const nova={id:novoId('cat'),nome,tipo:_finTipo,cor,form:'padrao',subs:[]};
+  f.categorias.push(nova);
+  save();
+  const sel=document.getElementById('flCat');
+  if(sel){
+    const op=document.createElement('option');
+    op.value=nova.id; op.textContent=nova.nome;
+    sel.appendChild(op); sel.value=nova.id;
+  }
+  _finCatManual=true;
+  onFinCatChange();
+  toast('Categoria “'+nome+'” criada');
+}
+
+function novaSubNoForm(){
+  const sel=document.getElementById('flCat');
+  const cat=sel?catPorId(sel.value):null;
+  if(!cat){ toast('Escolha a categoria primeiro'); return; }
+  const nome=(prompt('Nova subcategoria em “'+cat.nome+'”:')||'').trim();
+  if(!nome)return;
+  const nova={id:novoId('sub'),nome};
+  cat.subs.push(nova);
+  save();
+  const ss=document.getElementById('flSub');
+  if(ss){
+    const op=document.createElement('option');
+    op.value=nova.id; op.textContent=nova.nome;
+    ss.appendChild(op); ss.value=nova.id;
+  }
+  toast('Subcategoria “'+nome+'” criada');
+}
+
 /* trocar a categoria troca as subcategorias e pode trocar a cara do formulário */
 function onFinCatChange(){
   const sel=document.getElementById('flCat'); if(!sel)return;
@@ -7849,6 +8242,7 @@ function salvarLancFin(){
   const base={
     tipo:_finTipo,
     desc:(g('flDesc')||'').trim(),
+    obs:(g('flObs')||'').trim(),
     catId, subId:g('flSub')||null,
     valor:n('flValor'),
     dataLanc:g('flDataLanc')||_hojeISO(),
@@ -7860,6 +8254,19 @@ function salvarLancFin(){
     base.comb={tipo:g('flCombTipo')||'comb', km:n('flCombKm'),
                qtda:n('flCombQtda'), valorUnit:n('flCombUnit')};
   }
+  /* dividido: as partes definem o valor, e a categoria principal vira a de maior
+     peso — assim lista e filtros continuam tendo uma categoria para exibir */
+  if((document.getElementById('flMulti')||{}).checked){
+    const partes=_multiLinhas.filter(p=>Number(p.valor)>0)
+      .map(p=>({catId:p.catId, subId:p.subId||null, valor:Number(p.valor)}));
+    if(partes.length<2){ alert('Informe o valor de pelo menos duas partes.'); return; }
+    base.multi=true;
+    base.partes=partes;
+    base.valor=Math.round(partes.reduce((s,p)=>s+p.valor,0)*100)/100;
+    const maior=partes.reduce((a,b)=>b.valor>a.valor?b:a);
+    base.catId=maior.catId; base.subId=maior.subId;
+  }
+
   if(!(base.valor>0)){ alert('Informe um valor maior que zero.'); return; }
   (f.ultimaCat=f.ultimaCat||{})[_finTipo]=catId;
 
@@ -8029,7 +8436,7 @@ function finMigrarPessoal(silencioso){
           f.lancamentos.push({
             id:novoId('lan'), tipo:'saida',
             desc:'Combustível ('+subNome.toLowerCase()+')',
-            catId:cComb.id, subId:subDe(cComb,subNome),
+            catId:cComb.id, subId:null,
             valor:Math.round(custo*100)/100,
             dataLanc:r.data, venc:r.data,
             efetivada:true, dataEfet:r.data,
@@ -8042,7 +8449,7 @@ function finMigrarPessoal(silencioso){
         if(Number(ped)>0){
           f.lancamentos.push({
             id:novoId('lan'), tipo:'saida', desc:'Pedágio ('+subNome.toLowerCase()+')',
-            catId:cPed.id, subId:subDe(cPed,subNome),
+            catId:cPed.id, subId:null,
             valor:Number(ped), dataLanc:r.data, venc:r.data,
             efetivada:true, dataEfet:r.data, migrado:true
           });
@@ -11685,6 +12092,9 @@ function entrarNoApp(){
   /* primeiro acesso da conta: abre o cadastro do veículo.
      Só depois da tranca, para não aparecer atrás da tela de bloqueio. */
   try{ if(!trancaAtiva()) checarPrimeiroAcesso(); }catch(e){}
+  /* aviso de contas a vencer: espera a tranca e o cadastro do veículo para não
+     empilhar duas folhas na cara de quem acabou de abrir */
+  setTimeout(()=>{ try{ atualizarBadgeVenc(); if(!trancaAtiva()) checarVencimentos(); }catch(e){} }, 1200);
 }
 
 /* ===== LEMBRAR E-MAIL / SENHA =====
