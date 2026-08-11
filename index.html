@@ -379,6 +379,9 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .fin-switch{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px;
   font-weight:600;cursor:pointer}
 .fin-switch input{width:18px;height:18px}
+.rv-clic{cursor:pointer}
+.rv-clic:active{background:var(--panel)}
+.rv-edit{display:block;font-size:10.5px;color:var(--neutral);font-weight:600;margin-top:2px}
 .a-hero-link{background:none;border:0;padding:0;font:inherit;color:var(--neutral);
   text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .fin-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
@@ -4965,6 +4968,75 @@ function diasTrabMes(){
    Financiamento — os dois dividem o mesmo número por design. Só que aqui a
    pessoa não tinha como saber disso nem como mudar, e ficava com a dúvida
    "base de 30 dias, de onde saiu?". Agora o próprio texto abre o ajuste. */
+/* ===== AJUSTE DE CADA RESERVA =====
+   Antes, IPVA e manutenção saíam de um percentual sobre a FIPE — chute razoável
+   para começar, mas quem tem o boleto na mão sabe o valor exato. E a data importa:
+   IPVA que vence em 3 meses não pode ser guardado como se tivesse 12. */
+function abrirReservaCfg(k, nome){
+  const c=reservaCfg(k);
+  const r=calcReservas();
+  const item=r.itens.find(x=>x.k===k)||{ano:0,dia:0};
+
+  let ov=document.getElementById('resCfgOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='resCfgOv'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharReservaCfg(); });
+    document.body.appendChild(ov);
+  }
+  window._resCfgK=k;
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>${nome}</b>
+      <button class="a-sheet-x" onclick="fecharReservaCfg()">✕</button></div>
+    <div class="a-sheet-b">
+
+      <div class="a-mfield"><label>Valor total por ano</label>
+        <input id="rcValor" inputmode="decimal" onfocus="this.select()"
+               value="${Number(c.valor)>0?fmtN(c.valor,2):''}" placeholder="${fmtN(item.ano,2)}"></div>
+      <p class="fin-hint">Deixe em branco para o app estimar${
+        k==='ipva'?' pela alíquota sobre a FIPE':k==='lic'?' pela taxa anual cadastrada':' pelo percentual anual'}.
+        Hoje está estimando ${fmt(item.ano)} por ano.</p>
+
+      <div class="a-mfield" style="margin-top:14px"><label>Quando vence</label>
+        <input type="date" id="rcVenc" value="${c.venc||''}"></div>
+      <p class="fin-hint">Informando a data, o app divide pelo tempo que falta em vez de
+        diluir em doze meses — é a diferença entre ter o dinheiro na hora e não ter.</p>
+
+      <div class="a-mfield" style="margin-top:14px"><label>Ou defina quanto guardar por dia</label>
+        <input id="rcPorDia" inputmode="decimal" onfocus="this.select()"
+               value="${Number(c.porDia)>0?fmtN(c.porDia,2):''}" placeholder="${fmtN(item.dia,2)}"></div>
+      <p class="fin-hint">Preenchendo aqui, este valor manda em tudo. Hoje o app sugere
+        ${fmt(item.dia)} por dia.</p>
+
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn" style="flex:1;justify-content:center" onclick="limparReservaCfg()">Limpar</button>
+        <button class="btn primary" style="flex:2;justify-content:center" onclick="salvarReservaCfg()">Salvar</button>
+      </div>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharReservaCfg(true));
+}
+function fecharReservaCfg(fromBack){
+  const ov=document.getElementById('resCfgOv');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+function salvarReservaCfg(){
+  const k=window._resCfgK; if(!k)return;
+  const c=reservaCfg(k);
+  c.valor  = parseNum((document.getElementById('rcValor')||{}).value)||0;
+  c.venc   = (document.getElementById('rcVenc')||{}).value||'';
+  c.porDia = parseNum((document.getElementById('rcPorDia')||{}).value)||0;
+  save(); fecharReservaCfg(); renderVeiculo(); toast('Reserva ajustada');
+}
+function limparReservaCfg(){
+  const k=window._resCfgK; if(!k)return;
+  const v=veic();
+  if(v.reservas) delete v.reservas[k];
+  save(); fecharReservaCfg(); renderVeiculo(); toast('Voltou para o cálculo automático');
+}
+
 function ajustarDiasTrab(){
   const atual=diasTrabMes();
   const txt=prompt(
@@ -4983,13 +5055,46 @@ function ajustarDiasTrab(){
   toast('Base ajustada para '+n+' dias por mês');
 }
 
+/* Ajustes que a pessoa faz item a item. Guardado em veic().reservas:
+     {valor, venc, porDia}
+   Todos opcionais — vazio significa "calcula pra mim", como sempre foi. */
+function reservaCfg(k){
+  const v=veic();
+  if(!v.reservas) v.reservas={};
+  if(!v.reservas[k]) v.reservas[k]={};
+  return v.reservas[k];
+}
+
+/* Quanto guardar por dia para um item.
+   A ordem é intencional: o que a pessoa DEFINIU vale mais que o que o app
+   calcula, e uma data de vencimento vale mais que a média anual — se o IPVA
+   vence em 3 meses, dividir por 12 guarda menos da metade do necessário. */
+function reservaPorDia(k, valorAno, diasTrab){
+  const c=reservaCfg(k);
+  if(Number(c.porDia)>0) return {dia:Number(c.porDia), origem:'definido por você'};
+
+  const total = Number(c.valor)>0 ? Number(c.valor) : valorAno;
+  if(c.venc){
+    const faltam=_diasEntre(_hojeISO(), c.venc);
+    if(faltam>0){
+      /* dias TRABALHADOS que ainda cabem até o vencimento */
+      const diasUteis=Math.max(1, Math.round(faltam*(diasTrab/30.44)));
+      return {dia: total/diasUteis, origem:'vence em '+faltam+' dia'+(faltam>1?'s':'')};
+    }
+    if(faltam<=0) return {dia: total/Math.max(1,diasTrab), origem:'vencido — junte em 1 mês'};
+  }
+  const diasAno=diasTrab*12;
+  return {dia: diasAno>0 ? total/diasAno : 0, origem:'diluído no ano'};
+}
+
 function calcReservas(){
   const v=veic(), dias=diasTrabMes(), diasAno=dias*12;
   const fipe=v.valorFipe||0;
-  const ipvaAno   = fipe*(v.ipvaAliq||0)/100;
-  const licAno    = v.licencaAno||0;
-  const manutAno  = fipe*(v.manutPct||0)/100;
-  const imprevAno = fipe*(v.imprevPct||0)/100;
+  const _c=k=>reservaCfg(k);
+  const ipvaAno   = Number(_c('ipva').valor)>0   ? Number(_c('ipva').valor)   : fipe*(v.ipvaAliq||0)/100;
+  const licAno    = Number(_c('lic').valor)>0    ? Number(_c('lic').valor)    : (v.licencaAno||0);
+  const manutAno  = Number(_c('manut').valor)>0  ? Number(_c('manut').valor)  : fipe*(v.manutPct||0)/100;
+  const imprevAno = Number(_c('imprev').valor)>0 ? Number(_c('imprev').valor) : fipe*(v.imprevPct||0)/100;
   let aluguelMes=0;
   if(!v.proprio){
     const a=v.aluguelValor||0;
@@ -4997,15 +5102,26 @@ function calcReservas(){
                : v.aluguelPeriodo==='diaria'  ? a*dias
                : a;
   }
-  const porDia=x=>diasAno>0?x/diasAno:0;
+  const _sub=(k,padrao)=>{
+    const c=reservaCfg(k);
+    return Number(c.valor)>0 ? fmt(Number(c.valor))+' definido por você' : padrao;
+  };
   const itens=[
-    {k:'ipva',   nome:'IPVA',              ano:ipvaAno,   sub:`${fmtN(v.ipvaAliq,1)}% do valor FIPE`},
-    {k:'lic',    nome:'Licenciamento',     ano:licAno,    sub:'taxa anual + seguro obrigatório'},
-    {k:'manut',  nome:'Manutenção',        ano:manutAno,  sub:`${fmtN(v.manutPct,1)}% ao ano · revisões, pneus, óleo`},
-    {k:'imprev', nome:'Imprevistos',       ano:imprevAno, sub:`${fmtN(v.imprevPct,1)}% ao ano · batida, guincho, pane`}
+    {k:'ipva',   nome:'IPVA',              ano:ipvaAno,   sub:_sub('ipva',`${fmtN(v.ipvaAliq,1)}% do valor FIPE`)},
+    {k:'lic',    nome:'Licenciamento',     ano:licAno,    sub:_sub('lic','taxa anual + seguro obrigatório')},
+    {k:'manut',  nome:'Manutenção',        ano:manutAno,  sub:_sub('manut',`${fmtN(v.manutPct,1)}% ao ano · revisões, pneus, óleo`)},
+    {k:'imprev', nome:'Imprevistos',       ano:imprevAno, sub:_sub('imprev',`${fmtN(v.imprevPct,1)}% ao ano · batida, guincho, pane`)}
   ];
   if(aluguelMes>0)itens.push({k:'aluguel',nome:'Aluguel do carro',ano:aluguelMes*12,sub:`${fmt(aluguelMes)} por mês`});
-  itens.forEach(i=>{ i.dia=porDia(i.ano); i.mes=i.ano/12; });
+  itens.forEach(i=>{
+    const r=reservaPorDia(i.k, i.ano, dias);
+    i.dia=r.dia; i.origem=r.origem;
+    i.mes=i.dia*dias;          /* o mês passa a seguir o dia, não o contrário:
+                                  senão um item com vencimento próximo mostraria
+                                  R$/dia alto e R$/mês baixo, se contradizendo */
+    const c=reservaCfg(i.k);
+    if(c.venc) i.venc=c.venc;
+  });
   const totalDia=itens.reduce((a,i)=>a+i.dia,0);
   const totalMes=itens.reduce((a,i)=>a+i.mes,0);
   return{itens,totalDia,totalMes,dias};
@@ -5041,10 +5157,13 @@ function renderVeiculo(){
   }
 
   const linhas=r.itens.map(i=>`
-    <div class="a-item">
+    <div class="a-item rv-clic" ${i.k==='aluguel'?'':`onclick="abrirReservaCfg('${i.k}','${i.nome}')"`}>
       <div class="a-ic ${i.k==='aluguel'?'cost':'neutral'}">${i.nome.charAt(0)}</div>
-      <div class="a-mid"><b>${i.nome}</b><small>${i.sub}</small></div>
-      <div class="a-amt">${fmt(i.dia)}<span class="rv-dia">/dia</span></div>
+      <div class="a-mid"><b>${i.nome}</b><small>${i.sub}${
+        i.origem&&i.origem!=='diluído no ano'?` · <i style="color:var(--hybrid);font-style:normal">${i.origem}</i>`:''
+      }</small></div>
+      <div class="a-amt">${fmt(i.dia)}<span class="rv-dia">/dia</span>
+        ${i.k==='aluguel'?'':'<span class="rv-edit">ajustar ›</span>'}</div>
     </div>`).join('');
 
   el.innerHTML=`
@@ -5842,6 +5961,16 @@ function salvarMetaMes(){
      que o nosso cálculo. */
   const md=metaDiaCfg();
   const porDia = m.metaFat>0 ? Math.round((m.metaFat/Math.max(1,m.diasMes))*100)/100 : 0;
+
+  /* Apagou a meta do mês: a meta do dia que VEIO dela tem que sair junto.
+     Ficava um card dizendo "nenhuma meta definida para o mês" e cobrando um
+     valor por dia calculado a partir de uma meta que não existe mais.
+     Só apaga o que era automático — número digitado à mão é da pessoa e fica. */
+  if(porDia===0){
+    const eraAutomatica = Number(md.ganhoAuto)>0 && Math.abs(Number(md.ganho)-Number(md.ganhoAuto))<0.02;
+    if(eraAutomatica){ md.ganho=0; delete md.ganhoAuto; }
+  }
+
   if(porDia>0){
     const anterior=Number(md.ganho)||0;
     /* diferença de centavos não conta como "ajuste manual": é arredondamento */
