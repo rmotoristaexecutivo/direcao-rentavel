@@ -2559,6 +2559,28 @@ function parseHoras(v){
   }
   return parseNum(s);   // aceita também 1.5 / 1,5 como fallback
 }
+/* ===== MÁSCARA DE HORAS =====
+   O campo pedia h:mm e, por causa dos dois-pontos, o Android abria o teclado
+   completo em vez do numérico — enquanto o campo de valor, ao lado, abria o
+   numérico. Trocar de teclado no meio do lançamento, dentro do carro, é o tipo
+   de atrito que faz a pessoa desistir de anotar.
+   Agora o campo é inputmode=numeric e os dois-pontos entram sozinhos:
+   digitando 200 vira 2:00, 1530 vira 15:30. */
+function mascararHoras(el){
+  let d=(el.value||'').replace(/\D/g,'').slice(0,4);   // só dígitos, no máximo HHMM
+  if(d.length<=2){ el.value=d; return; }
+  const mm=d.slice(-2), hh=d.slice(0,-2);
+  el.value=hh+':'+mm;
+}
+/* fecha o que ficou pela metade quando a pessoa sai do campo: 2 -> 2:00 */
+function fecharHoras(el){
+  const v=(el.value||'').trim();
+  if(v==='') return;
+  if(!v.includes(':')){ el.value=(parseInt(v,10)||0)+':00'; return; }
+  const [hh,mm]=v.split(':');
+  el.value=(parseInt(hh,10)||0)+':'+String(parseInt(mm,10)||0).padStart(2,'0');
+}
+
 function fmtHoras(dec){
   const d=Number(dec)||0;
   const hh=Math.floor(d);
@@ -2566,6 +2588,26 @@ function fmtHoras(dec){
   if(mm===60)return `${hh+1}:00`;
   return `${hh}:${String(mm).padStart(2,'0')}`;
 }
+/* ===== TAXA: parse e formato próprios =====
+   O parseNum trata 3 casas decimais como separador de MILHAR (1.800 = mil e
+   oitocentos), o que está certo para dinheiro e errado para percentual: quem
+   digitava 1.569% acabava com 1569% a.m.
+   Taxa não tem milhar — qualquer vírgula ou ponto ali é decimal. */
+function parseTaxa(v){
+  if(typeof v==='number')return v;
+  if(!v)return 0;
+  v=(''+v).trim().replace(/[^\d.,-]/g,'').replace(/,/g,'.');
+  const p=v.split('.');
+  if(p.length>2) v=p.shift()+'.'+p.join('');   // 1.5.69 -> 1.569
+  const n=parseFloat(v);
+  return isNaN(n)?0:n;
+}
+/* mostra até 3 casas, sem zeros à toa: 1,569 · 1,8 · 2 */
+function fmtTaxa(v){
+  const n=Number(v)||0;
+  return n.toFixed(3).replace(/0+$/,'').replace(/\.$/,'').replace('.',',');
+}
+
 function parseNum(v){
   if(typeof v==='number')return v;
   if(!v)return 0;
@@ -2833,7 +2875,7 @@ function renderFinanceInputs(){
   document.getElementById('entradaInicio').value=f.entrada.inicio;
   document.getElementById('finValor').value=fmtN(f.fin.valor,2);
   document.getElementById('finParcelas').value=f.fin.parcelas;
-  document.getElementById('finTaxa').value=fmtN(f.fin.taxa,2);
+  document.getElementById('finTaxa').value=fmtTaxa(f.fin.taxa);
   document.getElementById('finParcelaValor').value=fmtN(f.fin.parcelaValor,2);
   document.getElementById('finInicio').value=f.fin.inicio;
   const tag=document.getElementById('finParcelaTag'), hint=document.getElementById('finParcelaHint');
@@ -2860,7 +2902,7 @@ function onFinanceInput(){
   f.entrada.parcelas=Math.max(0,parseInt(document.getElementById('entradaParcelas').value)||0);
   f.entrada.inicio=document.getElementById('entradaInicio').value||f.entrada.inicio;
   f.fin.parcelas=Math.max(0,parseInt(document.getElementById('finParcelas').value)||0);
-  f.fin.taxa=parseNum(document.getElementById('finTaxa').value);
+  f.fin.taxa=parseTaxa(document.getElementById('finTaxa').value);
   f.fin.inicio=document.getElementById('finInicio').value||f.fin.inicio;
   calcFinance();
   // atualiza só os campos calculados (sem mexer no que está sendo digitado)
@@ -3289,7 +3331,7 @@ function openFinSheet(){
       <div class="sheet-sec-h">🏦 Financiamento</div>
       <div class="m-field-row">
         <div class="m-field"><label>Parcelas</label><input inputmode="numeric" id="fsFinParc" value="${f.fin.parcelas}"></div>
-        <div class="m-field"><label>Taxa % a.m.</label><input inputmode="decimal" id="fsFinTaxa" value="${fmtN(f.fin.taxa,2)}"></div>
+        <div class="m-field"><label>Taxa % a.m.</label><input inputmode="decimal" id="fsFinTaxa" value="${fmtTaxa(f.fin.taxa)}"></div>
       </div>
       <div class="m-field"><label>Parcela do banco (R$) — deixe em branco p/ calcular</label><input inputmode="decimal" id="fsFinParcVal" value="${f.fin.parcelaManual?fmtN(f.fin.parcelaValor,2):''}" placeholder="automático (Tabela Price)"></div>
       <div class="m-field"><label>1ª parcela em</label><input type="date" id="fsFinIni" value="${f.fin.inicio}"></div>
@@ -3308,7 +3350,7 @@ function saveFinSheet(){
   f.entrada.parcelas=Math.max(0,parseInt(g('fsEntParc'))||0);
   f.entrada.inicio=g('fsEntIni')||f.entrada.inicio;
   f.fin.parcelas=Math.max(0,parseInt(g('fsFinParc'))||0);
-  f.fin.taxa=parseNum(g('fsFinTaxa'));
+  f.fin.taxa=parseTaxa(g('fsFinTaxa'));
   f.fin.inicio=g('fsFinIni')||f.fin.inicio;
   const pv=g('fsFinParcVal').trim();
   if(pv){ f.fin.parcelaValor=parseNum(pv); f.fin.parcelaManual=true; } else { f.fin.parcelaManual=false; }
@@ -4714,7 +4756,7 @@ function veic(){
   if(!state.veiculo)state.veiculo={
     apelido:'', marca:'', marcaCod:'', modelo:'', modeloCod:'', ano:'', anoCod:'',
     combustivel:'', valorFipe:0, proprio:true, aluguelValor:0, aluguelPeriodo:'mensal',
-    ipvaAliq:4, licencaAno:200, manutPct:3, imprevPct:2
+    ipvaAliq:4, licencaAno:200, manutPct:3, imprevPct:2, kmMes:0
   };
   return state.veiculo;
 }
@@ -4743,7 +4785,7 @@ function trocarVeiculo(){
 
 function setVeic(campo,valor){
   const v=veic();
-  if(['valorFipe','aluguelValor','ipvaAliq','licencaAno','manutPct','imprevPct'].includes(campo)){
+  if(['valorFipe','aluguelValor','ipvaAliq','licencaAno','manutPct','imprevPct','kmMes'].includes(campo)){
     const n=parseNum(valor); v[campo]=n>=0?n:0;
   } else if(campo==='proprio'){ v.proprio=!!valor; }
   else v[campo]=valor;
@@ -4988,6 +5030,14 @@ function abrirVeicModal(){
                      onchange="setVeic('aluguelPeriodo','${pp}');abrirVeicModal()"> ${pp==='diaria'?'Diária':pp==='semanal'?'Semanal':'Mensal'}</label>`).join('')}
         </div>`:''}
 
+      <!-- Franquia de km: vale para alugado (limite do contrato) e para próprio
+           (alguns seguros e consórcios também limitam a quilometragem) -->
+      <div class="a-mfield" style="margin-top:14px"><label>Limite de km por mês</label>
+        <input inputmode="numeric" value="${v.kmMes>0?fmtN(v.kmMes,0):''}" placeholder="0"
+               onblur="setVeic('kmMes',this.value)" onchange="setVeic('kmMes',this.value)" onfocus="this.select()"></div>
+      <p style="font-size:11.5px;color:var(--txt-faint);margin:6px 0 0;line-height:1.45">
+        Franquia do contrato de aluguel, por exemplo 5.000 km. Deixe em zero se não houver limite.</p>
+
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
               onclick="salvarVeiculo()">Salvar veículo</button>
       ${(v.valorFipe>0||v.modelo)?`<button class="btn" style="width:100%;justify-content:center;margin-top:9px"
@@ -5036,6 +5086,9 @@ function setMetaDia(campo,valor){
   const m=metaDiaCfg();
   const v=parseNum(valor);
   m[campo]=v>0?v:0;
+  /* Editou o ganho à mão: rompe o vínculo com o cálculo da meta do mês, para que
+     o próximo salvamento da meta mensal pergunte antes de sobrescrever. */
+  if(campo==='ganho') delete m.ganhoAuto;
   save(); renderMetaDia();
 }
 function hojeKey(){
@@ -5081,7 +5134,7 @@ function renderMetaDia(){
       Defina quanto quer ganhar e quanto pode gastar por dia para receber os avisos.
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
               onclick="abrirMetaDiaModal()">Definir metas do dia</button>
-    </div>${metaMesBloco()}`:`
+    </div>${metaMesBloco()}${kmFranquiaBloco()}`:`
       ${m.ganho>0?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Ganhar hoje</span>
@@ -5105,7 +5158,7 @@ function renderMetaDia(){
         <b style="color:${(t.ganho-t.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(t.ganho-t.gasto)}</b>
       </div>`:''}
 
-      ${metaMesBloco()}
+      ${metaMesBloco()}${kmFranquiaBloco()}
     `}
   </div>`;
 
@@ -5592,6 +5645,31 @@ function salvarMetaMes(){
   }
   if(d){ const v=parseNum(d.value); m.diasMes = v>0?Math.round(v):22; }
   delete m.metaManual;          /* a flag não faz mais sentido: meta é sempre manual */
+
+  /* ===== A META DO MÊS ALIMENTA A META DO DIA =====
+     O bloco do mês já mostrava "faltam R$ X · R$ Y/dia", mas esse Y morria ali:
+     a pessoa tinha que abrir outro modal e digitar o mesmo número à mão.
+     Agora ele desce sozinho para a meta de ganho do dia.
+
+     Respeitando uma coisa: quem já ajustou a meta diária à mão não tem o valor
+     sobrescrito sem avisar. Aí a gente pergunta — o número de quem usa vale mais
+     que o nosso cálculo. */
+  const md=metaDiaCfg();
+  const porDia = m.metaFat>0 ? Math.round((m.metaFat/Math.max(1,m.diasMes))*100)/100 : 0;
+  if(porDia>0){
+    const anterior=Number(md.ganho)||0;
+    /* diferença de centavos não conta como "ajuste manual": é arredondamento */
+    const jaEraOCalculo = anterior===0 || Math.abs(anterior-(md.ganhoAuto||0))<0.02;
+    if(jaEraOCalculo || confirm(
+        'Sua meta de ganho por dia hoje é '+fmt(anterior)+'.\n\n'+
+        'Pelo que você definiu para o mês, dá '+fmt(porDia)+' por dia.\n\n'+
+        'Atualizar a meta do dia para esse valor?')){
+      md.ganho=porDia;
+      md.ganhoAuto=porDia;   /* lembra o que foi calculado, para saber da próxima
+                                vez se a pessoa mexeu à mão depois */
+    }
+  }
+
   save();
   fecharMetaMesModal();
   toast(m.metaFat>0?'Meta do mês salva':'Meta do mês removida');
@@ -5691,7 +5769,7 @@ function renderEditLancSheet(kind,it,data){
         <select id="elApp" onchange="onEditLancAppChange()">${APP_LIST.map(a=>`<option value="${a}"${a===it.app?' selected':''}>${a}</option>`).join('')}</select></div>
       <div class="m-field-row">
         <div class="m-field"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" placeholder="0,00" value="${vzn(it.valor,2)}"></div>
-        <div class="m-field"><label>Horas (h:mm)</label><input id="elHoras" inputmode="text" placeholder="0:00" value="${it.horas?fmtHoras(it.horas):''}"></div>
+        <div class="m-field"><label>Horas (h:mm)</label><input id="elHoras" inputmode="numeric" placeholder="0:00" oninput="mascararHoras(this)" onblur="fecharHoras(this)" value="${it.horas?fmtHoras(it.horas):''}"></div>
       </div>
       <div class="m-field-row">
         <div class="m-field"><label>Corridas</label><input id="elCorridas" inputmode="decimal" placeholder="0" value="${vzn(it.corridas,0)}"></div>
@@ -5981,7 +6059,7 @@ function openEntrada(){
     </div>
     <div class="field-row">
       <div class="field"><label>Valor (R$)</label><input id="mValor" inputmode="decimal" placeholder="0" value=""></div>
-      <div class="field"><label>Horas trabalhadas (h:mm)</label><input id="mHoras" inputmode="text" placeholder="0:00" value=""></div>
+      <div class="field"><label>Horas trabalhadas (h:mm)</label><input id="mHoras" inputmode="numeric" placeholder="0:00" oninput="mascararHoras(this)" onblur="fecharHoras(this)" value=""></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Corridas</label><input id="mCorridas" inputmode="decimal" placeholder="0" value=""></div>
@@ -7134,6 +7212,64 @@ function abMonthlyKmSeries(year){
   }
   return out;
 }
+/* ===== FRANQUIA DE KM DO MÊS =====
+   Quem aluga carro tem limite de quilometragem no contrato (5.000 km/mês é o mais
+   comum) e paga caro por km excedente. Sem acompanhar, a pessoa só descobre que
+   estourou quando chega a cobrança.
+   O km rodado vem da MESMA fonte do gráfico anual — a variação do odômetro entre
+   o fim do mês anterior e a última leitura deste mês —, então os dois números
+   nunca se contradizem. */
+function kmDoMesCorrente(){
+  const cur = state.uber.current || _mesHoje();
+  const ano = Number(cur.slice(0,4));
+  const mes = Number(cur.slice(5,7));
+  const serie = abMonthlyKmSeries(ano) || [];
+  const item = serie.find(s=>s.m===mes);
+  return item ? (item.km||0) : 0;
+}
+
+function kmFranquiaBloco(){
+  const v = (state.veiculo)||{};
+  const limite = Number(v.kmMes)||0;
+  if(!(limite>0)) return '';           // sem franquia configurada, o card não aparece
+
+  const rodado = kmDoMesCorrente();
+  const falta  = Math.max(0, limite-rodado);
+  const pct    = Math.min(100, limite>0 ? (rodado/limite*100) : 0);
+  const estourou = rodado>limite;
+
+  /* Ritmo: no dia 10 de um mês de 31, o esperado é ter usado ~32% da franquia.
+     É isso que transforma o card em aviso em vez de placar — dá para corrigir
+     a rota antes de estourar. */
+  const hoje=new Date();
+  const mesmoMes = (hoje.getFullYear()+'-'+pad(hoje.getMonth()+1))===(state.uber.current||'');
+  const diasNoMes = new Date(Number((state.uber.current||'').slice(0,4)), Number((state.uber.current||'').slice(5,7)), 0).getDate();
+  const diaAtual = mesmoMes ? hoje.getDate() : diasNoMes;
+  const esperado = limite*(diaAtual/diasNoMes);
+  const adiantado = rodado>esperado*1.05;      // 5% de folga antes de alarmar
+  const diasRestantes = Math.max(0, diasNoMes-diaAtual);
+  const porDia = diasRestantes>0 ? falta/diasRestantes : 0;
+
+  const cor = estourou ? 'var(--expense)' : adiantado ? 'var(--hybrid)' : 'var(--gain)';
+  const legenda = estourou
+    ? `passou ${fmtN(rodado-limite,0)} km da franquia`
+    : (mesmoMes && diasRestantes>0
+        ? `restam ${fmtN(falta,0)} km · ${fmtN(porDia,0)} km/dia em ${diasRestantes} dia${diasRestantes>1?'s':''}`
+        : `restam ${fmtN(falta,0)} km`);
+
+  return `<div class="md-mes">
+    <div class="md-top">
+      <span class="md-lbl">Franquia de km · ${monthLabel()}</span>
+      <span class="md-val" style="color:${cor}">${fmtN(rodado,0)} <i>/ ${fmtN(limite,0)} km</i></span>
+    </div>
+    <div class="md-bar"><span style="width:${pct}%;background:${cor}"></span></div>
+    <div class="md-subrow">
+      <span class="md-sub" style="margin:0">${legenda}${adiantado&&!estourou?' · acima do ritmo':''}</span>
+      <button class="md-edit" onclick="abrirVeicModal()">ajustar</button>
+    </div>
+  </div>`;
+}
+
 function abKmChart(items){
   // items: [{label, km}] — barras simples de km por mês, mesmo padrão visual do resumoChart
   const withData=items.filter(i=>i.km>0);
