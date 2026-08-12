@@ -422,6 +422,18 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   transform:translateX(18px);min-width:15px;height:15px;padding:0 3px;border-radius:99px;
   background:var(--expense);color:#fff;font-size:9.5px;font-weight:800;line-height:15px;
   text-align:center;box-shadow:0 0 0 2px var(--panel-solid)}
+.m-parc{cursor:pointer}
+.m-parc:active{background:var(--panel)}
+.m-parc-pct{font-size:10.5px;font-weight:700;color:var(--gain);background:var(--gain-bg);
+  padding:1px 6px;border-radius:99px;margin-left:5px}
+.m-parc-sub{font-size:11px;color:var(--txt-faint);margin-top:2px}
+.m-parc-obs{font-size:11px;color:var(--txt-faint);font-style:italic;margin-top:2px;line-height:1.35}
+.pc-desc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:12px 10px}
+.pc-desc div{text-align:center}
+.pc-desc span{display:block;font-size:10.5px;color:var(--txt-faint);text-transform:uppercase;
+  letter-spacing:.05em;font-weight:700}
+.pc-desc b{display:block;margin-top:3px;font-size:14px;font-variant-numeric:tabular-nums}
 .ab-obs{font-size:11.5px;color:var(--txt-faint);font-style:italic;margin-top:5px;line-height:1.35;padding:0 2px}
 .fin-multi-l{display:flex;align-items:center;gap:7px;margin-top:8px}
 .fin-multi-bar{width:3px;align-self:stretch;border-radius:2px;flex:none}
@@ -3157,12 +3169,13 @@ function buildSchedule(plan,key,tbodyId,totId,extraCols){
   let totalDesc=0;      // soma dos descontos obtidos
   let totalPagoGeral=0; // soma do "valor pago" de TODAS as parcelas (pagas ou não, usando o valor cheio quando não preenchido)
   for(let i=0;i<plan.parcelas;i++){
-    const venc=addMonths(plan.inicio,i);
+    const venc=vencParcela(plan,i);
     const pago=!!plan.pagos[i];
     const adiantado=!!(plan.adiantados&&plan.adiantados[i]);
-    const desconto=(plan.descontos&&Number(plan.descontos[i]))||0;
-    const valorPago=Math.max(0,plan.parcelaValor-desconto);   // o que você efetivamente pagou
-    if(pago){ totalPago+=valorPago; totalNominal+=plan.parcelaValor; totalDesc+=desconto; }
+    const valorContrato=valorParcela(plan,i);
+    const valorPago=valorPagoParcela(plan,i);
+    const desconto=Math.max(0,valorContrato-valorPago);
+    if(pago){ totalPago+=valorPago; totalNominal+=valorContrato; totalDesc+=desconto; }
     totalPagoGeral+=valorPago;
     const vd=new Date(venc+'T00:00:00');
     let status,cls;
@@ -3174,17 +3187,20 @@ function buildSchedule(plan,key,tbodyId,totId,extraCols){
     // sem precisar fazer conta nenhuma.
     const colsExtra = extraCols ? `
       <td><input type="checkbox" class="chk" ${adiantado?'checked':''} onchange="toggleAdiantado('${key}',${i},this.checked)" title="Paguei essa parcela adiantado"></td>
-      <td><input class="cell-in" inputmode="decimal" value="${desconto>0?fmtN(valorPago,2):''}" placeholder="${fmtN(plan.parcelaValor,2)}" onchange="setValorPagoParcela('${key}',${i},this.value)" title="Quanto você pagou de fato"></td>
+      <td><input class="cell-in" inputmode="decimal" value="${desconto>0?fmtN(valorPago,2):''}" placeholder="${fmtN(valorContrato,2)}" onchange="setValorPagoParcela('${key}',${i},this.value)" title="Quanto você pagou de fato"></td>
       <td style="font-weight:700;color:${desconto>0?'var(--gain)':'var(--txt-faint)'}">${desconto>0?fmt(desconto):'—'}</td>` : '';
     tr.innerHTML=`<td style="color:var(--txt-faint)">${i+1}</td>
       <td><input class="cell-in date" type="date" value="${venc}" onchange="reanchor('${key}',${i},this.value)"></td>
-      <td>${fmt(plan.parcelaValor)}</td>
+      <td>${fmt(valorContrato)}</td>
       ${colsExtra}
       <td><span class="badge ${cls}">${status}</span></td>
       <td><input type="checkbox" class="chk" ${pago?'checked':''} onchange="togglePago('${tbodyId}',${i},this.checked)"></td>`;
     tb.appendChild(tr);
   }
-  document.getElementById(totId).textContent=fmt(plan.parcelas*plan.parcelaValor);
+  /* soma parcela a parcela: com valores próprios, multiplicar não vale mais */
+  let totalContrato=0;
+  for(let i=0;i<plan.parcelas;i++) totalContrato+=valorParcela(plan,i);
+  document.getElementById(totId).textContent=fmt(totalContrato);
   if(extraCols){
     const tf=document.getElementById(totId==='finTot'?'finTotFinal':''),
           td=document.getElementById(totId==='finTot'?'finTotDesc':'');
@@ -3193,6 +3209,178 @@ function buildSchedule(plan,key,tbodyId,totId,extraCols){
   }
   return {pago:totalPago,nominal:totalNominal,desconto:totalDesc};
 }
+/* ============================================================================
+   PARCELA A PARCELA — dados próprios de cada uma
+   ----------------------------------------------------------------------------
+   O plano tem um vencimento inicial e um valor único, e o resto vinha de
+   addMonths(inicio, i). Isso quebra na vida real: o banco antecipa um
+   vencimento, uma parcela vem com seguro embutido, você paga adiantado com
+   desconto e quer anotar o porquê.
+   Agora cada parcela pode ter data, valor, pagamento e observação próprios,
+   guardados por índice. Quem não editar nada continua com o plano calculado.
+   ============================================================================ */
+function planDe(key){ return key==='entrada'?state.finance.entrada:state.finance.fin; }
+function _mapa(plan,nome){ if(!plan[nome]||typeof plan[nome]!=='object')plan[nome]={}; return plan[nome]; }
+
+/* vencimento da parcela i: o próprio, se foi editado; senão o do plano */
+function vencParcela(plan,i){
+  const d=plan.datas && plan.datas[i];
+  return d || addMonths(plan.inicio,i);
+}
+/* valor de contrato da parcela i */
+function valorParcela(plan,i){
+  const v=plan.valores && Number(plan.valores[i]);
+  return (v>0) ? v : (Number(plan.parcelaValor)||0);
+}
+/* quanto saiu do bolso: o valor pago informado, senão o de contrato */
+function valorPagoParcela(plan,i){
+  const vp=plan.valorPago && Number(plan.valorPago[i]);
+  if(vp>0) return vp;
+  const desc=(plan.descontos&&Number(plan.descontos[i]))||0;
+  return Math.max(0, valorParcela(plan,i)-desc);
+}
+function descontoParcela(plan,i){
+  return Math.max(0, valorParcela(plan,i)-valorPagoParcela(plan,i));
+}
+
+/* ---------- folha de edição de uma parcela ---------- */
+let _parcEdit={key:null,i:null};
+
+function abrirParcelaEdit(key,i){
+  const plan=planDe(key);
+  _parcEdit={key,i};
+  const venc=vencParcela(plan,i);
+  const valor=valorParcela(plan,i);
+  const pago=!!plan.pagos[i];
+  const vPago=valorPagoParcela(plan,i);
+  const desc=descontoParcela(plan,i);
+  const pct=valor>0?(desc/valor*100):0;
+  const adiant=!!(plan.adiantados&&plan.adiantados[i]);
+  const pagoEm=(plan.pagoEm&&plan.pagoEm[i])||'';
+  const obs=(plan.obsParc&&plan.obsParc[i])||'';
+
+  let ov=document.getElementById('parcEditOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='parcEditOv'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharParcelaEdit(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>Parcela ${i+1} de ${plan.parcelas}</b>
+      <button class="a-sheet-x" onclick="fecharParcelaEdit()">✕</button></div>
+    <div class="a-sheet-b">
+
+      <div class="a-mfields">
+        <div class="a-mfield"><label>Vencimento</label>
+          <input type="date" id="pcVenc" value="${venc}"></div>
+        <div class="a-mfield"><label>Valor da parcela</label>
+          <input id="pcValor" inputmode="decimal" value="${fmtN(valor,2)}" onfocus="this.select()"
+                 oninput="pcRecalc()"></div>
+      </div>
+      <p class="fin-hint">Mudar a data altera só esta parcela. As outras seguem o plano.</p>
+
+      <label class="fin-switch"><input type="checkbox" id="pcPago" ${pago?'checked':''}>
+        <span>Parcela paga</span></label>
+      <label class="fin-switch" style="margin-top:8px"><input type="checkbox" id="pcAdiant" ${adiant?'checked':''}>
+        <span>Paguei adiantado</span></label>
+
+      <div class="fin-sec">Pagamento</div>
+      <div class="a-mfields">
+        <div class="a-mfield"><label>Data do pagamento</label>
+          <input type="date" id="pcPagoEm" value="${pagoEm}"></div>
+        <div class="a-mfield"><label>Valor pago</label>
+          <input id="pcValorPago" inputmode="decimal" value="${desc>0?fmtN(vPago,2):''}"
+                 placeholder="${fmtN(valor,2)}" onfocus="this.select()" oninput="pcRecalc()"></div>
+      </div>
+
+      <div class="pc-desc" id="pcDescBox">
+        <div><span>Desconto</span><b id="pcDescVal">${desc>0?fmt(desc):'—'}</b></div>
+        <div><span>Percentual</span><b id="pcDescPct">${desc>0?fmtN(pct,2)+'%':'—'}</b></div>
+        <div><span>Valor final</span><b id="pcFinal" style="color:var(--gain)">${fmt(vPago)}</b></div>
+      </div>
+
+      <div class="a-mfield" style="margin-top:14px"><label>Observação</label>
+        <input id="pcObs" value="${obs.replace(/"/g,'&quot;')}" placeholder="anote o que quiser sobre este pagamento"></div>
+
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn" style="flex:1;justify-content:center" onclick="limparParcelaEdit()">Limpar</button>
+        <button class="btn primary" style="flex:2;justify-content:center" onclick="salvarParcelaEdit()">Salvar</button>
+      </div>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharParcelaEdit(true));
+}
+function fecharParcelaEdit(fromBack){
+  const ov=document.getElementById('parcEditOv');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+
+/* desconto, percentual e valor final acompanham a digitação */
+function pcRecalc(){
+  const valor=parseNum((document.getElementById('pcValor')||{}).value);
+  const campoPago=(document.getElementById('pcValorPago')||{}).value;
+  const vPago=campoPago.trim()===''?valor:parseNum(campoPago);
+  const desc=Math.max(0,valor-vPago);
+  const pct=valor>0?(desc/valor*100):0;
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e)e.textContent=v; };
+  set('pcDescVal', desc>0?fmt(desc):'—');
+  set('pcDescPct', desc>0?fmtN(pct,2)+'%':'—');
+  set('pcFinal', fmt(Math.max(0,vPago)));
+}
+
+function salvarParcelaEdit(){
+  const {key,i}=_parcEdit; if(key==null)return;
+  const plan=planDe(key);
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const ck=id=>{const e=document.getElementById(id);return e?e.checked:false;};
+
+  const venc=g('pcVenc');
+  const valor=parseNum(g('pcValor'));
+  const campoPago=g('pcValorPago').trim();
+  const vPago=campoPago===''?valor:parseNum(campoPago);
+
+  /* só grava override quando difere do plano — assim quem não mexeu continua
+     seguindo o cálculo, e mudar o plano depois ainda vale para essas parcelas */
+  const datas=_mapa(plan,'datas');
+  if(venc && venc!==addMonths(plan.inicio,i)) datas[i]=venc; else delete datas[i];
+
+  const valores=_mapa(plan,'valores');
+  if(valor>0 && Math.abs(valor-(Number(plan.parcelaValor)||0))>0.004) valores[i]=valor; else delete valores[i];
+
+  const vpm=_mapa(plan,'valorPago');
+  const descontos=_mapa(plan,'descontos');
+  const desc=Math.max(0,valor-vPago);
+  if(desc>0.004){ vpm[i]=Math.round(vPago*100)/100; descontos[i]=Math.round(desc*100)/100; }
+  else { delete vpm[i]; delete descontos[i]; }
+
+  const pagoEm=_mapa(plan,'pagoEm');
+  if(g('pcPagoEm')) pagoEm[i]=g('pcPagoEm'); else delete pagoEm[i];
+
+  const obsP=_mapa(plan,'obsParc');
+  const obs=g('pcObs').trim();
+  if(obs) obsP[i]=obs; else delete obsP[i];
+
+  const adiant=_mapa(plan,'adiantados');
+  if(ck('pcAdiant')) adiant[i]=true; else delete adiant[i];
+
+  plan.pagos[i]=ck('pcPago');
+
+  save(); fecharParcelaEdit(); renderFinance(); _finModalRefresh();
+  toast('Parcela '+(i+1)+' atualizada');
+}
+
+function limparParcelaEdit(){
+  const {key,i}=_parcEdit; if(key==null)return;
+  const plan=planDe(key);
+  ['datas','valores','valorPago','descontos','pagoEm','obsParc','adiantados']
+    .forEach(m=>{ if(plan[m]) delete plan[m][i]; });
+  save(); fecharParcelaEdit(); renderFinance(); _finModalRefresh();
+  toast('Parcela voltou ao plano');
+}
+
 /* marca/desmarca "paguei adiantado" numa parcela */
 function toggleAdiantado(key,i,val){
   const plan = key==='entrada'?state.finance.entrada:state.finance.fin;
@@ -3205,7 +3393,9 @@ function setValorPagoParcela(key,i,val){
   const plan = key==='entrada'?state.finance.entrada:state.finance.fin;
   if(!plan.descontos)plan.descontos={};
   const valorPago=parseNum(val);
-  const desconto=Math.max(0,plan.parcelaValor-valorPago);
+  const desconto=Math.max(0,valorParcela(plan,i)-valorPago);
+  if(!plan.valorPago)plan.valorPago={};
+  if(desconto>0.004)plan.valorPago[i]=Math.round(valorPago*100)/100; else delete plan.valorPago[i];
   if(desconto>0.004)plan.descontos[i]=Math.round(desconto*100)/100; else delete plan.descontos[i];
   save();renderFinance();
 }
@@ -3228,7 +3418,7 @@ function togglePago(tbodyId,i,val){
 function parcelaStatus(plan,i){
   const today=new Date(); today.setHours(0,0,0,0);
   if(plan.pagos[i])return{ic:'✅',cls:'pago',key:'pagas'};
-  const vd=new Date(addMonths(plan.inicio,i)+'T00:00:00');
+  const vd=new Date(vencParcela(plan,i)+'T00:00:00');
   return vd<today?{ic:'🔴',cls:'atraso',key:'atraso'}:{ic:'⏳',cls:'pend',key:'avencer'};
 }
 function contarParcelas(plan){
@@ -3455,7 +3645,7 @@ function accParcelas(key,plan,titulo,c,semCabecalho){
   let itens='';
   for(let i=0;i<plan.parcelas;i++){
     const pago=!!plan.pagos[i];
-    const venc=addMonths(plan.inicio,i);
+    const venc=vencParcela(plan,i);
     const vd=new Date(venc+'T00:00:00');
     const atraso=!pago&&vd<today;
     const ic=pago?'✅':(atraso?'🔴':'⏳');
@@ -3464,19 +3654,30 @@ function accParcelas(key,plan,titulo,c,semCabecalho){
     if(filtro==='avencer'&&(pago||atraso))continue;
     if(filtro==='atraso'&&!atraso)continue;
     const adiant=!!(plan.adiantados&&plan.adiantados[i]);
-    const desc=(plan.descontos&&Number(plan.descontos[i]))||0;
-    const valFinal=Math.max(0,plan.parcelaValor-desc);
+    const valorContrato=valorParcela(plan,i);
+    const valFinal=valorPagoParcela(plan,i);
+    const desc=Math.max(0,valorContrato-valFinal);
+    const pct=valorContrato>0?(desc/valorContrato*100):0;
+    const obsP=(plan.obsParc&&plan.obsParc[i])||'';
+    const pagoEm=(plan.pagoEm&&plan.pagoEm[i])||'';
     const valHtml = desc>0
-      ? `<span style="text-decoration:line-through;opacity:.55;font-size:11.5px">${fmt(plan.parcelaValor)}</span> <b style="color:var(--gain)">${fmt(valFinal)}</b>`
-      : fmt(plan.parcelaValor);
-    itens+=`<div class="m-parc ${cls}">
+      ? `<span style="text-decoration:line-through;opacity:.55;font-size:11.5px">${fmt(valorContrato)}</span> <b style="color:var(--gain)">${fmt(valFinal)}</b>
+         <span class="m-parc-pct">−${fmtN(pct,1)}%</span>`
+      : fmt(valorContrato);
+    /* tocar na parcela abre a edição completa; o checkbox continua marcando
+       pago direto, sem abrir nada */
+    itens+=`<div class="m-parc ${cls}" onclick="abrirParcelaEdit('${key}',${i})">
       <span class="m-parc-num">${i+1}</span>
       <span class="m-parc-st">${ic}</span>
       <div class="m-parc-body">
         <div class="m-parc-venc">${fmtDateBR(venc)}${adiant?' <span style="font-size:10.5px;color:var(--gain)">⏩ adiantado</span>':''}</div>
         <div class="m-parc-val">${valHtml}</div>
+        ${pagoEm?`<div class="m-parc-sub">pago em ${fmtDateBR(pagoEm)}</div>`:''}
+        ${obsP?`<div class="m-parc-obs">${obsP}</div>`:''}
       </div>
-      <input type="checkbox" class="m-parc-chk" ${pago?'checked':''} onchange="togglePago('${key==='fin'?'finSched':'entradaSched'}',${i},this.checked)">
+      <input type="checkbox" class="m-parc-chk" ${pago?'checked':''}
+        onclick="event.stopPropagation()"
+        onchange="togglePago('${key==='fin'?'finSched':'entradaSched'}',${i},this.checked)">
     </div>`;
   }
   /* Estado vazio no celular: mesma ideia da tabela do computador. Se nada foi
@@ -3579,8 +3780,8 @@ function proxParcela(){
   [state.finance.entrada,state.finance.fin].forEach(plan=>{
     for(let i=0;i<plan.parcelas;i++){
       if(plan.pagos[i])continue;
-      const vd=new Date(addMonths(plan.inicio,i)+'T00:00:00');
-      if(!prox||vd<prox.d)prox={d:vd,v:plan.parcelaValor};
+      const vd=new Date(vencParcela(plan,i)+'T00:00:00');
+      if(!prox||vd<prox.d)prox={d:vd,v:valorParcela(plan,i)};
       break;
     }
   });
@@ -3590,7 +3791,7 @@ function proxParcelaFin(){
   const plan=state.finance.fin;
   for(let i=0;i<plan.parcelas;i++){
     if(plan.pagos[i])continue;
-    const vd=new Date(addMonths(plan.inicio,i)+'T00:00:00');
+    const vd=new Date(vencParcela(plan,i)+'T00:00:00');
     return 'próx. venc. '+fmtDateBR(`${vd.getFullYear()}-${pad(vd.getMonth()+1)}-${pad(vd.getDate())}`);
   }
   return 'financiamento quitado 🎉';
