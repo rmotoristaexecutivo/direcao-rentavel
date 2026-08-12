@@ -10070,7 +10070,7 @@ const _resGeral={
   fontes:{trabalho:true,corp:true,pessoal:true,abastecimento:false,manutencao:false,financiamento:false},
   /* receita pessoal nasce DESMARCADA no Geral: quem abre o Resumo quer ver a
      operação, não o salário do mês entrando como se fosse corrida */
-  fontesEnt:{pessoal:false}
+  fontesEnt:{pessoal:false, apps:true}
 };
 _resCmp.geral={ativo:true,chaves:[]};
 _resCfg.geral=_resGeral;
@@ -10114,7 +10114,11 @@ function resGeralPeriodo(itens,key,gran){
   let entrada=0, saida=0;
   /* antes o Geral somava TODA entrada; agora respeita a marcação, igual às
      saídas — é o que permite ver a operação sem a receita pessoal por cima */
-  Object.keys(RES_FONTES_ENT).forEach(f=>{ if(_resGeral.fontesEnt[f]!==false) entrada+=ent[f].valor; });
+  /* 'apps' é um grupo: cobre todas as fontes de entrada menos a pessoal */
+  Object.keys(RES_FONTES_ENT).forEach(f=>{
+    const chave = (f==='pessoal') ? 'pessoal' : 'apps';
+    if(_resGeral.fontesEnt[chave]!==false) entrada+=ent[f].valor;
+  });
   Object.keys(RES_FONTES_SAI).forEach(f=>{ if(_resGeral.fontes[f])saida+=sai[f].valor; });
   let km=0,litros=0,kwh=0,corridas=0;
   Object.keys(RES_FONTES_SAI).forEach(f=>{
@@ -10138,8 +10142,15 @@ function resGeralHtml(itens){
      operação, e este botão traz a receita pessoal quando você quiser o quadro
      completo da vida financeira */
   const onEntPess=_resGeral.fontesEnt.pessoal!==false;
-  const chipEntrada=`<button class="per-chip${onEntPess?' active':''}"
-      onclick="toggleResGeralFonteEnt('pessoal')">${onEntPess?'✓ ':''}👤 Receita pessoal</button>`;
+  const onEntApps=_resGeral.fontesEnt.apps!==false;
+  /* Os ganhos dos apps precisavam de chip próprio: sem ele, marcar só "Pessoal"
+     em gastos e ver ENTROU cheio de faturamento de corrida dava a impressão de
+     que a guia Pessoal tinha receita — quando ela só tem despesa. */
+  const chipEntrada=
+    `<button class="per-chip${onEntApps?' active':''}"
+        onclick="toggleResGeralFonteEnt('apps')">${onEntApps?'✓ ':''}🚗 Ganhos dos apps</button>`+
+    `<button class="per-chip${onEntPess?' active':''}"
+        onclick="toggleResGeralFonteEnt('pessoal')">${onEntPess?'✓ ':''}👤 Receita pessoal</button>`;
 
   if(!_resGeral.aberto){
     /* fechado, o card já mostra o saldo dos períodos escolhidos — antes era só um
@@ -10213,7 +10224,7 @@ function resGeralHtml(itens){
       </div>
       <div class="res-cfg-t" style="margin-top:14px">Entradas consideradas</div>
       <div class="per-grid">${chipEntrada}</div>
-      <p class="sub" style="margin:2px 0 0;font-size:11px">Os ganhos dos apps entram sempre. A receita pessoal (salário, reembolso) fica fora por padrão, para não inflar os indicadores da operação.</p>
+      <p class="sub" style="margin:2px 0 0;font-size:11px">A receita pessoal (salário, reembolso) fica fora por padrão, para não se misturar com o faturamento das corridas. Desmarque os apps para ver só o lado pessoal.</p>
       <div class="res-cfg-t" style="margin-top:14px">Gastos considerados</div>
       <div class="per-grid">${chipsFonte}</div>
       <p class="sub" style="margin:2px 0 0;font-size:11px">Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
