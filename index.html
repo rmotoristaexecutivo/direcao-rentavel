@@ -422,6 +422,7 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   transform:translateX(18px);min-width:15px;height:15px;padding:0 3px;border-radius:99px;
   background:var(--expense);color:#fff;font-size:9.5px;font-weight:800;line-height:15px;
   text-align:center;box-shadow:0 0 0 2px var(--panel-solid)}
+.ab-obs{font-size:11.5px;color:var(--txt-faint);font-style:italic;margin-top:5px;line-height:1.35;padding:0 2px}
 .fin-multi-l{display:flex;align-items:center;gap:7px;margin-top:8px}
 .fin-multi-bar{width:3px;align-self:stretch;border-radius:2px;flex:none}
 .fin-multi-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
@@ -2782,6 +2783,26 @@ function fmtHoras(dec){
   if(mm===60)return `${hh+1}:00`;
   return `${hh}:${String(mm).padStart(2,'0')}`;
 }
+/* ===== QUANTIDADE: litros, kWh =====
+   Mesmo problema da taxa, e mais grave: o parseNum trata 3 casas decimais como
+   separador de MILHAR — regra certa para dinheiro (1.800 = mil e oitocentos) e
+   desastrosa aqui. A bomba mostra 42,032 L e o app entendia 42.032 litros, o que
+   virava um abastecimento de R$ 245.466,88.
+
+   Em litros e kWh não existe milhar: nenhum tanque de carro leva mil litros.
+   Então qualquer vírgula ou ponto é sempre decimal.
+   ATENÇÃO: não usar isto em campos de KM (odômetro), onde 1.500 é mil e
+   quinhentos de verdade. */
+function parseQtd(v){
+  if(typeof v==='number')return v;
+  if(!v)return 0;
+  v=(''+v).trim().replace(/[^\d.,-]/g,'').replace(/,/g,'.');
+  const p=v.split('.');
+  if(p.length>2) v=p.shift()+'.'+p.join('');   // 4.2.03 -> 4.203
+  const n=parseFloat(v);
+  return isNaN(n)?0:n;
+}
+
 /* ===== TAXA: parse e formato próprios =====
    O parseNum trata 3 casas decimais como separador de MILHAR (1.800 = mil e
    oitocentos), o que está certo para dinheiro e errado para percentual: quem
@@ -6215,7 +6236,7 @@ function onEditCombInput(field){
   if(tipo==='el'){
     if(field==='qtda'){
       // usuário editou o kWh diretamente: respeita o valor e recalcula o % de bateria equivalente
-      const qtda=parseNum(document.getElementById('elCombQtda').value);
+      const qtda=parseQtd(document.getElementById('elCombQtda').value);
       const bat=cf.bateriaKwh||18.3;
       if(qtda>0 && bat>0) document.getElementById('elCombRend').value=fmtN(r2(qtda/bat*100),2);
     } else if(field!=='valor'){
@@ -6225,7 +6246,7 @@ function onEditCombInput(field){
     }
   } else if(field!=='valor'){
     let rend=parseNum(document.getElementById('elCombRend').value);
-    let qtda=parseNum(document.getElementById('elCombQtda').value);
+    let qtda=parseQtd(document.getElementById('elCombQtda').value);
     if(field==='qtda'){
       if(km>0 && qtda>0)document.getElementById('elCombRend').value=fmtN(r2(km/qtda),2);
     } else if(field==='rend'){
@@ -6236,7 +6257,7 @@ function onEditCombInput(field){
       else { const rendUse=rend||cf.kmL; document.getElementById('elCombQtda').value=fmtN(r2(rendUse>0?km/rendUse:0),2); }
     }
   }
-  const qtda=parseNum(document.getElementById('elCombQtda').value);
+  const qtda=parseQtd(document.getElementById('elCombQtda').value);
   const valorUnit=parseNum(document.getElementById('elCombValorUnit').value);
   document.getElementById('elCombTotal').value=fmt(qtda*valorUnit);
 }
@@ -6598,7 +6619,7 @@ function onCombFieldsInput(field){
     // combustível: km/l é bidirecional — editar litros recalcula o rendimento, editar
     // rendimento recalcula os litros, editar KM ajusta pelo que já está preenchido.
     let rend=parseNum(document.getElementById('mCombRend').value);
-    let qtda=parseNum(document.getElementById('mCombQtda').value);
+    let qtda=parseQtd(document.getElementById('mCombQtda').value);
     if(field==='qtda'){
       if(km>0 && qtda>0)document.getElementById('mCombRend').value=fmtN(r2(km/qtda),2);
     } else if(field==='rend'){
@@ -6610,7 +6631,7 @@ function onCombFieldsInput(field){
       else { const rendUse=rend||cf.kmL; document.getElementById('mCombQtda').value=fmtN(r2(rendUse>0?km/rendUse:0),2); }
     }
   }
-  const qtda=parseNum(document.getElementById('mCombQtda').value);
+  const qtda=parseQtd(document.getElementById('mCombQtda').value);
   const valorUnit=parseNum(document.getElementById('mCombValorUnit').value);
   document.getElementById('mCombTotal').value=fmt(qtda*valorUnit);
 }
@@ -6620,7 +6641,7 @@ function addPendingSaida(){
     const tipo=document.getElementById('mCombTipo').value;
     const km=parseNum(document.getElementById('mCombKm').value);
     const rend=parseNum(document.getElementById('mCombRend').value);
-    const qtda=parseNum(document.getElementById('mCombQtda').value);
+    const qtda=parseQtd(document.getElementById('mCombQtda').value);
     const valorUnit=parseNum(document.getElementById('mCombValorUnit').value);
     const valor=qtda*valorUnit;
     if(valor<=0){ alert('Informe o KM/Qtda e o valor por unidade.'); return; }
@@ -6687,7 +6708,7 @@ function _saveLancamentoInterno(){
   } else {
     const cat=document.getElementById('mCategoria').value;
     if(cat==='Combustível'){
-      const qtda=parseNum(document.getElementById('mCombQtda').value);
+      const qtda=parseQtd(document.getElementById('mCombQtda').value);
       if(qtda>0)addPendingSaida();
     } else {
       const v=parseNum(document.getElementById('mValorSaida').value);
@@ -8186,7 +8207,7 @@ function onFinCombInput(){
   const t=(document.getElementById('flCombTipo')||{}).value||'comb';
   const lbl=document.getElementById('flCombQtdaLbl');
   if(lbl) lbl.textContent = t==='el'?'kWh':'Litros';
-  const q=parseNum((document.getElementById('flCombQtda')||{}).value);
+  const q=parseQtd((document.getElementById('flCombQtda')||{}).value);
   const u=parseNum((document.getElementById('flCombUnit')||{}).value);
   const val=document.getElementById('flValor');
   if(!val)return;
@@ -8220,7 +8241,7 @@ function salvarLancFin(){
   };
   if(cat && cat.form==='combustivel'){
     base.comb={tipo:g('flCombTipo')||'comb', km:n('flCombKm'),
-               qtda:n('flCombQtda'), valorUnit:n('flCombUnit')};
+               qtda:parseQtd(g('flCombQtda')), valorUnit:n('flCombUnit')};
   }
   /* dividido: as partes definem o valor, e a categoria principal vira a de maior
      peso — assim lista e filtros continuam tendo uma categoria para exibir */
@@ -9182,6 +9203,7 @@ function abRenderLista(){
         </span>
       </div>
       ${tags.length?`<div class="ab-tags">${tags.join('')}</div>`:''}
+      ${r.obs?`<div class="ab-obs">${r.obs}</div>`:''}
     </div>`;
   }).join('') : `<div class="lanc-empty">Nenhum abastecimento em ${abastMonthLabel(key)} ainda. Toque no ＋ pra adicionar.</div>`;
 
@@ -9217,7 +9239,9 @@ function abUpdateKmL(){
   const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
   const iniC=g('abKmIniComb'), fimC=g('abKmFimComb'), iniE=g('abKmIniEl'), fimE=g('abKmFimEl');
   const km=(fimC>iniC?(fimC-iniC):0)+(fimE>iniE?(fimE-iniE):0);
-  const litros=g('abLitros');
+  /* km continua com parseNum: no odômetro 1.500 é mil e quinhentos mesmo.
+     Litros usa parseQtd, onde não existe milhar. */
+  const litros=parseQtd((document.getElementById('abLitros')||{}).value);
   if(km>0 && litros>0){
     box.style.display='';
     document.getElementById('abKmL').value=`${fmtN(km/litros,2)} km/l`;
@@ -9225,8 +9249,11 @@ function abUpdateKmL(){
 }
 function abUpdateValorTotal(){
   const g=id=>{ const e=document.getElementById(id); return e?parseNum(e.value):0; };
-  const subComb=g('abLitros')*g('abPrecoComb');   // litros × R$/L
-  const subEl=g('abKwh')*g('abPrecoKwh');          // kWh × R$/kWh
+  /* quantidade tem parse próprio: 42,032 L é quarenta e dois vírgula zero
+     trinta e dois, nunca quarenta e dois mil (ver parseQtd) */
+  const q=id=>{ const e=document.getElementById(id); return e?parseQtd(e.value):0; };
+  const subComb=q('abLitros')*g('abPrecoComb');   // litros × R$/L
+  const subEl=q('abKwh')*g('abPrecoKwh');          // kWh × R$/kWh
   const total=subComb+subEl;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e)e.value=fmt(v); };
   set('abSubComb',subComb); set('abSubEl',subEl); set('abValorTotal',total);
@@ -9286,7 +9313,9 @@ function openAbastModal(i){
     <div class="field" id="abKmLBox" style="display:none"><label>Média km/l (automático)</label><input id="abKmL" readonly tabindex="-1" value="" style="font-weight:800;color:var(--gain)"></div>
     <div class="field"><label>Forma de pagamento</label>
       <select id="abForma">${FORMA_PGTO.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
-    </div>`;
+    </div>
+    <div class="field"><label>Observação (opcional)</label>
+      <input id="abObs" value="${(r.obs||'').replace(/"/g,'&quot;')}" placeholder="posto, promoção, o que quiser anotar"></div>`;
   abUpdateKmRodado();
   abUpdateValorTotal();
   const ov=document.getElementById('abastModal');
@@ -9305,14 +9334,16 @@ function saveAbastEntry(){
   const data=document.getElementById('abData').value;
   if(!data){ alert('Escolha a data.'); return; }
   const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
-  const litros=g('abLitros'), precoComb=g('abPrecoComb'), kwh=g('abKwh'), precoKwh=g('abPrecoKwh');
+  const q=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseQtd(v); };
+  const litros=q('abLitros'), precoComb=g('abPrecoComb'), kwh=q('abKwh'), precoKwh=g('abPrecoKwh');
   const valorComb=(litros||0)*(precoComb||0);   // litros × R$/L
   const valorEl=(kwh||0)*(precoKwh||0);          // kWh × R$/kWh
   const valorTotal=valorComb+valorEl;
   if(valorTotal<=0){ alert('Informe litros e R$/L e/ou kWh e R$/kWh.'); return; }
   const entry={ data, forma:document.getElementById('abForma').value,
     litros:litros||0, precoComb:precoComb||0, valorComb:valorComb,
-    kwh:kwh||0, precoKwh:precoKwh||0, valorEl:valorEl, valor:valorTotal };
+    kwh:kwh||0, precoKwh:precoKwh||0, valorEl:valorEl, valor:valorTotal,
+    obs:((document.getElementById('abObs')||{}).value||'').trim() };
   const kmIniComb=g('abKmIniComb'), kmFimComb=g('abKmFimComb'), kmIniEl=g('abKmIniEl'), kmFimEl=g('abKmFimEl');
   if(kmIniComb!=null)entry.kmIniComb=kmIniComb;
   if(kmFimComb!=null)entry.kmFimComb=kmFimComb;
