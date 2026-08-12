@@ -517,8 +517,11 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .lc-tt{font-size:14px;font-weight:700;line-height:1.25;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .lc-sb{font-size:11.5px;color:var(--txt-dim);margin-top:3px;line-height:1.35}
 .lc-val{font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;flex:none}
-.lc-x{flex:none;width:28px;height:28px;border-radius:8px;border:0;background:transparent;
-  color:var(--txt-faint);font-size:14px;cursor:pointer;line-height:1}
+.lc-x{flex:none;width:40px;height:40px;border-radius:10px;border:0;background:transparent;
+  color:var(--txt-faint);font-size:15px;cursor:pointer;line-height:1;
+  /* 40px em vez de 28: com o alvo pequeno, o dedo errava e acertava o card,
+     abrindo a edição quando a intenção era excluir */
+  display:grid;place-items:center;margin:-6px -4px -6px 0}
 .lc-x:active{background:var(--expense-bg);color:var(--expense)}
 .lc-tot{display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:11px 14px;margin:0 0 2px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -7064,7 +7067,88 @@ const APP_LIST=['Uber','99','InDriver','Particular','Shopee','Mercado Livre','iF
 const UBER_CATS=[{key:'black',label:'Black'},{key:'conforto',label:'Comfort'},{key:'x',label:'X'},{key:'bag',label:'Bag'},{key:'blackBag',label:'Black Bag'}];
 const NN_CATS=[{key:'pop',label:'POP'},{key:'eletric',label:'Eletric'}];
 const GASTO_CATS=['Alimentação','Borracharia','Combustível','DAS MEI','Funilaria','Internet','IPVA','Lavagem','Licenciamento','Manutenção','Mecânico','Multas','Outro','Prestação','Reserva','Revisão','Seguro','TAG','Troca de Óleo'];
-const MANUT_SERVICOS=['Alinhamento/balanceamento','Ar condicionado','Bateria','Bomba de combustível','Correia/Corrente','Direção Hidráulica/Elétrica','Embreagem','Filtro de Ar','Filtro de Ar da Cabine','Filtro de Combustível','Fluido da Embreagem','Fluido de Freio','Fluido da Transmissão','Funilaria','Inspeção Técnica','Lâmpada/Farol','Limpador do Para-brisa','Mão de Obra','Óleo (troca)','Óleo (completar)','Orçamento','Pastilha de freio','Pneu (troca)','Pneu (reparo)','Pneu (rodízio)','Radiador','Revisão','Suspensão/Amortecedor','Vela de Ignição','Vidro/Espelho','Outro'];
+/* ============================================================================
+   SERVIÇOS DE MANUTENÇÃO
+   ----------------------------------------------------------------------------
+   Agrupados por sistema do carro. Uma lista corrida de 150 itens em ordem
+   alfabética obriga a rolar procurando — agrupada, você vai direto ao sistema.
+   Inclui itens de carro elétrico e híbrido (bateria de tração, carregador,
+   inversor), que num app de motorista de aplicativo hoje não são exceção.
+   ============================================================================ */
+const MANUT_GRUPOS=[
+  ['🛢️ Óleos e fluidos', ['Óleo do motor (troca)','Óleo do motor (completar)',
+    'Óleo do câmbio','Óleo do diferencial','Fluido de freio','Fluido da embreagem',
+    'Fluido da direção hidráulica','Fluido de arrefecimento','Aditivo do radiador',
+    'Fluido do limpador de para-brisa']],
+
+  ['🌬️ Filtros', ['Filtro de ar do motor','Filtro de ar da cabine','Filtro de combustível',
+    'Filtro de óleo','Filtro do câmbio','Filtro secador do ar-condicionado']],
+
+  ['🔧 Motor', ['Revisão','Vela de ignição','Bobina de ignição','Correia dentada',
+    'Correia do alternador','Corrente de comando','Tensor da correia','Junta do cabeçote',
+    'Cabeçote','Retífica do motor','Bomba de óleo','Bomba d\'água','Coxim do motor',
+    'Sensor de oxigênio (sonda lambda)','Sensor de rotação','Corpo de borboleta',
+    'Bicos injetores','Bomba de combustível','Tanque de combustível','Turbina/Turbo']],
+
+  ['⚡ Elétrico e híbrido', ['Bateria de tração','Módulo da bateria (EV)','Carregador de bordo',
+    'Cabo de recarga','Inversor','Motor elétrico','Sistema de recuperação de energia',
+    'Bomba d\'água elétrica','Diagnóstico do sistema híbrido']],
+
+  ['🔋 Elétrica', ['Bateria 12V','Alternador','Motor de partida','Chicote elétrico',
+    'Fusíveis e relés','Módulo/Central eletrônica','Sensor de estacionamento',
+    'Câmera de ré','Chave/Telecomando','Alarme','Diagnóstico eletrônico (scanner)']],
+
+  ['🛑 Freios', ['Pastilha de freio (dianteira)','Pastilha de freio (traseira)',
+    'Disco de freio (dianteiro)','Disco de freio (traseiro)','Lona/Sapata de freio',
+    'Tambor de freio','Cilindro de freio','Pinça de freio','Cabo do freio de mão',
+    'Freio de estacionamento elétrico','Sangria do sistema de freio','Módulo ABS']],
+
+  ['🚗 Suspensão e direção', ['Amortecedor dianteiro','Amortecedor traseiro','Mola',
+    'Batente e coifa','Bandeja/Braço de suspensão','Pivô','Bieleta','Barra estabilizadora',
+    'Bucha da suspensão','Rolamento de roda','Terminal de direção','Caixa de direção',
+    'Coluna de direção','Bomba da direção hidráulica','Homocinética/Junta','Alinhamento',
+    'Balanceamento','Cambagem','Alinhamento e balanceamento']],
+
+  ['⚙️ Transmissão', ['Embreagem (kit)','Atuador da embreagem','Câmbio automático (revisão)',
+    'Câmbio manual (revisão)','Diferencial','Semieixo','Coxim do câmbio','Cardã']],
+
+  ['❄️ Arrefecimento e climatização', ['Radiador','Ventoinha do radiador','Mangueiras do radiador',
+    'Válvula termostática','Reservatório de expansão','Ar-condicionado (recarga de gás)',
+    'Ar-condicionado (higienização)','Compressor do ar-condicionado','Condensador',
+    'Evaporador','Aquecedor/Ar quente']],
+
+  ['🛞 Pneus e rodas', ['Pneu (troca)','Pneu (reparo)','Pneu (rodízio)','Calibragem',
+    'Estepe','Roda/Aro','Calota','Parafuso e porca de roda','Sensor de pressão (TPMS)']],
+
+  ['💨 Escapamento', ['Escapamento','Catalisador','Silencioso','Coletor de escape',
+    'Sensor de escape','Filtro de partículas']],
+
+  ['🪑 Interior', ['Banco (reparo)','Banco (capa/revestimento)','Banco elétrico',
+    'Tapete/Carpete','Forro do teto','Painel','Porta-luvas','Cinto de segurança',
+    'Airbag','Volante','Manopla do câmbio','Higienização interna','Limpeza de estofados',
+    'Multimídia/Central','Alto-falante','Som/Áudio','Antena','Carregador USB',
+    'Ar-condicionado do banco','Retrovisor interno']],
+
+  ['🚙 Funilaria e vidros', ['Funilaria','Pintura','Polimento','Vitrificação','Para-choque dianteiro',
+    'Para-choque traseiro','Capô','Porta','Paralama','Tampa traseira','Retrovisor externo',
+    'Vidro (troca)','Vidro (reparo)','Para-brisa','Máquina de vidro elétrico',
+    'Borracha da porta','Fechadura','Emblema/Adesivo','Película','Martelinho de ouro']],
+
+  ['💡 Iluminação', ['Lâmpada do farol','Farol (conjunto)','Lanterna','Luz de freio',
+    'Farol de milha/Neblina','Seta/Pisca','Luz interna','Luz de placa']],
+
+  ['🧽 Limpeza e cuidados', ['Lavagem simples','Lavagem completa','Lavagem do motor',
+    'Cristalização','Enceramento','Impermeabilização','Cera/Selante']],
+
+  ['📋 Serviços e documentos', ['Inspeção técnica','Vistoria','Laudo cautelar',
+    'Guincho/Reboque','Mão de obra','Orçamento','Diagnóstico','Chaveiro',
+    'Instalação de acessório','Socorro mecânico']],
+
+  ['📝 Outro', ['Outro']]
+];
+
+/* lista plana: usada nas validações e para saber se um serviço gravado existe */
+const MANUT_SERVICOS=MANUT_GRUPOS.reduce((a,[,itens])=>a.concat(itens),[]);
 const MANUT_FORMAS=['Cartão de Crédito','Cartão de Débito','Pix','Boleto','Dinheiro','Outros'];
 const MANUT_DESTINOS=[{key:'uber',label:'🏢 Corp'},{key:'corp',label:'🚗 APP'},{key:'pessoal',label:'👤 Pessoal'}];
 const FORMA_PGTO=['Cartão de Crédito','Cartão de Débito','Dinheiro','Pix'];
@@ -9938,7 +10022,17 @@ function openManutModal(i){
   document.getElementById('manutModalBody').innerHTML=`
     <div class="field"><label>Data</label><input type="date" id="mnData" value="${r.data}"></div>
     <div class="field"><label>Serviço</label>
-      <select id="mnServico" onchange="onManutServicoChange()">${MANUT_SERVICOS.map(s=>`<option value="${s}"${s===r.servico?' selected':''}>${s}</option>`).join('')}</select>
+      <select id="mnServico" onchange="onManutServicoChange()">${
+        /* Serviço gravado que não está na lista (backup antigo, versão anterior)
+           entra como opção própria: sem isso o select cairia no primeiro item e
+           ao salvar TROCARIA o serviço sem avisar. */
+        (!r.servico||MANUT_SERVICOS.includes(r.servico) ? '' :
+          `<option value="${r.servico}" selected>${r.servico}</option>`)
+        + MANUT_GRUPOS.map(([grupo,itens])=>
+            `<optgroup label="${grupo}">`+
+            itens.map(s=>`<option value="${s}"${s===r.servico?' selected':''}>${s}</option>`).join('')+
+            `</optgroup>`).join('')
+      }</select>
     </div>
     <div class="field" id="mnOutroBox" style="display:none">
       <label>Descreva o serviço</label>
@@ -9950,7 +10044,10 @@ function openManutModal(i){
     </div>
     <label class="mn-dest-check" style="padding:4px 0 8px"><input type="checkbox" id="mnGarantia" ${r.garantia?'checked':''} onchange="onManutGarantiaChange()"> 🛡️ Serviço em garantia (concessionária) — sem custo</label>
     <div class="field" id="mnFormaBox"><label>Forma de pagamento</label>
-      <select id="mnForma">${MANUT_FORMAS.map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')}</select>
+      <select id="mnForma">${
+        (MANUT_FORMAS.includes(r.forma)||!r.forma?MANUT_FORMAS:[r.forma,...MANUT_FORMAS])
+          .map(f=>`<option value="${f}"${f===r.forma?' selected':''}>${f}</option>`).join('')
+      }</select>
     </div>
     <div id="mnRateioSection">
     <div class="modal-section-title">📍 Este gasto é de qual guia?</div>
