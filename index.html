@@ -422,6 +422,16 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   transform:translateX(18px);min-width:15px;height:15px;padding:0 3px;border-radius:99px;
   background:var(--expense);color:#fff;font-size:9.5px;font-weight:800;line-height:15px;
   text-align:center;box-shadow:0 0 0 2px var(--panel-solid)}
+.mn-tipos{display:flex;flex-direction:column;gap:7px}
+.mn-tipo{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);
+  border:1px solid var(--line);border-radius:12px}
+.mn-tipo-ic{font-size:17px;flex:none}
+.mn-tipo-tx{flex:1;min-width:0}
+.mn-tipo-n{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.mn-tipo-s{font-size:11px;color:var(--txt-faint);margin-top:2px;line-height:1.35}
+.mn-tipo-v{font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;flex:none;color:var(--expense)}
+.mn-rep{font-size:10px;font-weight:800;color:var(--hybrid);background:var(--hybrid-bg);
+  padding:2px 7px;border-radius:99px;white-space:nowrap}
 .m-parc{cursor:pointer}
 .m-parc:active{background:var(--panel)}
 .m-parc-pct{font-size:10.5px;font-weight:700;color:var(--gain);background:var(--gain-bg);
@@ -9542,15 +9552,17 @@ function saveAbastEntry(){
   if(_salvando_saveAbastEntry)return;
   _salvando_saveAbastEntry=true;
   setTimeout(()=>{_salvando_saveAbastEntry=false},1200);
+  /* trava liberada em cada saída: sem isso, cair numa validação e corrigir em
+     menos de 1,2 s fazia o salvamento seguinte ser ignorado em silêncio */
   const data=document.getElementById('abData').value;
-  if(!data){ alert('Escolha a data.'); return; }
+  if(!data){ alert('Escolha a data.'); _salvando_saveAbastEntry=false; return; }
   const g=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseNum(v); };
   const q=id=>{ const e=document.getElementById(id); if(!e)return null; const v=(e.value||'').trim(); return v===''?null:parseQtd(v); };
   const litros=q('abLitros'), precoComb=g('abPrecoComb'), kwh=q('abKwh'), precoKwh=g('abPrecoKwh');
   const valorComb=(litros||0)*(precoComb||0);   // litros × R$/L
   const valorEl=(kwh||0)*(precoKwh||0);          // kWh × R$/kWh
   const valorTotal=valorComb+valorEl;
-  if(valorTotal<=0){ alert('Informe litros e R$/L e/ou kWh e R$/kWh.'); return; }
+  if(valorTotal<=0){ alert('Informe litros e R$/L e/ou kWh e R$/kWh.'); _salvando_saveAbastEntry=false; return; }
   const entry={ data, forma:document.getElementById('abForma').value,
     litros:litros||0, precoComb:precoComb||0, valorComb:valorComb,
     kwh:kwh||0, precoKwh:precoKwh||0, valorEl:valorEl, valor:valorTotal,
@@ -9568,6 +9580,7 @@ function saveAbastEntry(){
   rows.push(entry);
   rows.sort((a,b)=>a.data.localeCompare(b.data));
   save(); closeAbastModal(); renderAbastecimento();
+  _salvando_saveAbastEntry=false;
   toast('Abastecimento salvo');
 }
 function delAbastFromModal(){ if(_abastEditIdx==null)return; delAbastEntry(_abastEditIdx); closeAbastModal(); }
@@ -9647,11 +9660,18 @@ function applyManutMirror(m){
 }
 
 let _mNavLevel='meses', _mNavYear=null;
-function mNavBack(){ _mNavLevel='meses'; renderManutencao(); }
-function mNavGoLista(key){ state.manutencao.current=key; state.manutencao.year=Number(key.slice(0,4)); _mNavLevel='lista'; save(); renderManutencao(); }
+function mNavBack(){ renderManutencao(); }
+/* tela única: escolher outro mês recarrega a mesma tela, sem navegar */
+function mNavGoLista(key){
+  state.manutencao.current=key;
+  state.manutencao.year=Number(key.slice(0,4));
+  _mNavYear=state.manutencao.year;
+  save(); renderManutencao();
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); }
+}
 function mNavSetHeader(title,showBack){
   const t=document.getElementById('manutNavTitle'); if(t)t.innerHTML=title;
-  const b=document.getElementById('manutBackBtn'); if(b)b.classList.toggle('show',!!showBack);
+  const b=document.getElementById('manutBackBtn'); if(b)b.classList.remove('show');
   const fab=document.getElementById('manutFab'); if(fab)fab.style.display=(abaAtiva()==='manutencao')?'':'none';
   const add=document.getElementById('manutAddBtn'); if(add)add.style.display=(_mNavLevel==='lista')?'':'none';
   const sp=document.getElementById('manutSpacer'); if(sp)sp.style.display=(_mNavLevel==='lista')?'none':'';
@@ -9660,51 +9680,149 @@ function renderManutencao(){
   const body=document.getElementById('manutNavBody');
   if(!body)return;
   if(_mNavYear==null)_mNavYear=state.manutencao.year||Number(state.manutencao.current.slice(0,4));
-  if(_mNavLevel==='lista')return mRenderLista();
+  /* tela única: não há mais nível de lista separado */
   return mRenderMeses();
 }
+/* ============================================================================
+   MANUTENÇÃO — TELA ÚNICA
+   ----------------------------------------------------------------------------
+   Antes: abrir a lista de meses, tocar no mês, ler uma folha, tocar em "abrir o
+   mês para editar" e só então ver os serviços. Quatro toques para chegar num
+   dado que cabe na primeira tela.
+   Agora o mês vem aberto com os serviços à vista, trocado por ‹ › no topo, e um
+   resumo por tipo de serviço mostra o que se repete no ano — que é a pergunta
+   que uma aba de manutenção existe para responder.
+   ============================================================================ */
+function mTrocarMes(dir){
+  const {y,m}=monthKeyParts(state.manutencao.current);
+  const d=new Date(y,m-1+dir,1);
+  state.manutencao.current=d.getFullYear()+'-'+pad(d.getMonth()+1);
+  state.manutencao.year=d.getFullYear();
+  _mNavYear=d.getFullYear();
+  save(); renderManutencao();
+}
+
+/* Agrupa por tipo de serviço no ano: quantas vezes, quanto custou e quando foi
+   a última. É o que responde \"troquei óleo há quanto tempo?\" sem abrir mês
+   por mês. */
+function manutPorTipo(y){
+  const mapa={};
+  for(let m=1;m<=12;m++){
+    (state.manutencao.months[`${y}-${pad(m)}`]||[]).forEach(r=>{
+      const nome=manutNome(r);
+      if(!mapa[nome]) mapa[nome]={nome,n:0,valor:0,ultima:'',meses:new Set(),garantias:0};
+      const t=mapa[nome];
+      t.n++; t.valor+=Number(r.valor)||0;
+      if(r.garantia) t.garantias++;
+      if(!t.ultima || r.data>t.ultima) t.ultima=r.data;
+      t.meses.add(m);
+    });
+  }
+  return Object.values(mapa)
+    .map(t=>({...t, mesesN:t.meses.size}))
+    .sort((a,b)=> b.n-a.n || b.valor-a.valor);
+}
+
 function mRenderMeses(){
   const years=manutYears();
   const y=_mNavYear;
   mNavSetHeader('Manutenção',false);
   const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="_mNavYear=${yy};renderManutencao()">${yy}</button>`).join('')+_btnAddAno('manut')+_btnRemoveAno(y,'manut');
-  const mStart=1;
-  let cards='';
+
   let gastoAno=0, servicosAno=0, ultimo=null;
-  for(let m=mStart;m<=12;m++){
-    const key=`${y}-${pad(m)}`;
-    const rows=state.manutencao.months[key]||[];
-    const has=rows.length>0;
+  for(let m=1;m<=12;m++){
+    const rows=state.manutencao.months[`${y}-${pad(m)}`]||[];
     const tot=monthTotalsManut(rows);
     gastoAno+=tot.valor; servicosAno+=tot.count;
-    if(has)ultimo={mes:m,tot};
-    /* mês vira linha; toque abre o modal com os serviços daquele mês */
-    if(has){
-      cards+=`<div class="a-mrow" onclick="abrirManutModal('${key}')">
-        <div class="a-mrow-l"><b>${MESES[m-1]}</b><small>${tot.count} serviço(s)</small></div>
-        <div class="a-mrow-v" style="color:var(--expense)">${fmt(tot.valor)}</div>
-        <span class="a-mrow-ar">›</span>
-      </div>`;
-    }else{
-      cards+=`<div class="a-mrow empty" onclick="abrirManutModal('${key}')">
-        <div class="a-mrow-l"><b>${MESES[m-1]}</b></div>
-        <div class="a-mrow-v">—</div>
-        <span class="a-mrow-ar">›</span>
-      </div>`;
-    }
+    if(rows.length)ultimo={mes:m,tot};
   }
+
+  /* mês em exibição, com os serviços logo abaixo */
+  const key=state.manutencao.current;
+  const rowsMes=ensureManutMonth(key);
+  const totMes=monthTotalsManut(rowsMes);
+  const {y:cy,m:cm}=monthKeyParts(key);
+
+  const servicosHtml = rowsMes.length ? rowsMes.map((r,i)=>{
+    const dests=(r.rateio||[]).filter(a=>a.valor>0).map(a=>{
+      const d=MANUT_DESTINOS.find(x=>x.key===a.destino); return d?d.label:a.destino;
+    });
+    const odo=r.odometro?` · ${fmtN(r.odometro,0)} km`:'';
+    const valHtml=r.garantia
+      ? `<span style="color:var(--gain);font-weight:700;font-size:12.5px">🛡️ Garantia</span>`
+      : `<span style="color:var(--expense)">${fmt(r.valor)}</span>`;
+    return `<div class="lc-card" style="--c:var(--expense)" onclick="openManutModal(${i})">
+      <div class="lc-tx">
+        <div class="lc-tt">🔧 ${manutNome(r)}</div>
+        <div class="lc-sb">${fmtDateBR(r.data)}${r.forma?' · '+r.forma:''}${odo}${
+          dests.length?' · '+dests.join(' · '):''}</div>
+      </div>
+      <span class="lc-val">${valHtml}</span>
+      <button class="lc-x" onclick="event.stopPropagation();delManutEntry(${i})">✕</button>
+    </div>`;
+  }).join('') : `<div class="fin-vazio">Nenhum serviço em ${MESES[cm-1].toLowerCase()}. Toque no ＋ para lançar.</div>`;
+
+  /* resumo por tipo, do ano inteiro */
+  const tipos=manutPorTipo(y);
+  const tiposHtml = tipos.length ? tipos.map(t=>{
+    const rep = t.n>1
+      ? `<span class="mn-rep">${t.n}× no ano</span>`
+      : '';
+    return `<div class="mn-tipo">
+      <span class="mn-tipo-ic">🔧</span>
+      <div class="mn-tipo-tx">
+        <div class="mn-tipo-n">${t.nome}${rep}</div>
+        <div class="mn-tipo-s">última em ${fmtDateBR(t.ultima)}${
+          t.mesesN>1?` · em ${t.mesesN} meses diferentes`:''}${
+          t.garantias>0?` · ${t.garantias} em garantia`:''}</div>
+      </div>
+      <span class="mn-tipo-v">${t.valor>0?fmt(t.valor):'—'}</span>
+    </div>`;
+  }).join('') : `<div class="fin-vazio">Nenhum serviço lançado em ${y}.</div>`;
+
+  /* lista de meses, para pular direto */
+  let meses='';
+  for(let m=1;m<=12;m++){
+    const k=`${y}-${pad(m)}`;
+    if(k===key)continue;
+    const rows=state.manutencao.months[k]||[];
+    const has=rows.length>0;
+    const tot=monthTotalsManut(rows);
+    meses+=`<div class="a-mrow${has?'':' empty'}" onclick="mNavGoLista('${k}')">
+      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${tot.count} serviço(s)</small>`:''}</div>
+      <div class="a-mrow-v"${has?' style="color:var(--expense)"':''}>${has?fmt(tot.valor):'—'}</div>
+      <span class="a-mrow-ar">›</span>
+    </div>`;
+  }
+
+  if(_secAberta['mn-tipos']===undefined)_secAberta['mn-tipos']=true;
+
   document.getElementById('manutNavBody').innerHTML=`
     <div class="yr-bar">${yearBtns}</div>
-    <div class="a-hero f-cost">
-      <div class="a-hero-k">Manutenção em ${y}</div>
-      <div class="a-hero-v" style="color:var(--expense)">${fmt(gastoAno)}</div>
-      <div class="a-hero-s">${servicosAno} serviço(s)${ultimo?` · último em ${MESES[ultimo.mes-1].toLowerCase()}`:''}</div>
+
+    <div class="u-mesbar">
+      <button class="fin-nav" onclick="mTrocarMes(-1)">‹</button>
+      <div class="fin-mes">${MESES[cm-1]} ${cy}</div>
+      <button class="fin-nav" onclick="mTrocarMes(1)">›</button>
     </div>
-    <div class="a-grid3 two">
-      <div class="a-tile f-roxo"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
+
+    <div class="a-hero f-cost">
+      <div class="a-hero-k">Gasto do mês</div>
+      <div class="a-hero-v" style="color:var(--expense)">${fmt(totMes.valor)}</div>
+      <div class="a-hero-s">${totMes.count} serviço(s) em ${MESES[cm-1].toLowerCase()}</div>
+    </div>
+
+    <div class="a-grid3">
+      <div class="a-tile f-roxo"><div class="t">Ano ${y}</div><div class="v">${fmt(gastoAno)}</div><div class="s">${servicosAno} serviço(s)</div></div>
+      <div class="a-tile f-cost"><div class="t">Média mensal</div><div class="v">${fmt(gastoAno/12)}</div></div>
       <div class="a-tile f-cost"><div class="t">Por serviço</div><div class="v">${servicosAno>0?fmt(gastoAno/servicosAno):'—'}</div></div>
     </div>
-    ${secWrap('mn-meses','Meses',`<div class="a-mlist">${cards}</div>`)}`;
+
+    <div class="lc-wrap" style="padding:12px 0 4px">${servicosHtml}</div>
+
+    ${secWrap('mn-tipos',`Serviços em ${y}${tipos.length?` · ${tipos.length} tipo(s)`:''}`,
+       `<div class="mn-tipos">${tiposHtml}</div>`)}
+    ${secWrap('mn-meses','Outros meses',`<div class="a-mlist">${meses}</div>`)}`;
 }
 
 /* ============================================================
@@ -9802,14 +9920,17 @@ function mRenderLista(){
 /* ===== MODAL: nova/editar manutenção ===== */
 let _manutEditIdx=null;
 function openManutModal(i){
-  if(i==null && _mNavLevel!=='lista'){
-    const hoje=new Date();
-    state.manutencao.current=hoje.getFullYear()+'-'+pad(hoje.getMonth()+1);
-  }
+  /* o mês em exibição é o alvo do lançamento — não força mais o mês de hoje,
+     senão lançar num mês que você abriu de propósito ia para o lugar errado */
   _manutEditIdx=(i==null?null:i);
   const key=state.manutencao.current;
   const rows=ensureManutMonth(key);
-  const r=(i!=null)?rows[i]:{data:todayStr(),servico:MANUT_SERVICOS[0],forma:'Pix',valor:0,odometro:null,rateio:[{destino:'pessoal',valor:0}]};
+  /* data padrão dentro do mês em exibição: se você está olhando março e toca no
+     ＋, o lançamento é de março. Só quando o mês em exibição é o de hoje é que a
+     data vem como hoje. */
+  const _hoje=todayStr();
+  const _dataPadrao = _hoje.slice(0,7)===key ? _hoje : (key+'-01');
+  const r=(i!=null)?rows[i]:{data:_dataPadrao,servico:MANUT_SERVICOS[0],forma:'Pix',valor:0,odometro:null,rateio:[{destino:'pessoal',valor:0}]};
   document.getElementById('manutModalTitle').textContent=(i!=null)?'✏️ Editar manutenção':'🔧 Nova manutenção';
   document.getElementById('manutDelBtn').style.display=(i!=null)?'':'none';
   // rateio atual (por destino)
@@ -9824,7 +9945,7 @@ function openManutModal(i){
       <input type="text" id="mnOutroDesc" value="${r.servicoOutro||''}" placeholder="ex.: Higienização do ar-condicionado">
     </div>
     <div class="field-row">
-      <div class="field"><label>Odômetro (opcional)</label><input inputmode="decimal" id="mnOdo" value="${r.odometro||''}" placeholder="km"></div>
+      <div class="field"><label>Odômetro (opcional)</label><input inputmode="decimal" id="mnOdo" value="${r.odometro||''}" placeholder="km" autocomplete="off" name="mnOdo_${Math.random().toString(36).slice(2,7)}"></div>
       <div class="field"><label>Valor total (R$)</label><input inputmode="decimal" id="mnValor" value="${r.garantia?'':(r.valor||'')}" oninput="onManutValorInput()" ${r.garantia?'disabled':''}></div>
     </div>
     <label class="mn-dest-check" style="padding:4px 0 8px"><input type="checkbox" id="mnGarantia" ${r.garantia?'checked':''} onchange="onManutGarantiaChange()"> 🛡️ Serviço em garantia (concessionária) — sem custo</label>
@@ -9909,30 +10030,55 @@ function onManutRateioInput(){
 }
 let _salvando_saveManutEntry=false;
 function saveManutEntry(){
-  /* mesma trava do lançamento: evita gravar duas vezes com duplo toque */
+  /* ============================================================
+     TRAVA CONTRA DUPLO TOQUE — e o bug que ela causava
+     Antes a trava ligava e só desligava por tempo (1,2 s). Quem caísse numa
+     validação ("informe o valor", "marque uma guia") e corrigisse rápido tinha
+     o segundo salvamento ENGOLIDO EM SILÊNCIO — e dois serviços lançados em
+     seguida viravam um só.
+     Agora ela é liberada em todo caminho de saída: validação, cancelamento e
+     sucesso. O tempo continua como rede de segurança para o duplo toque real.
+     ============================================================ */
   if(_salvando_saveManutEntry)return;
   _salvando_saveManutEntry=true;
   setTimeout(()=>{_salvando_saveManutEntry=false},1200);
+  const _libera=()=>{ _salvando_saveManutEntry=false; };
+
   const data=document.getElementById('mnData').value;
-  if(!data){ alert('Escolha a data.'); return; }
+  if(!data){ alert('Escolha a data.'); _libera(); return; }
   const garantia=!!document.getElementById('mnGarantia').checked;
   const valor=garantia?0:parseNum(document.getElementById('mnValor').value);
-  if(!garantia && valor<=0){ alert('Informe o valor da manutenção (ou marque "Serviço em garantia" se foi sem custo).'); return; }
+  if(!garantia && valor<=0){ alert('Informe o valor da manutenção (ou marque "Serviço em garantia" se foi sem custo).'); _libera(); return; }
   const rateio=[];
   if(!garantia){
     MANUT_DESTINOS.forEach(d=>{ const v=parseNum(document.getElementById('mnVal_'+d.key).value); if(v>0)rateio.push({destino:d.key,valor:v}); });
-    if(!rateio.length){ alert('Marque ao menos uma guia (Trabalho, Corp ou Pessoal) e informe o valor dela.'); return; }
+    if(!rateio.length){ alert('Marque ao menos uma guia (Trabalho, Corp ou Pessoal) e informe o valor dela.'); _libera(); return; }
     const somaRat=rateio.reduce((s,a)=>s+a.valor,0);
     if(Math.abs(somaRat-valor)>0.02){
-      if(!confirm(`A soma do rateio (${fmt(somaRat)}) é diferente do valor total (${fmt(valor)}).\n\nDeseja salvar assim mesmo? O que vai contar nas guias é o rateio.`))return;
+      if(!confirm(`A soma do rateio (${fmt(somaRat)}) é diferente do valor total (${fmt(valor)}).\n\nDeseja salvar assim mesmo? O que vai contar nas guias é o rateio.`)){ _libera(); return; }
     }
   }
   const servico=document.getElementById('mnServico').value;
   const servicoOutro=(document.getElementById('mnOutroDesc')?.value||'').trim();
-  if(servico==='Outro' && !servicoOutro){ alert('Descreva o serviço.'); return; }
+  if(servico==='Outro' && !servicoOutro){ alert('Descreva o serviço.'); _libera(); return; }
+
+  /* ODÔMETRO — só entra o que você digitou.
+     O campo vinha sem autocomplete, e o navegador preenchia sozinho com valor de
+     outro formulário: aparecia 2.000 km num serviço em que nada foi digitado.
+     Aqui a leitura é do que está no campo, e um número absurdo é barrado antes
+     de virar dado. */
+  const odoTxt=(document.getElementById('mnOdo')?.value||'').trim();
+  let odometro=null;
+  if(odoTxt!==''){
+    const o=parseNum(odoTxt);
+    if(!(o>0)){ alert('O odômetro precisa ser um número maior que zero — ou deixe em branco.'); _libera(); return; }
+    if(o>2000000){ alert('Odômetro parece incorreto: '+fmtN(o,0)+' km.\n\nConfira o valor.'); _libera(); return; }
+    odometro=o;
+  }
+
   const entry={ id:(_manutEditIdx!=null?ensureManutMonth(state.manutencao.current)[_manutEditIdx].id:manutId()),
     data, servico, servicoOutro:(servico==='Outro'?servicoOutro:''), forma:(garantia?'':document.getElementById('mnForma').value),
-    valor, garantia, odometro:parseNum(document.getElementById('mnOdo').value)||null, rateio };
+    valor, garantia, odometro, rateio };
 
   // remove o antigo (e seu espelho) se for edição
   const oldKey=state.manutencao.current;
@@ -9949,6 +10095,8 @@ function saveManutEntry(){
   applyManutMirror(entry);   // gera as saídas nas guias de destino
   save(); closeManutModal();
   renderManutencao(); renderUber(); renderPessoal();
+  _salvando_saveManutEntry=false;   /* liberado já: dois serviços seguidos são
+                                       normais, e esperar 1,2 s perdia o segundo */
   toast('Manutenção salva');
 }
 function delManutFromModal(){ if(_manutEditIdx==null)return; delManutEntry(_manutEditIdx); closeManutModal(); }
