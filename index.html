@@ -3031,6 +3031,13 @@ function load(){
 function save(){localStorage.setItem(KEY,JSON.stringify(state));scheduleCloudSync();}
 
 /* ============ Tabs ============ */
+/* Qual aba está visível agora. Serve para o botão flutuante (+) de cada aba só
+   aparecer quando ela é a aba ativa. */
+function abaAtiva(){
+  const v=document.querySelector('.view.active');
+  return v ? v.id.replace('view-','') : '';
+}
+
 function activateTab(tab){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
@@ -4478,7 +4485,10 @@ function uNavSetHeader(title,showBack){
   /* tela única: não há nível anterior, então o botão voltar nunca aparece */
   const b=document.getElementById('uBackBtn'); if(b)b.classList.remove('show');
   /* o + agora é o botão flutuante do rodapé, igual a Abastecimento e Manutenção */
-  const fab=document.getElementById('uberFab'); if(fab)fab.style.display='';
+  /* só aparece na própria aba: ao salvar um lançamento o app redesenha todas as
+     telas, e sem esta guarda o + de uma aba surgia por cima da outra — daí o +
+     da Manutenção abrir o formulário de deslocamento. */
+  const fab=document.getElementById('uberFab'); if(fab)fab.style.display=(abaAtiva()==='uber')?'':'none';
 }
 function renderUberMobile(){
   const body=document.getElementById('uNavBody');
@@ -8830,7 +8840,7 @@ function pNavGoDias(key){ resetSecoes(); state.pessoal.current=key; state.pessoa
 function pNavSetHeader(title,showBack){
   const t=document.getElementById('pNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('pBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display='';
+  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display=(abaAtiva()==='pessoal')?'':'none';
 }
 function renderPessoalMobile(){
   const body=document.getElementById('pNavBody');
@@ -9174,7 +9184,7 @@ function abNavSetHeader(title,showBack){
   /* o + some quando a tela não é a lista de um mês — mas depois que os meses
      viraram lista suspensa, a tela inicial deixou de ser 'lista' e o botão nunca
      mais aparecia. Agora vale nos dois níveis: no de meses, lança no mês atual. */
-  const fab=document.getElementById('abastFab'); if(fab)fab.style.display='';
+  const fab=document.getElementById('abastFab'); if(fab)fab.style.display=(abaAtiva()==='abastecimento')?'':'none';
   // botão desktop aparece tanto na lista de um mês quanto na tela de meses (add direto)
   const addD=document.getElementById('abastAddDesktop'); if(addD)addD.style.display=(_abNavLevel==='lista'||_abNavLevel==='meses')?'':'none';
 }
@@ -9642,7 +9652,7 @@ function mNavGoLista(key){ state.manutencao.current=key; state.manutencao.year=N
 function mNavSetHeader(title,showBack){
   const t=document.getElementById('manutNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('manutBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('manutFab'); if(fab)fab.style.display='';
+  const fab=document.getElementById('manutFab'); if(fab)fab.style.display=(abaAtiva()==='manutencao')?'':'none';
   const add=document.getElementById('manutAddBtn'); if(add)add.style.display=(_mNavLevel==='lista')?'':'none';
   const sp=document.getElementById('manutSpacer'); if(sp)sp.style.display=(_mNavLevel==='lista')?'none':'';
 }
