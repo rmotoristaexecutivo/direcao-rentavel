@@ -422,6 +422,9 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   transform:translateX(18px);min-width:15px;height:15px;padding:0 3px;border-radius:99px;
   background:var(--expense);color:#fff;font-size:9.5px;font-weight:800;line-height:15px;
   text-align:center;box-shadow:0 0 0 2px var(--panel-solid)}
+@keyframes ggPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,144,250,.55)}50%{box-shadow:0 0 0 7px rgba(46,144,250,0)}}
+.gg-destaque{animation:ggPulse 1.1s ease-out 4;border-color:var(--neutral)!important;
+  color:var(--neutral)!important;font-weight:800}
 .mn-tipos{display:flex;flex-direction:column;gap:7px}
 .mn-tipo{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);
   border:1px solid var(--line);border-radius:12px}
@@ -2046,6 +2049,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       <span style="font-weight:700">G</span>&nbsp; Entrar com Google
     </button>
 
+    <p class="login-msg" id="authMetodoDica" style="display:none;color:var(--neutral)"></p>
     <p class="login-msg" id="authMsg"></p>
     </div><!-- /authFormBox -->
 
@@ -4370,7 +4374,11 @@ function monthTotals(rows){
     tot.uber+=r.uber||0;tot.g99+=r.g99||0;tot.indriver+=r.indriver||0;tot.part+=r.part||0;tot.ifood+=r.ifood||0;tot.shopee+=r.shopee||0;tot.mercadoLivre+=r.mercadoLivre||0;tot.lalamove+=r.lalamove||0;tot.despesa+=c.despesa;tot.ganho+=c.ganho;tot.lucro+=c.lucro;});
   return tot;
 }
-const _opt=(val)=>`<option value="comb"${val!=='el'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option>`;
+/* Os três modos que o cálculo já entende (ver trechoCalc): combustível, elétrico
+   e misto — trecho que usou os dois, comum em híbrido. O misto estava só nas
+   folhas do celular; aqui na tabela ele não aparecia, e quem usa o desktop não
+   conseguia marcar. */
+const _opt=(val)=>`<option value="comb"${val!=='el'&&val!=='misto'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option><option value="misto"${val==='misto'?' selected':''}>🔀 misto</option>`;
 const _inp=(i,f,v)=>`<input class="cell-in" inputmode="decimal" value="${v||0}" onchange="updateCell(${i},'${f}',this.value)">`;
 // variante em branco (sem "0") quando o valor é zero — usada no trecho vazio
 const _inpBlank=(i,f,v)=>`<input class="cell-in cell-blank" inputmode="decimal" value="${v||''}" placeholder="-" onchange="updateCell(${i},'${f}',this.value)">`;
@@ -6409,8 +6417,9 @@ function renderEditLancSheet(kind,it,data){
         <div class="m-field-row">
           <div class="m-field"><label>Tipo</label>
             <select id="elCombTipo" onchange="onEditCombInput('tipo')">
-              <option value="comb"${tipo!=='el'?' selected':''}>⛽ Combustível</option>
+              <option value="comb"${tipo!=='el'&&tipo!=='misto'?' selected':''}>⛽ Combustível</option>
               <option value="el"${tipo==='el'?' selected':''}>⚡ Elétrico</option>
+              <option value="misto"${tipo==='misto'?' selected':''}>🔀 Misto (os dois)</option>
             </select>
           </div>
           <div class="m-field"><label>KM</label><input id="elCombKm" inputmode="decimal" placeholder="0" value="${vzn(it.km,2)}" oninput="onEditCombInput('km')"></div>
@@ -6420,6 +6429,14 @@ function renderEditLancSheet(kind,it,data){
           <div class="m-field"><label id="elCombQtdaLabel">${tipo==='el'?'Qtda (kWh)':'Qtda (litros)'}</label><input id="elCombQtda" inputmode="decimal" placeholder="0" value="${vzn(it.qtda,2)}" oninput="onEditCombInput('qtda')"></div>
         </div>
         <div class="m-field"><label id="elCombValorLabel">${tipo==='el'?'Valor por kWh (R$)':'Valor por litro (R$)'}</label><input id="elCombValorUnit" inputmode="decimal" value="${fmtN(it.valorUnit||(tipo==='el'?(cf.tarifa||0.95):(cf.preco||6)),2)}" oninput="onEditCombInput('valor')"></div>
+        <div id="elCombElBox" style="display:${tipo==='misto'?'':'none'}">
+          <div class="m-field-row">
+            <div class="m-field"><label>kWh</label>
+              <input id="elCombQtdaEl" inputmode="decimal" value="${it.qtdaEl?vzn(it.qtdaEl,2):''}" placeholder="0,00" oninput="onEditCombInput('qtdaEl')"></div>
+            <div class="m-field"><label>Valor por kWh (R$)</label>
+              <input id="elCombValorUnitEl" inputmode="decimal" value="${it.valorUnitEl?vzn(it.valorUnitEl,2):''}" placeholder="0,00" oninput="onEditCombInput('valorEl')"></div>
+          </div>
+        </div>
         <div class="m-field"><label>Total (automático)</label><input id="elCombTotal" readonly tabindex="-1" value="${fmt(it.valor||0)}" style="opacity:.85"></div>
       </div>
       <div class="m-field" id="elValorBox" style="display:${isComb?'none':''}"><label>Valor (R$)</label><input id="elValor" inputmode="decimal" placeholder="0,00" value="${vzn(it.valor,2)}"></div>
@@ -6481,9 +6498,14 @@ function onEditCombInput(field){
       else { const rendUse=rend||cf.kmL; document.getElementById('elCombQtda').value=fmtN(r2(rendUse>0?km/rendUse:0),2); }
     }
   }
+  const ehMisto=(tipo==='misto');
+  const boxEl=document.getElementById('elCombElBox');
+  if(boxEl) boxEl.style.display = ehMisto?'':'none';
   const qtda=parseQtd(document.getElementById('elCombQtda').value);
   const valorUnit=parseNum(document.getElementById('elCombValorUnit').value);
-  document.getElementById('elCombTotal').value=fmt(qtda*valorUnit);
+  const qEl = ehMisto ? parseQtd((document.getElementById('elCombQtdaEl')||{}).value) : 0;
+  const uEl = ehMisto ? parseNum((document.getElementById('elCombValorUnitEl')||{}).value) : 0;
+  document.getElementById('elCombTotal').value=fmt(qtda*valorUnit + qEl*uEl);
 }
 function closeEditLanc(fromBack){ document.getElementById('editLancOverlay').classList.remove('open'); _editLanc=null; if(!fromBack)navPop(); }
 function onEditLancAppChange(){
@@ -6524,11 +6546,16 @@ function saveEditLanc(){
     it.categoria=g('elCat'); it.forma=g('elForma'); it.obs=g('elObs');
     if(it.categoria==='Combustível'){
       it.tipo=g('elCombTipo'); it.km=v('elCombKm'); it.rend=v('elCombRend');
-      it.qtda=v('elCombQtda'); it.valorUnit=v('elCombValorUnit');
-      it.valor=it.qtda*it.valorUnit;
+      it.qtda=parseQtd(g('elCombQtda')); it.valorUnit=v('elCombValorUnit');
+      /* misto: guarda o par elétrico e soma os dois no total */
+      if(it.tipo==='misto'){
+        it.qtdaEl=parseQtd(g('elCombQtdaEl')); it.valorUnitEl=v('elCombValorUnitEl');
+      } else { delete it.qtdaEl; delete it.valorUnitEl; }
+      it.valor=it.qtda*it.valorUnit + (Number(it.qtdaEl)||0)*(Number(it.valorUnitEl)||0);
     } else {
       it.valor=v('elValor');
       delete it.tipo; delete it.km; delete it.rend; delete it.qtda; delete it.valorUnit;
+      delete it.qtdaEl; delete it.valorUnitEl;
     }
   }
   /* ===== MUDANÇA DE DATA =====
@@ -6801,6 +6828,7 @@ function onCategoriaChange(){
         <select id="mCombTipo" onchange="onCombFieldsInput('tipo')">
           <option value="comb">⛽ Combustível</option>
           <option value="el">⚡ Elétrico</option>
+          <option value="misto">🔀 Misto (os dois)</option>
         </select>
       </div>
       <div class="field"><label>KM rodado</label><input id="mCombKm" inputmode="decimal" placeholder="0" value="" oninput="onCombFieldsInput('km')"></div>
@@ -6809,7 +6837,13 @@ function onCategoriaChange(){
       <div class="field" id="mCombRendLabel"><label>Rendimento (km/l)</label><input id="mCombRend" inputmode="decimal" value="${fmtN(cf.kmL,2)}" oninput="onCombFieldsInput('rend')"></div>
       <div class="field"><label id="mCombQtdaLabel">Qtda (litros)</label><input id="mCombQtda" inputmode="decimal" placeholder="0" value="" oninput="onCombFieldsInput('qtda')"></div>
     </div>
-    <div class="field"><label id="mCombValorLabel">Valor por litro (R$)</label><input id="mCombValorUnit" inputmode="decimal" value="${fmtN(cf.preco||6.0,2)}" oninput="onCombFieldsInput('valor')"></div>
+        <div id="mCombElBox" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>kWh</label><input id="mCombQtdaEl" inputmode="decimal" placeholder="0" value="" oninput="onCombFieldsInput('qtdaEl')"></div>
+        <div class="field"><label>Valor por kWh (R$)</label><input id="mCombValorUnitEl" inputmode="decimal" placeholder="0,00" value="" oninput="onCombFieldsInput('valorEl')"></div>
+      </div>
+    </div>
+<div class="field"><label id="mCombValorLabel">Valor por litro (R$)</label><input id="mCombValorUnit" inputmode="decimal" value="${fmtN(cf.preco||6.0,2)}" oninput="onCombFieldsInput('valor')"></div>
     <div class="field"><label>Total (automático)</label><input id="mCombTotal" readonly tabindex="-1" value="R$ 0,00" style="color:var(--electric);font-weight:700"></div>`;
   window._lastCombTipo='comb';
   onCombFieldsInput('tipo');
@@ -6820,6 +6854,12 @@ function onCombFieldsInput(field){
   const cf=state.uber.config||{kwhKm:0.18,kmL:20,bateriaKwh:18.3};
   const r2=x=>Math.round(x*100)/100;
   // ao trocar tipo, sugere o valor unitário padrão correspondente
+  /* no misto o primeiro par é sempre o combustível — deixar "Qtda (litros)"
+     genérico faria a pessoa não saber onde entra cada coisa */
+  if(tipo==='misto'){
+    const ql=document.getElementById('mCombQtdaLabel'); if(ql)ql.textContent='Litros (parte a combustível)';
+    const vl=document.getElementById('mCombValorLabel'); if(vl)vl.textContent='Valor por litro (R$)';
+  }
   if(tipo!==window._lastCombTipo){
     document.getElementById('mCombValorUnit').value=fmtN(tipo==='el'?(cf.tarifa||0.95):(cf.preco||6.0),2);
     if(tipo!=='el')document.getElementById('mCombRend').value=fmtN(cf.kmL,2);
@@ -6855,9 +6895,17 @@ function onCombFieldsInput(field){
       else { const rendUse=rend||cf.kmL; document.getElementById('mCombQtda').value=fmtN(r2(rendUse>0?km/rendUse:0),2); }
     }
   }
+  /* MISTO: o total soma os dois lados. O bloco elétrico só aparece nesse modo,
+     no mesmo formato que trechoCalc usa nas outras abas. */
+  const ehMisto=(tipo==='misto');
+  const boxEl=document.getElementById('mCombElBox');
+  if(boxEl) boxEl.style.display = ehMisto?'':'none';
+
   const qtda=parseQtd(document.getElementById('mCombQtda').value);
   const valorUnit=parseNum(document.getElementById('mCombValorUnit').value);
-  document.getElementById('mCombTotal').value=fmt(qtda*valorUnit);
+  const qEl = ehMisto ? parseQtd((document.getElementById('mCombQtdaEl')||{}).value) : 0;
+  const uEl = ehMisto ? parseNum((document.getElementById('mCombValorUnitEl')||{}).value) : 0;
+  document.getElementById('mCombTotal').value=fmt(qtda*valorUnit + qEl*uEl);
 }
 function addPendingSaida(){
   const cat=document.getElementById('mCategoria').value;
@@ -6867,11 +6915,15 @@ function addPendingSaida(){
     const rend=parseNum(document.getElementById('mCombRend').value);
     const qtda=parseQtd(document.getElementById('mCombQtda').value);
     const valorUnit=parseNum(document.getElementById('mCombValorUnit').value);
-    const valor=qtda*valorUnit;
+    /* misto: guarda também o par elétrico, no mesmo formato das outras abas */
+    const qtdaEl=(tipo==='misto')?parseQtd((document.getElementById('mCombQtdaEl')||{}).value):0;
+    const valorUnitEl=(tipo==='misto')?parseNum((document.getElementById('mCombValorUnitEl')||{}).value):0;
+    const valor=qtda*valorUnit + qtdaEl*valorUnitEl;
     if(valor<=0){ alert('Informe o KM/Qtda e o valor por unidade.'); return; }
-    _pendingItems.push({ categoria:'Combustível', forma:document.getElementById('mForma').value, valor, obs:document.getElementById('mObs').value||'', tipo, km, rend, qtda, valorUnit });
+    _pendingItems.push({ categoria:'Combustível', forma:document.getElementById('mForma').value, valor, obs:document.getElementById('mObs').value||'', tipo, km, rend, qtda, valorUnit, qtdaEl, valorUnitEl });
     document.getElementById('mCombKm').value='0';
     document.getElementById('mCombQtda').value='0';
+    const _qe=document.getElementById('mCombQtdaEl'); if(_qe)_qe.value='';
     document.getElementById('mObs').value='';
     onCombFieldsInput('km');
     refreshPendingList();
@@ -7348,7 +7400,7 @@ function monthTotalsP(rows){
     tot.pedagioTotal+=c.pedagioTotal;tot.kwh+=c.kwh;tot.litros+=c.litros;tot.elVal+=c.elVal;tot.combVal+=c.combVal;tot.gastoDia+=c.gastoDia;});
   return tot;
 }
-const _optP=(val)=>`<option value="comb"${val!=='el'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option>`;
+const _optP=(val)=>`<option value="comb"${val!=='el'&&val!=='misto'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option><option value="misto"${val==='misto'?' selected':''}>🔀 misto</option>`;
 const _inpP=(i,f,v)=>`<input class="cell-in" inputmode="decimal" value="${v||0}" onchange="updatePessoalCell(${i},'${f}',this.value)">`;
 // variante que fica em branco (sem "0") quando o valor é zero/vazio — usada no trecho vazio
 const _inpBlankP=(i,f,v)=>`<input class="cell-in cell-blank" inputmode="decimal" value="${v||''}" placeholder="-" onchange="updatePessoalCell(${i},'${f}',this.value)">`;
@@ -8049,7 +8101,12 @@ function renderFinLista(){
       const stCor={pago:'var(--gain)',vencida:'var(--expense)',proxima:'var(--hybrid)',aberta:'var(--txt-faint)'}[st];
       const stTxt={pago:'pago',vencida:'vencida',proxima:'vence em breve',aberta:'em aberto'}[st];
       const parc=l.parcelas>1?` · ${l.parcela}/${l.parcelas}`:'';
-      const combTx = l.comb ? ` · ${fmtN(l.comb.km,0)} km · ${fmtN(l.comb.qtda,2)} ${l.comb.tipo==='el'?'kWh':'L'}` : '';
+      const combTx = l.comb
+        ? ` · ${fmtN(l.comb.km,0)} km · ` + (
+            l.comb.tipo==='misto'
+              ? `${fmtN(l.comb.qtda,2)} L + ${fmtN(l.comb.qtdaEl||0,2)} kWh`
+              : `${fmtN(l.comb.qtda,2)} ${l.comb.tipo==='el'?'kWh':'L'}`)
+        : '';
       return `<div class="lc-card fin-card" style="--c:${c?c.cor:'var(--txt-dim)'}">
         <button class="fin-chk ${l.efetivada?'on':''}" title="${l.efetivada?'Marcar como não paga':'Marcar como paga'}"
                 onclick="event.stopPropagation();finAlternarEfetiva('${l.id}')">${l.efetivada?'✓':''}</button>
@@ -8167,11 +8224,13 @@ function renderLancFinForm(l){
         <div class="a-mfields">
           <div class="a-mfield"><label>Tipo</label>
             <select id="flCombTipo" onchange="onFinCombInput()">
-              <option value="comb"${l&&l.comb&&l.comb.tipo==='el'?'':' selected'}>⛽ Combustível</option>
+              <option value="comb"${!l||!l.comb||(l.comb.tipo!=='el'&&l.comb.tipo!=='misto')?' selected':''}>⛽ Combustível</option>
               <option value="el"${l&&l.comb&&l.comb.tipo==='el'?' selected':''}>⚡ Elétrico</option>
+              <option value="misto"${l&&l.comb&&l.comb.tipo==='misto'?' selected':''}>🔀 Misto (os dois)</option>
             </select></div>
           <div class="a-mfield"><label>KM rodados</label>
-            <input id="flCombKm" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.km,1):''}" placeholder="0"></div>
+            <input id="flCombKm" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.km,1):''}" placeholder="0"
+                   oninput="onFinCombInput()"></div>
         </div>
         <div class="a-mfields" style="margin-top:10px">
           <div class="a-mfield"><label id="flCombQtdaLbl">Litros</label>
@@ -8181,6 +8240,21 @@ function renderLancFinForm(l){
             <input id="flCombUnit" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.valorUnit,2):''}"
                    placeholder="0,00" oninput="onFinCombInput()"></div>
         </div>
+        <div id="flCombElBox" style="display:none">
+          <div class="fin-sec" style="margin-top:12px">⚡ Parte elétrica</div>
+          <div class="a-mfields">
+            <div class="a-mfield"><label>kWh</label>
+              <input id="flCombQtdaEl" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.qtdaEl,2):''}"
+                     placeholder="0,00" oninput="onFinCombInput()"></div>
+            <div class="a-mfield"><label>Preço por kWh</label>
+              <input id="flCombUnitEl" inputmode="decimal" value="${l&&l.comb?vzn(l.comb.valorUnitEl,2):''}"
+                     placeholder="0,00" oninput="onFinCombInput()"></div>
+          </div>
+        </div>
+
+        <div class="a-mfield" style="margin-top:10px" id="flCombMediaBox">
+          <label id="flCombMediaLbl">Média km/l (automático)</label>
+          <input id="flCombMedia" value="" readonly></div>
         <p class="fin-hint">O valor é calculado: quantidade × preço.</p>
       </div>
 
@@ -8516,11 +8590,42 @@ function onFinCombInput(){
   const u=parseNum((document.getElementById('flCombUnit')||{}).value);
   const val=document.getElementById('flValor');
   if(!val)return;
-  /* Só escreve no campo quando há o que calcular. Antes ele preenchia "0,00"
-     sempre — e como o campo fica à espera de digitação, o próximo número era
-     ANEXADO ao zero: digitar 200 virava 0,00200. */
-  if(q>0 && u>0) val.value=fmtN(Math.round(q*u*100)/100,2);
+
+  /* MISTO: o mesmo trecho usou os dois. Um par de campos guarda o combustível e
+     outro o elétrico — é o mesmo formato que trechoCalc já usa nas outras abas,
+     então o dado fica consistente no app inteiro. */
+  const ehMisto = (t==='misto');
+  const boxEl=document.getElementById('flCombElBox');
+  if(boxEl) boxEl.style.display = ehMisto?'':'none';
+  const qEl = ehMisto ? parseQtd((document.getElementById('flCombQtdaEl')||{}).value) : 0;
+  const uEl = ehMisto ? parseNum((document.getElementById('flCombUnitEl')||{}).value) : 0;
+
+  const totalComb = (q>0&&u>0) ? q*u : 0;
+  const totalEl   = (qEl>0&&uEl>0) ? qEl*uEl : 0;
+  const total = totalComb+totalEl;
+  if(total>0) val.value=fmtN(Math.round(total*100)/100,2);
   else if(!val.value || parseNum(val.value)===0) val.value='';
+
+  /* Média de consumo: some da aba Pessoal antiga quando o módulo de finanças
+     assumiu, e é justamente o número que interessa a quem lança abastecimento —
+     saber se o carro está rendendo. km ÷ litros, ou km ÷ kWh no elétrico. */
+  const km=parseQtd((document.getElementById('flCombKm')||{}).value);
+  const med=document.getElementById('flCombMedia');
+  const lblMed=document.getElementById('flCombMediaLbl');   /* nome próprio: 'lbl' já é o rótulo da quantidade acima */
+  if(lblMed) lblMed.textContent = ehMisto ? 'Consumo do trecho (automático)'
+                                 : (t==='el' ? 'Média km/kWh (automático)' : 'Média km/l (automático)');
+  if(med){
+    if(ehMisto){
+      /* no misto não existe uma média só: mostra as duas, cada uma sobre o
+         combustível que a produziu */
+      const partes=[];
+      if(q>0)   partes.push(fmtN(km/q,2)+' km/l');
+      if(qEl>0) partes.push(fmtN(km/qEl,2)+' km/kWh');
+      med.value = (km>0 && partes.length) ? partes.join('  ·  ') : '';
+    } else {
+      med.value = (km>0 && q>0) ? fmtN(km/q,2)+(t==='el'?' km/kWh':' km/l') : '';
+    }
+  }
 }
 
 function salvarLancFin(){
@@ -8546,7 +8651,8 @@ function salvarLancFin(){
   };
   if(cat && cat.form==='combustivel'){
     base.comb={tipo:g('flCombTipo')||'comb', km:n('flCombKm'),
-               qtda:parseQtd(g('flCombQtda')), valorUnit:n('flCombUnit')};
+               qtda:parseQtd(g('flCombQtda')), valorUnit:n('flCombUnit'),
+               qtdaEl:parseQtd(g('flCombQtdaEl')), valorUnitEl:n('flCombUnitEl')};
   }
   /* dividido: as partes definem o valor, e a categoria principal vira a de maior
      peso — assim lista e filtros continuam tendo uma categoria para exibir */
@@ -8734,8 +8840,12 @@ function finMigrarPessoal(silencioso){
             valor:Math.round(custo*100)/100,
             dataLanc:r.data, venc:r.data,
             efetivada:true, dataEfet:r.data,
-            comb:{tipo: tipo==='el'?'el':'comb', km:Number(km)||0,
-                  qtda:Number(qtda)||0, valorUnit:Number(unit)||0},
+            /* preserva o modo original: a aba antiga já registrava trechos mistos,
+               e reduzi-los a 'comb' perderia a parte elétrica */
+            comb:{tipo: (tipo==='el'||tipo==='misto')?tipo:'comb', km:Number(km)||0,
+                  qtda:Number(qtda)||0, valorUnit:Number(unit)||0,
+                  qtdaEl:Number(lado==='ida'?r.qtdaIdaEl:r.qtdaVoltaEl)||0,
+                  valorUnitEl:Number(lado==='ida'?r.valorIdaEl:r.valorVoltaEl)||0},
             migrado:true
           });
           criados++;
@@ -12514,7 +12624,11 @@ function traduzErroAuth(e){
   if(cod==='user_already_exists'||m.includes('already registered')||m.includes('already been registered')||m.includes('user already'))
     return 'Esse e-mail já tem conta. Clique em "Entrar" — ou em "Esqueci minha senha" se não lembrar.';
   if(cod==='invalid_credentials'||m.includes('invalid login'))
-    return 'E-mail ou senha incorretos. Se ainda não tem conta, clique em "Criar conta".';
+    /* O Supabase devolve o mesmo erro para senha errada e para conta que existe
+       mas foi criada pelo Google — por segurança, ele não revela qual é o caso.
+       Quem entrou com o Google NÃO TEM SENHA, e lia "senha incorreta" tentando
+       adivinhar uma senha que nunca criou. A mensagem agora cita as duas saídas. */
+    return 'Não entrou. Se você criou a conta com o Google, use o botão "Entrar com Google" aqui embaixo. Se criou com senha, confira os dados ou use "Esqueci minha senha".';
   if(cod==='email_not_confirmed'||m.includes('not confirmed'))
     return 'Falta confirmar seu e-mail. Procure a mensagem na caixa de entrada e no spam.';
   if(cod==='email_address_invalid'||m.includes('unable to validate email')||m.includes('invalid format')||m.includes('email address')&&m.includes('invalid'))
@@ -12595,7 +12709,26 @@ function aoMarcarSenha(){
   salvarPrefsLogin();
 }
 
+/* Aviso do método usado da última vez neste aparelho.
+   Não bloqueia nada: quem quiser entrar do outro jeito continua podendo. */
+function avisarMetodoLogin(){
+  let met=null;
+  try{ met=localStorage.getItem('cv_login_metodo'); }catch(e){}
+  const el=document.getElementById('authMetodoDica');
+  if(!el)return;
+  if(met==='google'){
+    el.innerHTML='Da última vez você entrou com o <b>Google</b> — use o botão abaixo.';
+    el.style.display='';
+  } else if(met==='senha'){
+    el.innerHTML='Da última vez você entrou com <b>e-mail e senha</b>.';
+    el.style.display='';
+  } else {
+    el.style.display='none';
+  }
+}
+
 function carregarPrefsLogin(){
+  try{ avisarMetodoLogin(); }catch(e){}
   try{
     const flags=JSON.parse(localStorage.getItem(PREF_FLAGS)||'{}');
     const cE=document.getElementById('lembrarEmail'), cS=document.getElementById('lembrarSenha');
@@ -12652,7 +12785,23 @@ async function emailSignIn(){
   }catch(e){
     authMsg(traduzErroAuth(e));
     authBusy(false,'authEntrarBtn');
+    /* chama atenção para o caminho que resolve na maioria das vezes: a pessoa
+       criou a conta com o Google e está tentando uma senha que não existe */
+    const cod=((e&&(e.code||e.error_code))||'').toString().toLowerCase();
+    const msg=((e&&e.message)||'').toLowerCase();
+    if(cod==='invalid_credentials'||msg.includes('invalid login')) destacarBotaoGoogle();
   }
+}
+
+/* Pisca o botão do Google por alguns segundos. Não muda nada no fluxo — só
+   direciona o olho de quem está travado na tela de login. */
+function destacarBotaoGoogle(){
+  const b=document.getElementById('btnGoogleAuthTop')||document.querySelector('#authFormBox .btn[onclick*="signInWithGoogle"]');
+  if(!b)return;
+  b.classList.add('gg-destaque');
+  try{ b.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(e){}
+  clearTimeout(window._ggT);
+  window._ggT=setTimeout(()=>b.classList.remove('gg-destaque'), 6000);
 }
 
 async function emailSignUp(){
@@ -12783,6 +12932,13 @@ async function adoptAuthSyncKey(user){
   updateAuthUI();
   /* guarda o e-mail para o login_hint da próxima vez (ver signInWithGoogle) */
   try{ if(user && user.email) localStorage.setItem(PREF_GOOGLE_EMAIL,user.email); }catch(e){}
+  /* Registra COMO a pessoa entrou. Quem cria a conta pelo Google não tem senha,
+     e voltava à tela de login tentando adivinhar uma. Na próxima vez, a tela
+     avisa qual botão usar antes de ela errar. */
+  try{
+    const prov=(user&&user.app_metadata&&user.app_metadata.provider)||'';
+    if(prov) localStorage.setItem('cv_login_metodo', prov==='email'?'senha':'google');
+  }catch(e){}
   const newRaw=authKeyFor(user);
   let cur=null;
   try{ cur=localStorage.getItem('cv_synckey_raw'); }catch(e){}
