@@ -338,6 +338,11 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   font-size:12px;padding:8px 13px;border-radius:9px;cursor:pointer}
 .fin-visao{background:var(--bg2);border:1px solid var(--line);border-radius:14px;
   overflow:hidden;margin-bottom:12px}
+.fin-visao-h{display:flex;width:100%;align-items:center;justify-content:space-between;
+  background:transparent;border:0;padding:12px 13px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-size:13px;font-weight:700;color:var(--txt)}
+.fin-visao-h i{font-style:normal;color:var(--txt-faint);font-size:11px}
+.fin-visao.fechada .fin-vrow{display:none}
 .fin-vrow{display:flex;align-items:center;gap:11px;padding:12px 13px;cursor:pointer;
   border-bottom:1px solid var(--line)}
 .fin-vrow:last-child{border-bottom:0}
@@ -7981,6 +7986,9 @@ function _somarMeses(iso,n){
 /* ============================================================================
    TELA DAS FINANÇAS
    ============================================================================ */
+let _finVisaoAberta=false;   /* recolhido por padrão: os números que importam já
+                                estão nos três saldos do topo */
+function finToggleVisao(){ _finVisaoAberta=!_finVisaoAberta; renderFinancas(); }
 let _finAba='saida';                 // lista em exibição
 let _finFiltro='todas';              // filtro de situação
 
@@ -8025,7 +8033,11 @@ function renderFinancas(){
         <button class="fin-alerta-btn">Verificar</button>
       </div>`:''}
 
-    <div class="fin-visao">
+    <div class="fin-visao${_finVisaoAberta?'':' fechada'}">
+      <button class="fin-visao-h" onclick="finToggleVisao()">
+        <span>Receitas e despesas</span>
+        <i>${_finVisaoAberta?'▲':'▼'}</i>
+      </button>
       <div class="fin-vrow" onclick="finAbrirAba('entrada')">
         <span class="fin-vic" style="background:var(--gain-bg);color:var(--gain)">＋</span>
         <span class="fin-vtx"><b>Receitas</b><i>previsto ${fmt(s.receitaPrev)}</i></span>
@@ -9044,7 +9056,11 @@ function pNavGoDias(key){ resetSecoes(); state.pessoal.current=key; state.pessoa
 function pNavSetHeader(title,showBack){
   const t=document.getElementById('pNavTitle'); if(t)t.innerHTML=title;
   const b=document.getElementById('pBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display=(abaAtiva()==='pessoal')?'':'none';
+  /* O botão flutuante da aba Pessoal foi aposentado: a tela de Finanças tem
+     "+ Receita" e "− Despesa" próprios, e este ＋ ainda abria o formulário
+     ANTIGO de deslocamento (ida/volta) — dois lançamentos diferentes no mesmo
+     gesto. Fica oculto sempre. */
+  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display='none';
 }
 function renderPessoalMobile(){
   const body=document.getElementById('pNavBody');
