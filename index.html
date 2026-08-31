@@ -5988,11 +5988,21 @@ function renderMetaDia(){
   const hoje=new Date();
   const dataTxt=`${pad(hoje.getDate())}/${pad(hoje.getMonth()+1)}`;
 
+  /* O card misturava dois meses: "Ganhar hoje" olhava sempre a data de HOJE,
+     enquanto "Meta do mês" seguia o mês que você está navegando. Navegando
+     setembro, aparecia o realizado de 31/08 ao lado da meta de setembro — e o
+     ganho vinha zerado porque os lançamentos de setembro não entram numa linha
+     que só enxerga hoje.
+     Fora do mês corrente, a linha do dia não faz sentido e sai. */
+  const mesCorrente = (hoje.getFullYear()+'-'+pad(hoje.getMonth()+1));
+  const noMesDeHoje = (state.uber.current===mesCorrente);
+  const tituloCard = noMesDeHoje ? `Metas · ${dataTxt}` : `Metas · ${monthLabel()}`;
+
   el.innerHTML=`
   <div class="a-card md-card${estourou?' md-alerta':(bateu?' md-ok':'')}">
     <h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
       <button class="md-exp" onclick="toggleMetaCal()">
-        <span>Metas · ${dataTxt}</span>
+        <span>${tituloCard}</span>
         <i>${_metaCalAberto?'▲':'▼'}</i>
       </button>
       <button class="md-edit" onclick="abrirMetaDiaModal()">ajustar</button>
@@ -6003,7 +6013,7 @@ function renderMetaDia(){
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
               onclick="abrirMetaDiaModal()">Definir metas do dia</button>
     </div>${metaMesBloco()}${kmFranquiaBloco()}${_metaCalAberto?metaCalendarioHtml():''}`:`
-      ${m.ganho>0?`<div class="md-linha">
+      ${(noMesDeHoje&&m.ganho>0)?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Ganhar hoje</span>
           <span class="md-val" style="color:var(--gain)">${fmt(t.ganho)} <i>/ ${fmt(m.ganho)}</i></span>
@@ -6012,7 +6022,7 @@ function renderMetaDia(){
         <div class="md-sub">${bateu?`meta batida · ${fmt(t.ganho-m.ganho)} acima`:`faltam ${fmt(falta)}`}</div>
       </div>`:''}
 
-      ${m.gasto>0?`<div class="md-linha">
+      ${(noMesDeHoje&&m.gasto>0)?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Teto de gasto</span>
           <span class="md-val" style="color:var(--expense)">${fmt(t.gasto)} <i>/ ${fmt(m.gasto)}</i></span>
@@ -6021,11 +6031,17 @@ function renderMetaDia(){
         <div class="md-sub">${estourou?`passou ${fmt(-sobra)} do previsto`:`ainda pode gastar ${fmt(sobra)}`}</div>
       </div>`:''}
 
-      ${(m.ganho>0&&m.gasto>0)?`<div class="md-saldo">
+      ${(noMesDeHoje&&m.ganho>0&&m.gasto>0)?`<div class="md-saldo">
         <span>Sobra hoje</span>
         <b style="color:${(t.ganho-t.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(t.ganho-t.gasto)}</b>
       </div>`:''}
 
+      ${!noMesDeHoje?`<div class="md-linha">
+        <div class="md-sub" style="margin:0">
+          Você está vendo <b>${monthLabel()}</b>. As metas de hoje aparecem quando
+          você volta para o mês atual.
+        </div>
+      </div>`:''}
       ${metaMesBloco()}${kmFranquiaBloco()}
     `}
     ${_metaCalAberto?metaCalendarioHtml():''}
