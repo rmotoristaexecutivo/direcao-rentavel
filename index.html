@@ -430,6 +430,48 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 @keyframes ggPulse{0%,100%{box-shadow:0 0 0 0 rgba(46,144,250,.55)}50%{box-shadow:0 0 0 7px rgba(46,144,250,0)}}
 .gg-destaque{animation:ggPulse 1.1s ease-out 4;border-color:var(--neutral)!important;
   color:var(--neutral)!important;font-weight:800}
+/* ===== calendário de metas ===== */
+.md-exp{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:transparent;border:0;padding:0;cursor:pointer;text-align:left;
+  font:inherit;color:inherit}
+.md-exp i{font-style:normal;font-size:11px;color:var(--txt-faint)}
+.mc-wrap{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.mc-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:11.5px;color:var(--txt-faint);margin-bottom:9px}
+.mc-sem{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:5px}
+.mc-sem span{text-align:center;font-size:10.5px;font-weight:700;color:var(--txt-faint)}
+.mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.mc-vazio{aspect-ratio:1}
+.mc-dia{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  cursor:pointer;padding:0;font-family:'Manrope',system-ui,sans-serif}
+.mc-dia .mc-n{font-size:12px;font-weight:600;color:var(--txt-dim);line-height:1}
+.mc-dia .mc-v{font-size:9px;font-weight:700;color:var(--txt-faint);line-height:1}
+.mc-dia.on{background:var(--neutral-bg);border-color:var(--neutral)}
+.mc-dia.on .mc-n{color:var(--neutral)}
+.mc-dia.ok{background:var(--gain-bg);border-color:var(--gain)}
+.mc-dia.ok .mc-n,.mc-dia.ok .mc-v{color:var(--gain)}
+.mc-dia.parcial{background:var(--hybrid-bg);border-color:var(--hybrid)}
+.mc-dia.parcial .mc-n,.mc-dia.parcial .mc-v{color:var(--hybrid)}
+/* dia marcado que passou sem faturamento: informação, não alarme. Em vermelho,
+   um mês com vários desses virava um mural de erro. */
+.mc-dia.vazio{background:transparent;border-style:dashed;border-color:var(--line-strong)}
+.mc-dia.vazio .mc-n{color:var(--txt-faint);text-decoration:line-through}
+.mc-dia.hoje{box-shadow:0 0 0 2px var(--txt-dim)}
+.mc-resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.mc-resumo div{text-align:center;background:var(--bg2);border:1px solid var(--line);
+  border-radius:11px;padding:9px 6px}
+.mc-resumo span{display:block;font-size:10px;color:var(--txt-faint);text-transform:uppercase;
+  letter-spacing:.04em;font-weight:700;line-height:1.25}
+.mc-resumo b{display:block;margin-top:3px;font-size:14px;font-variant-numeric:tabular-nums}
+.mc-dica{margin-top:10px;font-size:12px;color:var(--txt-dim);line-height:1.5;
+  background:var(--neutral-bg);border-radius:10px;padding:10px 12px}
+.mc-real{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.mc-real div{text-align:center;background:var(--bg2);border:1px solid var(--line);
+  border-radius:11px;padding:10px}
+.mc-real span{display:block;font-size:10.5px;color:var(--txt-faint);font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em}
+.mc-real b{display:block;margin-top:3px;font-size:15px;font-variant-numeric:tabular-nums}
 .mn-tipos{display:flex;flex-direction:column;gap:7px}
 .mn-tipo{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);
   border:1px solid var(--line);border-radius:12px}
@@ -5691,6 +5733,219 @@ function totaisDeHoje(){
   return{ganho:c.ganho||0, gasto:c.gastoUber||0, temLancamento:true};
 }
 
+/* ============================================================================
+   CALENDÁRIO DE METAS
+   ----------------------------------------------------------------------------
+   Antes existia uma meta de mês e uma meta de dia, e a do dia valia para todos
+   os dias igualmente. Só que ninguém roda todo dia, nem roda igual: sábado rende
+   diferente de terça, e há dias em que você simplesmente não trabalha.
+
+   Aqui você marca no calendário os dias que vai rodar. A meta do mês é dividida
+   entre eles — e cada dia pode ter meta própria, se você quiser ajustar.
+   O que o app calcula sozinho fica marcado como automático; o que você digita
+   é preservado.
+   ============================================================================ */
+function metaCal(mesKey){
+  if(!state.uber.metaCal) state.uber.metaCal={};
+  if(!state.uber.metaCal[mesKey]) state.uber.metaCal[mesKey]={dias:{}};
+  const c=state.uber.metaCal[mesKey];
+  if(!c.dias) c.dias={};
+  return c;
+}
+
+/* Dias marcados como de trabalho no mês. Sem marcação nenhuma, cai no
+   comportamento antigo: todos os dias contam. */
+function diasTrabalhoDoMes(mesKey){
+  const c=metaCal(mesKey);
+  const marcados=Object.keys(c.dias).filter(d=>c.dias[d] && c.dias[d].trabalha);
+  return marcados.sort();
+}
+
+function metaDoDia(dataISO){
+  const mesKey=dataISO.slice(0,7);
+  const c=metaCal(mesKey);
+  const d=c.dias[dataISO];
+  if(d && Number(d.ganho)>0) return {ganho:Number(d.ganho), gasto:Number(d.gasto)||0, propria:true};
+  /* sem meta própria: divide o que falta da meta do mês pelos dias de trabalho
+     que ainda restam — assim quem rendeu pouco ontem vê a meta de hoje subir */
+  const mm=state.uber.meta||{};
+  const metaFat=Number(mm.metaFat)||0;
+  if(!(metaFat>0)) return {ganho:0, gasto:(d&&Number(d.gasto))||0, propria:false};
+  const rows=state.uber.months[mesKey]||[];
+  const feito=monthTotals(rows).ganho;
+  const falta=Math.max(0,metaFat-feito);
+  const dias=diasTrabalhoDoMes(mesKey);
+  const hoje=hojeKey();
+  const restantes=dias.filter(x=>x>=hoje).length || dias.length || Number(mm.diasMes)||22;
+  return {ganho: Math.round((falta/Math.max(1,restantes))*100)/100,
+          gasto:(d&&Number(d.gasto))||0, propria:false};
+}
+
+/* realizado de um dia */
+function realizadoDoDia(dataISO){
+  const rows=state.uber.months[dataISO.slice(0,7)]||[];
+  const r=rows.find(x=>x.data===dataISO);
+  if(!r) return {ganho:0,gasto:0,tem:false};
+  const c=rowCalc(r);
+  return {ganho:c.ganho||0, gasto:c.gastoUber||0, tem:true};
+}
+
+let _metaCalAberto=false;
+function toggleMetaCal(){ _metaCalAberto=!_metaCalAberto; renderMetaDia(); }
+
+function metaCalendarioHtml(){
+  const mesKey=state.uber.current;
+  const [ano,mes]=mesKey.split('-').map(Number);
+  const c=metaCal(mesKey);
+  const primeiro=new Date(ano,mes-1,1).getDay();          // 0=domingo
+  const totalDias=new Date(ano,mes,0).getDate();
+  const hoje=hojeKey();
+
+  const mm=state.uber.meta||{};
+  const metaFat=Number(mm.metaFat)||0;
+  const rows=state.uber.months[mesKey]||[];
+  const feito=monthTotals(rows).ganho;
+  const falta=Math.max(0,metaFat-feito);
+  const dias=diasTrabalhoDoMes(mesKey);
+  const restantes=dias.filter(x=>x>=hoje);
+
+  let celulas='';
+  for(let i=0;i<primeiro;i++) celulas+='<div class="mc-vazio"></div>';
+  for(let d=1;d<=totalDias;d++){
+    const iso=`${ano}-${pad(mes)}-${pad(d)}`;
+    const cfg=c.dias[iso]||{};
+    const trab=!!cfg.trabalha;
+    const real=realizadoDoDia(iso);
+    const meta=trab?metaDoDia(iso):{ganho:0};
+    const bateu=trab && meta.ganho>0 && real.ganho>=meta.ganho;
+    const passou=iso<hoje;
+    const ehHoje=(iso===hoje);
+    const cls=['mc-dia'];
+    if(trab)cls.push('on');
+    if(bateu)cls.push('ok');
+    else if(trab&&passou&&real.ganho>0)cls.push('parcial');
+    else if(trab&&passou)cls.push('vazio');
+    if(ehHoje)cls.push('hoje');
+    celulas+=`<button class="${cls.join(' ')}" onclick="abrirMetaDoDia('${iso}')">
+      <span class="mc-n">${d}</span>
+      ${trab?`<span class="mc-v">${real.ganho>0?fmtN(real.ganho,0):'–'}</span>`:''}
+    </button>`;
+  }
+
+  const porDia = restantes.length>0 ? falta/restantes.length : 0;
+
+  return `<div class="mc-wrap">
+    <div class="mc-cab">
+      <span>Toque num dia para marcar que vai rodar</span>
+      <button class="md-edit" onclick="marcarSemanaToda()">dias úteis</button>
+    </div>
+    <div class="mc-sem">${['D','S','T','Q','Q','S','S'].map(x=>`<span>${x}</span>`).join('')}</div>
+    <div class="mc-grid">${celulas}</div>
+
+    <div class="mc-resumo">
+      <div><span>Dias marcados</span><b>${dias.length}</b></div>
+      <div><span>Ainda por rodar</span><b>${restantes.length}</b></div>
+      <div><span>Falta para a meta</span><b style="color:${falta>0?'var(--neutral)':'var(--gain)'}">${fmt(falta)}</b></div>
+    </div>
+    ${restantes.length>0&&falta>0?`<div class="mc-dica">
+      Para bater ${fmt(metaFat)} no mês, faltam <b>${fmt(porDia)} por dia</b>
+      ${restantes.length>1?`nos ${restantes.length} dias que restam`:'no último dia marcado'}.
+    </div>`:''}
+  </div>`;
+}
+
+/* marca de uma vez os dias úteis que ainda não passaram */
+function marcarSemanaToda(){
+  const mesKey=state.uber.current;
+  const [ano,mes]=mesKey.split('-').map(Number);
+  const totalDias=new Date(ano,mes,0).getDate();
+  const c=metaCal(mesKey);
+  let n=0;
+  for(let d=1;d<=totalDias;d++){
+    const dow=new Date(ano,mes-1,d).getDay();
+    if(dow===0)continue;                       // domingo fora
+    const iso=`${ano}-${pad(mes)}-${pad(d)}`;
+    c.dias[iso]=Object.assign({},c.dias[iso],{trabalha:true});
+    n++;
+  }
+  save(); renderMetaDia();
+  toast(n+' dias marcados');
+}
+
+/* folha de um dia: marca se trabalha e permite meta própria */
+function abrirMetaDoDia(iso){
+  const mesKey=iso.slice(0,7);
+  const c=metaCal(mesKey);
+  const cfg=c.dias[iso]||{};
+  const real=realizadoDoDia(iso);
+  const sugerida=metaDoDia(iso);
+
+  let ov=document.getElementById('metaDiaCalOv');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='metaDiaCalOv'; ov.className='a-sheet-ov';
+    ov.addEventListener('click',e=>{ if(e.target===ov)fecharMetaDoDia(); });
+    document.body.appendChild(ov);
+  }
+  window._metaDiaISO=iso;
+  const [y,m,d]=iso.split('-');
+  ov.innerHTML=`<div class="a-sheet">
+    <div class="a-sheet-h"><b>${d}/${m} · ${diaSemanaDe(iso)}</b>
+      <button class="a-sheet-x" onclick="fecharMetaDoDia()">✕</button></div>
+    <div class="a-sheet-b">
+      <label class="fin-switch"><input type="checkbox" id="mcTrab" ${cfg.trabalha?'checked':''}>
+        <span>Vou rodar neste dia</span></label>
+
+      <div class="a-mfields" style="margin-top:14px">
+        <div class="a-mfield"><label>Meta de ganho</label>
+          <input id="mcGanho" inputmode="decimal" onfocus="this.select()"
+                 value="${Number(cfg.ganho)>0?fmtN(cfg.ganho,2):''}"
+                 placeholder="${sugerida.ganho>0?fmtN(sugerida.ganho,2):'0,00'}"></div>
+        <div class="a-mfield"><label>Teto de gasto</label>
+          <input id="mcGasto" inputmode="decimal" onfocus="this.select()"
+                 value="${Number(cfg.gasto)>0?fmtN(cfg.gasto,2):''}"
+                 placeholder="0,00"></div>
+      </div>
+      <p class="fin-hint">Em branco, o app divide o que falta da meta do mês pelos
+        dias que ainda restam${sugerida.ganho>0?` — hoje daria ${fmt(sugerida.ganho)}`:''}.</p>
+
+      ${real.tem?`<div class="mc-real">
+        <div><span>Ganho no dia</span><b style="color:var(--gain)">${fmt(real.ganho)}</b></div>
+        <div><span>Gasto no dia</span><b style="color:var(--expense)">${fmt(real.gasto)}</b></div>
+      </div>`:''}
+
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn" style="flex:1;justify-content:center" onclick="limparMetaDoDia()">Limpar</button>
+        <button class="btn primary" style="flex:2;justify-content:center" onclick="salvarMetaDoDia()">Salvar</button>
+      </div>
+    </div>
+  </div>`;
+  requestAnimationFrame(()=>ov.classList.add('open'));
+  navPush(()=>fecharMetaDoDia(true));
+}
+function fecharMetaDoDia(fromBack){
+  const ov=document.getElementById('metaDiaCalOv');
+  if(ov)ov.classList.remove('open');
+  if(!fromBack)navPop();
+}
+function salvarMetaDoDia(){
+  const iso=window._metaDiaISO; if(!iso)return;
+  const c=metaCal(iso.slice(0,7));
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const trab=(document.getElementById('mcTrab')||{}).checked;
+  const ganho=parseNum(g('mcGanho'));
+  const gasto=parseNum(g('mcGasto'));
+  if(!trab && !(ganho>0) && !(gasto>0)) delete c.dias[iso];
+  else c.dias[iso]={trabalha:!!trab, ganho:ganho>0?ganho:0, gasto:gasto>0?gasto:0};
+  save(); fecharMetaDoDia(); renderMetaDia(); renderUber();
+}
+function limparMetaDoDia(){
+  const iso=window._metaDiaISO; if(!iso)return;
+  const c=metaCal(iso.slice(0,7));
+  delete c.dias[iso];
+  save(); fecharMetaDoDia(); renderMetaDia(); renderUber();
+}
+
 let _alertaMetaMostrado='';
 function renderMetaDia(){
   const el=document.getElementById('opMetaDia'); if(!el)return;
@@ -5710,8 +5965,11 @@ function renderMetaDia(){
 
   el.innerHTML=`
   <div class="a-card md-card${estourou?' md-alerta':(bateu?' md-ok':'')}">
-    <h3 style="display:flex;justify-content:space-between;align-items:center">
-      <span>Metas de hoje · ${dataTxt}</span>
+    <h3 style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <button class="md-exp" onclick="toggleMetaCal()">
+        <span>Metas · ${dataTxt}</span>
+        <i>${_metaCalAberto?'▲':'▼'}</i>
+      </button>
       <button class="md-edit" onclick="abrirMetaDiaModal()">ajustar</button>
     </h3>
 
@@ -5719,7 +5977,7 @@ function renderMetaDia(){
       Defina quanto quer ganhar e quanto pode gastar por dia para receber os avisos.
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
               onclick="abrirMetaDiaModal()">Definir metas do dia</button>
-    </div>${metaMesBloco()}${kmFranquiaBloco()}`:`
+    </div>${metaMesBloco()}${kmFranquiaBloco()}${_metaCalAberto?metaCalendarioHtml():''}`:`
       ${m.ganho>0?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Ganhar hoje</span>
@@ -5745,6 +6003,7 @@ function renderMetaDia(){
 
       ${metaMesBloco()}${kmFranquiaBloco()}
     `}
+    ${_metaCalAberto?metaCalendarioHtml():''}
   </div>`;
 
   /* alerta piscante: uma vez por situação, por dia — não a cada re-render */
@@ -5779,7 +6038,18 @@ function metaMesBloco(){
   const mt=monthTotals(ensureMonth(state.uber.current));
   const feito=mt.ganho, falta=Math.max(0,metaFat-feito);
   const pct=Math.min(100,feito/metaFat*100);
-  const dias=Number(mm.diasMes)>0?Number(mm.diasMes):22;
+  /* Dias que ainda restam segundo o CALENDÁRIO, quando ele tem dias marcados.
+     Sem isso, este bloco dizia "R$ 203/dia em 22 dias" enquanto o calendário
+     logo abaixo dizia "R$ 4.470/dia em 1 dia" — dois números contraditórios na
+     mesma tela. O calendário é a fonte mais fiel: sabe quais dias você marcou e
+     quantos já passaram. */
+  const marcados=diasTrabalhoDoMes(state.uber.current);
+  const hj=hojeKey();
+  const restantesCal=marcados.filter(d=>d>=hj).length;
+  const dias = marcados.length>0
+    ? Math.max(1,restantesCal)
+    : (Number(mm.diasMes)>0?Number(mm.diasMes):22);
+  const usaCal = marcados.length>0;
   const bateu=feito>=metaFat;
   return `<div class="md-mes">
     <div class="md-top">
@@ -5788,7 +6058,8 @@ function metaMesBloco(){
     </div>
     <div class="md-bar"><span style="width:${pct}%;background:var(--neutral)"></span></div>
     <div class="md-subrow">
-      <span class="md-sub" style="margin:0">${bateu?'meta do mês batida':`faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))}/dia em ${dias} dias`}</span>
+      <span class="md-sub" style="margin:0">${bateu?'meta do mês batida':
+        `faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))}/dia em ${dias} dia${dias>1?'s':''}${usaCal?' que faltam':''}`}</span>
       <button class="md-edit" onclick="abrirMetaMesModal()">ajustar</button>
     </div>
   </div>`;
