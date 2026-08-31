@@ -440,13 +440,23 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   font-size:11.5px;color:var(--txt-faint);margin-bottom:9px}
 .mc-sem{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:5px}
 .mc-sem span{text-align:center;font-size:10.5px;font-weight:700;color:var(--txt-faint)}
+/* Largura máxima do bloco inteiro: sem isso, no desktop as 7 colunas esticavam
+   para 190px cada e o calendário tomava a tela. Limitar só a grade deixava o
+   texto e os cards de resumo esticados em volta de uma grade centralizada. */
+.mc-wrap{max-width:440px;margin-left:auto;margin-right:auto}
+.mc-grid,.mc-sem{max-width:420px;margin-left:auto;margin-right:auto}
 .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.mc-vazio{aspect-ratio:1}
-.mc-dia{aspect-ratio:1;border:1px solid var(--line);background:var(--bg2);border-radius:9px;
+.mc-vazio{min-height:52px}
+.mc-dia{min-height:52px;border:1px solid var(--line);background:var(--bg2);border-radius:9px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  cursor:pointer;padding:0;font-family:'Manrope',system-ui,sans-serif}
-.mc-dia .mc-n{font-size:12px;font-weight:600;color:var(--txt-dim);line-height:1}
-.mc-dia .mc-v{font-size:9px;font-weight:700;color:var(--txt-faint);line-height:1}
+  cursor:pointer;padding:3px 1px;font-family:'Manrope',system-ui,sans-serif;overflow:hidden}
+.mc-dia .mc-n{font-size:12px;font-weight:700;color:var(--txt-dim);line-height:1}
+.mc-dia .mc-g,.mc-dia .mc-d{font-size:9px;font-weight:700;line-height:1.15;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.mc-dia .mc-g{color:var(--gain)}
+.mc-dia .mc-d{color:var(--txt-faint)}
+.mc-dia .mc-d.est{color:var(--expense)}
+.mc-dia i{font-style:normal;font-weight:600;opacity:.6}
 .mc-dia.on{background:var(--neutral-bg);border-color:var(--neutral)}
 .mc-dia.on .mc-n{color:var(--neutral)}
 .mc-dia.ok{background:var(--gain-bg);border-color:var(--gain)}
@@ -5776,6 +5786,8 @@ function metaDoDia(dataISO){
   const falta=Math.max(0,metaFat-feito);
   const dias=diasTrabalhoDoMes(mesKey);
   const hoje=hojeKey();
+  /* dias marcados que ainda não passaram. Se todos já passaram, cai nos dias
+     marcados do mês — não faz sentido concentrar tudo num dia que não existe. */
   const restantes=dias.filter(x=>x>=hoje).length || dias.length || Number(mm.diasMes)||22;
   return {ganho: Math.round((falta/Math.max(1,restantes))*100)/100,
           gasto:(d&&Number(d.gasto))||0, propria:false};
@@ -5826,9 +5838,18 @@ function metaCalendarioHtml(){
     else if(trab&&passou&&real.ganho>0)cls.push('parcial');
     else if(trab&&passou)cls.push('vazio');
     if(ehHoje)cls.push('hoje');
+
+    /* Cada dia mostra realizado sobre meta, nas duas linhas: ganho e gasto.
+       Números inteiros e sem R$ — com 7 colunas no celular, centavos e cifrão
+       não cabem e só atrapalham a leitura. O valor exato está na folha do dia. */
+    const tetoG = trab ? metaDoDia(iso).gasto : 0;
+    const estourouG = tetoG>0 && real.gasto>tetoG;
     celulas+=`<button class="${cls.join(' ')}" onclick="abrirMetaDoDia('${iso}')">
       <span class="mc-n">${d}</span>
-      ${trab?`<span class="mc-v">${real.ganho>0?fmtN(real.ganho,0):'–'}</span>`:''}
+      ${trab?`
+        <span class="mc-g">${real.ganho>0?fmtN(real.ganho,0):'0'}<i>/${meta.ganho>0?fmtN(meta.ganho,0):'–'}</i></span>
+        ${(tetoG>0||real.gasto>0)?`<span class="mc-d${estourouG?' est':''}">${fmtN(real.gasto,0)}<i>/${tetoG>0?fmtN(tetoG,0):'–'}</i></span>`:''}
+      `:''}
     </button>`;
   }
 
@@ -5847,10 +5868,14 @@ function metaCalendarioHtml(){
       <div><span>Ainda por rodar</span><b>${restantes.length}</b></div>
       <div><span>Falta para a meta</span><b style="color:${falta>0?'var(--neutral)':'var(--gain)'}">${fmt(falta)}</b></div>
     </div>
-    ${restantes.length>0&&falta>0?`<div class="mc-dica">
-      Para bater ${fmt(metaFat)} no mês, faltam <b>${fmt(porDia)} por dia</b>
-      ${restantes.length>1?`nos ${restantes.length} dias que restam`:'no último dia marcado'}.
-    </div>`:''}
+    ${falta>0 ? (restantes.length>0
+      ? `<div class="mc-dica">Para bater ${fmt(metaFat)} no mês, faltam <b>${fmt(porDia)} por dia</b>
+         ${restantes.length>1?`nos ${restantes.length} dias que restam`:'no último dia marcado'}.</div>`
+      : (dias.length>0
+        ? `<div class="mc-dica">Faltam ${fmt(falta)} para a meta, mas não há mais dias marcados
+           pela frente. Marque outros dias se ainda pretende rodar.</div>`
+        : `<div class="mc-dica">Marque os dias que pretende rodar para o app calcular
+           quanto precisa fazer por dia.</div>`)) : ''}
   </div>`;
 }
 
@@ -6058,8 +6083,14 @@ function metaMesBloco(){
     </div>
     <div class="md-bar"><span style="width:${pct}%;background:var(--neutral)"></span></div>
     <div class="md-subrow">
-      <span class="md-sub" style="margin:0">${bateu?'meta do mês batida':
-        `faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))}/dia em ${dias} dia${dias>1?'s':''}${usaCal?' que faltam':''}`}</span>
+      <span class="md-sub" style="margin:0">${
+        bateu ? 'meta do mês batida'
+        : (usaCal && restantesCal===0)
+          /* todos os dias marcados já passaram: dividir o que falta por um dia
+             inexistente daria "R$ 5.000/dia", número que não ajuda ninguém */
+          ? `faltam ${fmt(falta)} · nenhum dia marcado pela frente`
+          : `faltam ${fmt(falta)} · ${fmt(falta/Math.max(1,dias))}/dia em ${dias} dia${dias>1?'s':''}${usaCal?' que faltam':''}`
+      }</span>
       <button class="md-edit" onclick="abrirMetaMesModal()">ajustar</button>
     </div>
   </div>`;
@@ -6069,7 +6100,11 @@ function metaMesBloco(){
 function abrirMetaMesModal(){
   const mm=state.uber.meta||(state.uber.meta={});
   const metaFat = Number(mm.metaFat)||0;
-  const dias=Number(mm.diasMes)>0?Number(mm.diasMes):22;
+  /* Se o calendário tem dias marcados, ELE é a fonte: digitar o número aqui
+     criaria dois lugares definindo a mesma coisa, com chance de divergirem. */
+  const marcadosCal=diasTrabalhoDoMes(state.uber.current);
+  const usaCal=marcadosCal.length>0;
+  const dias = usaCal ? marcadosCal.length : (Number(mm.diasMes)>0?Number(mm.diasMes):22);
   let ov=document.getElementById('metaMesModal');
   if(!ov){
     ov=document.createElement('div');
@@ -6086,9 +6121,16 @@ function abrirMetaMesModal(){
           <input id="metaFatMes" inputmode="decimal" value="${metaFat>0?fmtN(metaFat,2):''}"
                  placeholder="0,00" onfocus="this.select()"></div>
         <div class="a-mfield"><label>Dias que vou rodar</label>
-          <input id="metaDiasMes" inputmode="numeric" value="${dias}" onfocus="this.select()"></div>
+          <input id="metaDiasMes" inputmode="numeric" value="${dias}"
+                 ${usaCal?'readonly':'onfocus="this.select()"'}></div>
       </div>
-      <p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0;line-height:1.5">
+      ${usaCal?`<p style="font-size:11.5px;color:var(--neutral);margin:10px 0 0;line-height:1.5">
+        Os ${dias} dias vêm do calendário. Para mudar, marque ou desmarque dias lá.
+        <button class="md-edit" style="margin-left:6px"
+                onclick="fecharMetaMesModal();_metaCalAberto=true;renderMetaDia()">abrir calendário</button></p>`:
+       `<p style="font-size:11.5px;color:var(--txt-faint);margin:10px 0 0;line-height:1.5">
+        Marque os dias no calendário para o app contar sozinho.</p>`}
+      <p style="font-size:11.5px;color:var(--txt-faint);margin:8px 0 0;line-height:1.5">
         Deixe o valor em branco para remover a meta do mês.</p>
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:18px"
               onclick="salvarMetaMes()">Salvar</button>
@@ -6500,7 +6542,10 @@ function salvarMetaMes(){
     const txt=(f.value||'').trim();
     m.metaFat = txt==='' ? 0 : (parseNum(txt)||0);
   }
-  if(d){ const v=parseNum(d.value); m.diasMes = v>0?Math.round(v):22; }
+  /* com calendário marcado, o campo está travado: guardar o valor dele seria
+     congelar um número que muda toda vez que você marca ou desmarca um dia */
+  const temCal=diasTrabalhoDoMes(state.uber.current).length>0;
+  if(d && !temCal){ const v=parseNum(d.value); m.diasMes = v>0?Math.round(v):22; }
   delete m.metaManual;          /* a flag não faz mais sentido: meta é sempre manual */
 
   /* ===== A META DO MÊS ALIMENTA A META DO DIA =====
