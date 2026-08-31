@@ -474,6 +474,8 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .mc-resumo span{display:block;font-size:10px;color:var(--txt-faint);text-transform:uppercase;
   letter-spacing:.04em;font-weight:700;line-height:1.25}
 .mc-resumo b{display:block;margin-top:3px;font-size:14px;font-variant-numeric:tabular-nums}
+.mc-origem{margin-top:9px;font-size:11.5px;color:var(--neutral);line-height:1.45;
+  background:var(--neutral-bg);border-radius:9px;padding:8px 11px}
 .mc-dica{margin-top:10px;font-size:12px;color:var(--txt-dim);line-height:1.5;
   background:var(--neutral-bg);border-radius:10px;padding:10px 12px}
 .mc-real{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
@@ -5771,6 +5773,29 @@ function diasTrabalhoDoMes(mesKey){
   return marcados.sort();
 }
 
+/* Soma das metas próprias definidas no calendário, e quantos dias têm meta.
+   Quando você define meta dia a dia, ELAS são a meta do mês — somar é a única
+   leitura coerente. Antes, a meta do mês era um valor digitado à parte, e ficava
+   dizendo R$ 20,00 enquanto o calendário tinha R$ 250 num dia só. */
+function somaMetasDoCal(mesKey){
+  const c=metaCal(mesKey);
+  let soma=0, comMeta=0, tetoGasto=0;
+  Object.keys(c.dias).forEach(d=>{
+    const x=c.dias[d]; if(!x||!x.trabalha)return;
+    if(Number(x.ganho)>0){ soma+=Number(x.ganho); comMeta++; }
+    if(Number(x.gasto)>0) tetoGasto+=Number(x.gasto);
+  });
+  return {soma, comMeta, tetoGasto};
+}
+
+/* A meta do mês que vale: a soma do calendário quando existe, senão a digitada. */
+function metaMesEfetiva(mesKey){
+  const s=somaMetasDoCal(mesKey);
+  if(s.comMeta>0) return {valor:s.soma, origem:'calendario', dias:s.comMeta, teto:s.tetoGasto};
+  const mm=state.uber.meta||{};
+  return {valor:Number(mm.metaFat)||0, origem:'digitada', dias:0, teto:0};
+}
+
 function metaDoDia(dataISO){
   const mesKey=dataISO.slice(0,7);
   const c=metaCal(mesKey);
@@ -5779,7 +5804,7 @@ function metaDoDia(dataISO){
   /* sem meta própria: divide o que falta da meta do mês pelos dias de trabalho
      que ainda restam — assim quem rendeu pouco ontem vê a meta de hoje subir */
   const mm=state.uber.meta||{};
-  const metaFat=Number(mm.metaFat)||0;
+  const metaFat=metaMesEfetiva(mesKey).valor;
   if(!(metaFat>0)) return {ganho:0, gasto:(d&&Number(d.gasto))||0, propria:false};
   const rows=state.uber.months[mesKey]||[];
   const feito=monthTotals(rows).ganho;
@@ -5813,8 +5838,8 @@ function metaCalendarioHtml(){
   const totalDias=new Date(ano,mes,0).getDate();
   const hoje=hojeKey();
 
-  const mm=state.uber.meta||{};
-  const metaFat=Number(mm.metaFat)||0;
+  const efetivaCal=metaMesEfetiva(mesKey);
+  const metaFat=efetivaCal.valor;
   const rows=state.uber.months[mesKey]||[];
   const feito=monthTotals(rows).ganho;
   const falta=Math.max(0,metaFat-feito);
@@ -5865,9 +5890,13 @@ function metaCalendarioHtml(){
 
     <div class="mc-resumo">
       <div><span>Dias marcados</span><b>${dias.length}</b></div>
-      <div><span>Ainda por rodar</span><b>${restantes.length}</b></div>
+      <div><span>Meta somada</span><b style="color:var(--neutral)">${fmt(metaFat)}</b></div>
       <div><span>Falta para a meta</span><b style="color:${falta>0?'var(--neutral)':'var(--gain)'}">${fmt(falta)}</b></div>
     </div>
+    ${efetivaCal.origem==='calendario'?`<div class="mc-origem">
+      A meta do mês é a soma dos ${efetivaCal.dias} dia${efetivaCal.dias>1?'s':''} com meta própria.
+      ${efetivaCal.teto>0?`Teto de gasto somado: ${fmt(efetivaCal.teto)}.`:''}
+    </div>`:''}
     ${falta>0 ? (restantes.length>0
       ? `<div class="mc-dica">Para bater ${fmt(metaFat)} no mês, faltam <b>${fmt(porDia)} por dia</b>
          ${restantes.length>1?`nos ${restantes.length} dias que restam`:'no último dia marcado'}.</div>`
@@ -6012,7 +6041,7 @@ function renderMetaDia(){
       Defina quanto quer ganhar e quanto pode gastar por dia para receber os avisos.
       <button class="btn primary" style="width:100%;justify-content:center;margin-top:12px"
               onclick="abrirMetaDiaModal()">Definir metas do dia</button>
-    </div>${metaMesBloco()}${kmFranquiaBloco()}${_metaCalAberto?metaCalendarioHtml():''}`:`
+    </div>${metaMesBloco()}${kmFranquiaBloco()}`:`
       ${(noMesDeHoje&&m.ganho>0)?`<div class="md-linha">
         <div class="md-top">
           <span class="md-lbl">Ganhar hoje</span>
@@ -6067,7 +6096,8 @@ function metaMesBloco(){
      é financiamento; meta é meta.
      ============================================================ */
   const mm=state.uber.meta||{};
-  const metaFat = Number(mm.metaFat)||0;
+  const efetiva=metaMesEfetiva(state.uber.current);
+  const metaFat=efetiva.valor;
   if(!(metaFat>0)){
     return `<div class="md-mes">
       <div class="md-subrow">
@@ -6094,7 +6124,8 @@ function metaMesBloco(){
   const bateu=feito>=metaFat;
   return `<div class="md-mes">
     <div class="md-top">
-      <span class="md-lbl">Meta do mês · ${monthLabel()}</span>
+      <span class="md-lbl">Meta do mês · ${monthLabel()}${
+        efetiva.origem==='calendario'?` <i style="font-style:normal;color:var(--neutral)">soma de ${efetiva.dias} dia${efetiva.dias>1?'s':''}</i>`:''}</span>
       <span class="md-val" style="color:var(--neutral)">${fmt(feito)} <i>/ ${fmt(metaFat)}</i></span>
     </div>
     <div class="md-bar"><span style="width:${pct}%;background:var(--neutral)"></span></div>
@@ -6118,6 +6149,7 @@ function abrirMetaMesModal(){
   const metaFat = Number(mm.metaFat)||0;
   /* Se o calendário tem dias marcados, ELE é a fonte: digitar o número aqui
      criaria dois lugares definindo a mesma coisa, com chance de divergirem. */
+  const efetivaModal=metaMesEfetiva(state.uber.current);
   const marcadosCal=diasTrabalhoDoMes(state.uber.current);
   const usaCal=marcadosCal.length>0;
   const dias = usaCal ? marcadosCal.length : (Number(mm.diasMes)>0?Number(mm.diasMes):22);
@@ -6134,13 +6166,18 @@ function abrirMetaMesModal(){
     <div class="a-sheet-b">
       <div class="a-mfields">
         <div class="a-mfield"><label>Quero faturar no mês</label>
-          <input id="metaFatMes" inputmode="decimal" value="${metaFat>0?fmtN(metaFat,2):''}"
-                 placeholder="0,00" onfocus="this.select()"></div>
+          <input id="metaFatMes" inputmode="decimal" value="${efetivaModal.origem==='calendario'?fmtN(efetivaModal.valor,2):(metaFat>0?fmtN(metaFat,2):'')}"
+                 placeholder="0,00" ${efetivaModal.origem==='calendario'?'readonly':'onfocus="this.select()"'}></div>
         <div class="a-mfield"><label>Dias que vou rodar</label>
           <input id="metaDiasMes" inputmode="numeric" value="${dias}"
                  ${usaCal?'readonly':'onfocus="this.select()"'}></div>
       </div>
-      ${usaCal?`<p style="font-size:11.5px;color:var(--neutral);margin:10px 0 0;line-height:1.5">
+      ${efetivaModal.origem==='calendario'?`<p style="font-size:11.5px;color:var(--neutral);margin:10px 0 0;line-height:1.5">
+        Esta meta é a <b>soma dos ${efetivaModal.dias} dias</b> com meta própria no calendário.
+        Para mudar o valor, ajuste os dias lá.
+        <button class="md-edit" style="margin-left:6px"
+                onclick="fecharMetaMesModal();_metaCalAberto=true;renderMetaDia()">abrir calendário</button></p>`
+      : usaCal?`<p style="font-size:11.5px;color:var(--neutral);margin:10px 0 0;line-height:1.5">
         Os ${dias} dias vêm do calendário. Para mudar, marque ou desmarque dias lá.
         <button class="md-edit" style="margin-left:6px"
                 onclick="fecharMetaMesModal();_metaCalAberto=true;renderMetaDia()">abrir calendário</button></p>`:
@@ -6554,7 +6591,10 @@ function salvarMetaMes(){
   const m=state.uber.meta||(state.uber.meta={});
   const f=document.getElementById('metaFatMes');
   const d=document.getElementById('metaDiasMes');
-  if(f){
+  /* com metas por dia no calendário, o campo está travado e mostra a soma:
+     gravar esse número congelaria um valor que muda a cada dia ajustado */
+  const vemDoCal = metaMesEfetiva(state.uber.current).origem==='calendario';
+  if(f && !vemDoCal){
     const txt=(f.value||'').trim();
     m.metaFat = txt==='' ? 0 : (parseNum(txt)||0);
   }
