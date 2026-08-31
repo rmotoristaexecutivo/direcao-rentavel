@@ -478,12 +478,18 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   background:var(--neutral-bg);border-radius:9px;padding:8px 11px}
 .mc-dica{margin-top:10px;font-size:12px;color:var(--txt-dim);line-height:1.5;
   background:var(--neutral-bg);border-radius:10px;padding:10px 12px}
-.mc-real{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.mc-real div{text-align:center;background:var(--bg2);border:1px solid var(--line);
-  border-radius:11px;padding:10px}
-.mc-real span{display:block;font-size:10.5px;color:var(--txt-faint);font-weight:700;
-  text-transform:uppercase;letter-spacing:.04em}
-.mc-real b{display:block;margin-top:3px;font-size:15px;font-variant-numeric:tabular-nums}
+.mc-cmp{background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+  padding:4px 12px;margin-top:8px}
+.mc-cmp-l{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--line)}
+.mc-cmp-l:last-child{border-bottom:0}
+.mc-cmp-r{flex:none;width:64px;font-size:12.5px;font-weight:600;color:var(--txt-dim)}
+.mc-cmp-v{flex:1;min-width:0}
+.mc-cmp-v b{display:block;font-size:15px;font-variant-numeric:tabular-nums;line-height:1.15}
+.mc-cmp-v i{display:block;font-style:normal;font-size:11px;color:var(--txt-faint);margin-top:1px}
+.mc-cmp-d{flex:none;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.mc-cmp-tot{background:transparent}
+.mc-cmp-tot .mc-cmp-r{color:var(--txt)}
 .mn-tipos{display:flex;flex-direction:column;gap:7px}
 .mn-tipo{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);
   border:1px solid var(--line);border-radius:12px}
@@ -5963,10 +5969,47 @@ function abrirMetaDoDia(iso){
       <p class="fin-hint">Em branco, o app divide o que falta da meta do mês pelos
         dias que ainda restam${sugerida.ganho>0?` — hoje daria ${fmt(sugerida.ganho)}`:''}.</p>
 
-      ${real.tem?`<div class="mc-real">
-        <div><span>Ganho no dia</span><b style="color:var(--gain)">${fmt(real.ganho)}</b></div>
-        <div><span>Gasto no dia</span><b style="color:var(--expense)">${fmt(real.gasto)}</b></div>
-      </div>`:''}
+      ${(()=>{
+        /* Comparativo do dia: meta contra o que aconteceu, e a diferença.
+           Antes só mostrava o realizado solto — o número sozinho não diz se o
+           dia foi bom. A diferença é a leitura que interessa. */
+        const metaG = Number(cfg.ganho)>0 ? Number(cfg.ganho) : sugerida.ganho;
+        const metaD = Number(cfg.gasto)>0 ? Number(cfg.gasto) : 0;
+        if(!real.tem && !(metaG>0) && !(metaD>0)) return '';
+        const difG = real.ganho - metaG;      // positivo = ganhou acima da meta
+        const difD = metaD - real.gasto;      // positivo = sobrou do teto
+        const linha=(rot,metaV,realV,dif,bomSePositivo,corReal)=>{
+          if(!(metaV>0) && !(realV>0)) return '';
+          const ok = dif>=0;
+          const corDif = (metaV>0) ? (ok?'var(--gain)':'var(--expense)') : 'var(--txt-faint)';
+          const sinal = dif>0?'+':'';
+          return `<div class="mc-cmp-l">
+            <span class="mc-cmp-r">${rot}</span>
+            <span class="mc-cmp-v">
+              <b style="color:${corReal}">${fmt(realV)}</b>
+              <i>meta ${metaV>0?fmt(metaV):'—'}</i>
+            </span>
+            <span class="mc-cmp-d" style="color:${corDif}">${metaV>0?sinal+fmt(dif):'—'}</span>
+          </div>`;
+        };
+        return `<div class="fin-sec" style="margin-top:16px">Como foi o dia</div>
+          <div class="mc-cmp">
+            ${linha('Ganho', metaG, real.ganho, difG, true, 'var(--gain)')}
+            ${linha('Gasto', metaD, real.gasto, difD, false, 'var(--expense)')}
+            ${(real.tem)?`<div class="mc-cmp-l mc-cmp-tot">
+              <span class="mc-cmp-r">Sobrou no dia</span>
+              <span class="mc-cmp-v"><b style="color:${(real.ganho-real.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(real.ganho-real.gasto)}</b></span>
+              <span class="mc-cmp-d"></span>
+            </div>`:''}
+          </div>
+          ${real.tem?`<p class="fin-hint">${
+            difG>=0 && metaG>0 ? `Bateu a meta de ganho, ${fmt(difG)} acima.`
+            : metaG>0 ? `Faltaram ${fmt(-difG)} para a meta de ganho.` : ''
+          } ${
+            metaD>0 ? (difD>=0 ? `Ficou ${fmt(difD)} dentro do teto de gasto.`
+                               : `Passou ${fmt(-difD)} do teto de gasto.`) : ''
+          }</p>`:''}`;
+      })()}
 
       <div style="display:flex;gap:8px;margin-top:18px">
         <button class="btn" style="flex:1;justify-content:center" onclick="limparMetaDoDia()">Limpar</button>
