@@ -485,6 +485,11 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .mc-cmp-l:last-child{border-bottom:0}
 .mc-cmp-r{flex:none;width:64px;font-size:12.5px;font-weight:600;color:var(--txt-dim)}
 .mc-cmp-v{flex:1;min-width:0}
+.mc-inp{width:100%;max-width:130px;background:var(--panel-solid);border:1px solid var(--line);
+  border-radius:8px;padding:5px 8px;font-family:'Manrope',system-ui,sans-serif;
+  font-size:15px;font-weight:800;color:var(--gain);font-variant-numeric:tabular-nums}
+.mc-inp[readonly]{background:transparent;border-color:transparent;padding-left:0}
+.mc-inp-d{color:var(--expense)}
 .mc-cmp-v b{display:block;font-size:15px;font-variant-numeric:tabular-nums;line-height:1.15}
 .mc-cmp-v i{display:block;font-style:normal;font-size:11px;color:var(--txt-faint);margin-top:1px}
 .mc-cmp-d{flex:none;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
@@ -5828,9 +5833,48 @@ function metaDoDia(dataISO){
 function realizadoDoDia(dataISO){
   const rows=state.uber.months[dataISO.slice(0,7)]||[];
   const r=rows.find(x=>x.data===dataISO);
-  if(!r) return {ganho:0,gasto:0,tem:false};
+  if(!r) return {ganho:0,gasto:0,tem:false,nGanhos:0,nGastos:0};
   const c=rowCalc(r);
-  return {ganho:c.ganho||0, gasto:c.gastoUber||0, tem:true};
+  return {ganho:c.ganho||0, gasto:c.gastoUber||0, tem:true,
+          nGanhos:(r.ganhos||[]).length, nGastos:(r.gastosExtra||[]).length};
+}
+
+/* Lança direto pela folha do dia.
+   O realizado SEMPRE vem dos lançamentos — digitar aqui cria um lançamento de
+   verdade, não um número paralelo. Sem isso existiriam duas fontes para o mesmo
+   valor, e uma hora elas divergiriam.
+   Só permite quando o dia tem no máximo um lançamento de cada tipo: com vários,
+   não há como saber qual deles o número digitado deveria alterar. */
+function lancarNoDia(dataISO, ganho, gasto){
+  const mesKey=dataISO.slice(0,7);
+  const rows=ensureMonth(mesKey);
+  let r=rows.find(x=>x.data===dataISO);
+  if(!r){
+    rows.push(emptyRow(dataISO));
+    rows.sort((a,b)=>a.data.localeCompare(b.data));
+    r=rows.find(x=>x.data===dataISO);
+  }
+  r.ganhos=r.ganhos||[]; r.gastosExtra=r.gastosExtra||[];
+
+  if(ganho>0){
+    if(r.ganhos.length===0) r.ganhos.push({app:'Particular',valor:ganho,corridas:0,km:0,horas:0});
+    else r.ganhos[0].valor=ganho;
+  } else if(ganho===0 && r.ganhos.length===1){
+    r.ganhos=[];
+  }
+
+  if(gasto>0){
+    if(r.gastosExtra.length===0) r.gastosExtra.push({categoria:'Outros',valor:gasto,forma:'Pix',obs:''});
+    else r.gastosExtra[0].valor=gasto;
+  } else if(gasto===0 && r.gastosExtra.length===1){
+    r.gastosExtra=[];
+  }
+
+  recalcRowFromLists(r);
+  /* dia que ficou sem nada não precisa continuar na lista */
+  if(!r.ganhos.length && !r.gastosExtra.length && !(r.kmIda>0) && !(r.kmVolta>0)){
+    const i=rows.indexOf(r); if(i>=0) rows.splice(i,1);
+  }
 }
 
 let _metaCalAberto=false;
@@ -5948,6 +5992,7 @@ function abrirMetaDoDia(iso){
     document.body.appendChild(ov);
   }
   window._metaDiaISO=iso;
+  window._mcMetas={ganho:(Number(cfg.ganho)>0?Number(cfg.ganho):sugerida.ganho), gasto:Number(cfg.gasto)||0};
   const [y,m,d]=iso.split('-');
   ov.innerHTML=`<div class="a-sheet">
     <div class="a-sheet-h"><b>${d}/${m} · ${diaSemanaDe(iso)}</b>
@@ -5970,45 +6015,55 @@ function abrirMetaDoDia(iso){
         dias que ainda restam${sugerida.ganho>0?` — hoje daria ${fmt(sugerida.ganho)}`:''}.</p>
 
       ${(()=>{
-        /* Comparativo do dia: meta contra o que aconteceu, e a diferença.
-           Antes só mostrava o realizado solto — o número sozinho não diz se o
-           dia foi bom. A diferença é a leitura que interessa. */
+        /* Comparativo do dia com campos editáveis.
+           Os valores são os dos LANÇAMENTOS — digitar aqui cria ou ajusta um
+           lançamento de verdade (ver lancarNoDia). Quando o dia já tem mais de um
+           ganho ou gasto, os campos ficam travados: não há como adivinhar qual
+           deles um número único deveria alterar. */
         const metaG = Number(cfg.ganho)>0 ? Number(cfg.ganho) : sugerida.ganho;
         const metaD = Number(cfg.gasto)>0 ? Number(cfg.gasto) : 0;
-        if(!real.tem && !(metaG>0) && !(metaD>0)) return '';
-        const difG = real.ganho - metaG;      // positivo = ganhou acima da meta
-        const difD = metaD - real.gasto;      // positivo = sobrou do teto
-        const linha=(rot,metaV,realV,dif,bomSePositivo,corReal)=>{
-          if(!(metaV>0) && !(realV>0)) return '';
-          const ok = dif>=0;
-          const corDif = (metaV>0) ? (ok?'var(--gain)':'var(--expense)') : 'var(--txt-faint)';
-          const sinal = dif>0?'+':'';
-          return `<div class="mc-cmp-l">
-            <span class="mc-cmp-r">${rot}</span>
-            <span class="mc-cmp-v">
-              <b style="color:${corReal}">${fmt(realV)}</b>
-              <i>meta ${metaV>0?fmt(metaV):'—'}</i>
-            </span>
-            <span class="mc-cmp-d" style="color:${corDif}">${metaV>0?sinal+fmt(dif):'—'}</span>
-          </div>`;
-        };
+        const travaG = real.nGanhos>1;
+        const travaD = real.nGastos>1;
+        const difG = real.ganho - metaG;
+        const difD = metaD - real.gasto;
+        const sinal=v=>v>0?'+':'';
+        const dif=(metaV,d,ok)=>metaV>0
+          ? `<span class="mc-cmp-d" style="color:${ok?'var(--gain)':'var(--expense)'}">${sinal(d)}${fmt(d)}</span>`
+          : `<span class="mc-cmp-d" style="color:var(--txt-faint)">—</span>`;
+
         return `<div class="fin-sec" style="margin-top:16px">Como foi o dia</div>
           <div class="mc-cmp">
-            ${linha('Ganho', metaG, real.ganho, difG, true, 'var(--gain)')}
-            ${linha('Gasto', metaD, real.gasto, difD, false, 'var(--expense)')}
-            ${(real.tem)?`<div class="mc-cmp-l mc-cmp-tot">
-              <span class="mc-cmp-r">Sobrou no dia</span>
-              <span class="mc-cmp-v"><b style="color:${(real.ganho-real.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(real.ganho-real.gasto)}</b></span>
+            <div class="mc-cmp-l">
+              <span class="mc-cmp-r">Ganho</span>
+              <span class="mc-cmp-v">
+                <input id="mcRealGanho" inputmode="decimal" class="mc-inp"
+                       value="${real.ganho>0?fmtN(real.ganho,2):''}" placeholder="0,00"
+                       onfocus="this.select()" oninput="mcRecalcDif()" ${travaG?'readonly':''}>
+                <i>meta ${metaG>0?fmt(metaG):'—'}</i>
+              </span>
+              <span id="mcDifGanho">${dif(metaG,difG,difG>=0)}</span>
+            </div>
+            <div class="mc-cmp-l">
+              <span class="mc-cmp-r">Gasto</span>
+              <span class="mc-cmp-v">
+                <input id="mcRealGasto" inputmode="decimal" class="mc-inp mc-inp-d"
+                       value="${real.gasto>0?fmtN(real.gasto,2):''}" placeholder="0,00"
+                       onfocus="this.select()" oninput="mcRecalcDif()" ${travaD?'readonly':''}>
+                <i>teto ${metaD>0?fmt(metaD):'—'}</i>
+              </span>
+              <span id="mcDifGasto">${dif(metaD,difD,difD>=0)}</span>
+            </div>
+            <div class="mc-cmp-l mc-cmp-tot">
+              <span class="mc-cmp-r">Sobrou</span>
+              <span class="mc-cmp-v"><b id="mcSobra" style="color:${(real.ganho-real.gasto)>=0?'var(--gain)':'var(--expense)'}">${fmt(real.ganho-real.gasto)}</b></span>
               <span class="mc-cmp-d"></span>
-            </div>`:''}
+            </div>
           </div>
-          ${real.tem?`<p class="fin-hint">${
-            difG>=0 && metaG>0 ? `Bateu a meta de ganho, ${fmt(difG)} acima.`
-            : metaG>0 ? `Faltaram ${fmt(-difG)} para a meta de ganho.` : ''
-          } ${
-            metaD>0 ? (difD>=0 ? `Ficou ${fmt(difD)} dentro do teto de gasto.`
-                               : `Passou ${fmt(-difD)} do teto de gasto.`) : ''
-          }</p>`:''}`;
+          <p class="fin-hint" id="mcAviso">${
+            (travaG||travaD)
+              ? `Este dia tem ${travaG?real.nGanhos+' ganhos':''}${travaG&&travaD?' e ':''}${travaD?real.nGastos+' gastos':''} lançados — edite pela aba APP para não misturar os valores.`
+              : 'O que você digitar aqui vira lançamento do dia na aba APP.'
+          }</p>`;
       })()}
 
       <div style="display:flex;gap:8px;margin-top:18px">
@@ -6025,6 +6080,24 @@ function fecharMetaDoDia(fromBack){
   if(ov)ov.classList.remove('open');
   if(!fromBack)navPop();
 }
+/* diferença e sobra acompanham a digitação */
+function mcRecalcDif(){
+  const m=window._mcMetas||{ganho:0,gasto:0};
+  const g=parseNum((document.getElementById('mcRealGanho')||{}).value);
+  const d=parseNum((document.getElementById('mcRealGasto')||{}).value);
+  const difG=g-m.ganho, difD=m.gasto-d;
+  const put=(id,metaV,val,ok)=>{
+    const el=document.getElementById(id); if(!el)return;
+    el.innerHTML = metaV>0
+      ? `<span class="mc-cmp-d" style="color:${ok?'var(--gain)':'var(--expense)'}">${val>0?'+':''}${fmt(val)}</span>`
+      : `<span class="mc-cmp-d" style="color:var(--txt-faint)">—</span>`;
+  };
+  put('mcDifGanho', m.ganho, difG, difG>=0);
+  put('mcDifGasto', m.gasto, difD, difD>=0);
+  const s=document.getElementById('mcSobra');
+  if(s){ s.textContent=fmt(g-d); s.style.color=(g-d)>=0?'var(--gain)':'var(--expense)'; }
+}
+
 function salvarMetaDoDia(){
   const iso=window._metaDiaISO; if(!iso)return;
   const c=metaCal(iso.slice(0,7));
@@ -6034,7 +6107,17 @@ function salvarMetaDoDia(){
   const gasto=parseNum(g('mcGasto'));
   if(!trab && !(ganho>0) && !(gasto>0)) delete c.dias[iso];
   else c.dias[iso]={trabalha:!!trab, ganho:ganho>0?ganho:0, gasto:gasto>0?gasto:0};
-  save(); fecharMetaDoDia(); renderMetaDia(); renderUber();
+
+  /* realizado: só grava quando os campos estão liberados (um lançamento por tipo) */
+  const elG=document.getElementById('mcRealGanho'), elD=document.getElementById('mcRealGasto');
+  if(elG && !elG.hasAttribute('readonly')){
+    const rg=parseNum(elG.value), rd=parseNum((elD||{}).value);
+    const atual=realizadoDoDia(iso);
+    if(Math.abs(rg-atual.ganho)>0.004 || Math.abs(rd-atual.gasto)>0.004){
+      lancarNoDia(iso, rg, rd);
+    }
+  }
+  save(); fecharMetaDoDia(); renderMetaDia(); renderUber(); renderOperacao&&0;
 }
 function limparMetaDoDia(){
   const iso=window._metaDiaISO; if(!iso)return;
