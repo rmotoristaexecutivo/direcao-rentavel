@@ -478,6 +478,22 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
   background:var(--neutral-bg);border-radius:9px;padding:8px 11px}
 .mc-dica{margin-top:10px;font-size:12px;color:var(--txt-dim);line-height:1.5;
   background:var(--neutral-bg);border-radius:10px;padding:10px 12px}
+/* resumo do trajeto na folha de lançamento */
+.sheet-calc{background:transparent;padding:0;margin-top:12px}
+.uc-hero{background:var(--bg2);border:1px solid var(--line);border-radius:13px;
+  padding:12px 14px;margin-bottom:8px}
+.uc-hero .uc-r{display:block;font-size:10.5px;font-weight:700;color:var(--txt-faint);
+  text-transform:uppercase;letter-spacing:.05em}
+.uc-hero b{display:block;font-family:'Sora',system-ui,sans-serif;font-size:24px;
+  font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.uc-hero i{display:block;font-style:normal;font-size:11.5px;color:var(--txt-dim);margin-top:3px}
+.uc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:7px}
+.uc-tile{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:9px 10px}
+.uc-tile .uc-r{display:block;font-size:9.5px;font-weight:700;color:var(--txt-faint);
+  text-transform:uppercase;letter-spacing:.04em;line-height:1.2}
+.uc-tile b{display:block;font-size:14.5px;font-weight:800;margin-top:2px;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.uc-tile i{display:block;font-style:normal;font-size:10.5px;color:var(--txt-faint);margin-top:1px}
 .mc-cmp{background:var(--bg2);border:1px solid var(--line);border-radius:12px;
   padding:4px 12px;margin-top:8px}
 .mc-cmp-l{display:flex;align-items:center;gap:10px;padding:10px 0;
@@ -5214,8 +5230,37 @@ function renderUSheet(){
 }
 function updateUSheetCalc(){
   const el=document.getElementById('uSheetCalc'); if(!el)return;
-  const c=rowCalc(_uSheetDraft);
-  el.innerHTML=`💰 Gasto do dia: <b style="color:var(--expense)">${fmt(c.gastoTrabalho)}</b> · 🅰️ ${fmt(c.totalIda)} · 🅱️ ${fmt(c.totalVolta+(_uSheetDraft.pedagioVolta||0))}`;
+  const d=_uSheetDraft;
+  const c=rowCalc(d);
+  const km=(Number(d.kmIda)||0)+(Number(d.kmVolta)||0);
+  const litros=c.trabLitros||0, kwh=c.trabKwh||0;
+  const pedagio=(Number(d.pedagioIda)||0)+(Number(d.pedagioVolta)||0);
+
+  /* Consumo real do trajeto: km por litro e km por kWh, cada um sobre o que
+     realmente foi usado. Num trecho misto existem os dois, e uma média só
+     esconderia justamente a informação que interessa. */
+  const kmL = litros>0 ? km/litros : 0;
+  const kmKwh = kwh>0 ? km/kwh : 0;
+  const custoKm = km>0 ? c.gastoTrabalho/km : 0;
+
+  const tile=(rot,val,sub,cor)=>`<div class="uc-tile">
+    <span class="uc-r">${rot}</span>
+    <b style="${cor?`color:${cor}`:''}">${val}</b>
+    ${sub?`<i>${sub}</i>`:''}</div>`;
+
+  el.innerHTML=`
+    <div class="uc-hero">
+      <span class="uc-r">Gasto do dia</span>
+      <b style="color:var(--expense)">${fmt(c.gastoTrabalho)}</b>
+      <i>🅰️ ${fmt(c.totalIda)} · 🅱️ ${fmt(c.totalVolta+(Number(d.pedagioVolta)||0))}</i>
+    </div>
+    <div class="uc-grid">
+      ${tile('KM total', km>0?fmtN(km,1)+' km':'—', km>0?`ida ${fmtN(Number(d.kmIda)||0,0)} · volta ${fmtN(Number(d.kmVolta)||0,0)}`:'', 'var(--neutral)')}
+      ${litros>0?tile('Média', fmtN(kmL,2)+' km/l', fmtN(litros,2)+' L', 'var(--hybrid)'):''}
+      ${kwh>0?tile('Média', fmtN(kmKwh,2)+' km/kWh', fmtN(kwh,2)+' kWh', 'var(--electric)'):''}
+      ${km>0?tile('Custo por km', fmt(custoKm), '', 'var(--expense)'):''}
+      ${pedagio>0?tile('Pedágio', fmt(pedagio), 'ida + volta', 'var(--roxo)'):''}
+    </div>`;
 }
 function saveUSheet(){
   const date=_uSheetDraft.data;
@@ -6129,7 +6174,19 @@ function limparMetaDoDia(){
 let _alertaMetaMostrado='';
 function renderMetaDia(){
   const el=document.getElementById('opMetaDia'); if(!el)return;
-  const m=metaDiaCfg();
+  /* A meta de hoje vem do CALENDÁRIO — meta própria do dia, ou o que falta da
+     meta do mês dividido pelos dias que ainda restam. Antes vinha de
+     state.uber.metaDia, um valor global e único que não conhecia o calendário
+     nem o mês: aparecia "R$ 113,64" (meta do mês ÷ 22) num dia cuja meta
+     marcada era outra. O valor global segue como reserva para quem nunca
+     marcou nada no calendário. */
+  const _mGlobal=metaDiaCfg();
+  const _hk=hojeKey();
+  const _mCal=metaDoDia(_hk);
+  const m={
+    ganho: _mCal.ganho>0 ? _mCal.ganho : (Number(_mGlobal.ganho)||0),
+    gasto: _mCal.gasto>0 ? _mCal.gasto : (Number(_mGlobal.gasto)||0)
+  };
   const t=totaisDeHoje();
   const temMeta=(m.ganho>0||m.gasto>0);
 
@@ -7535,7 +7592,11 @@ function _saveLancamentoInterno(){
 let _metaBatidaEm=null;      // evita repetir o "parabéns" a cada lançamento
 
 function checarMetaDoDia(foiEntrada){
-  const m=metaDiaCfg();
+  /* mesma regra do card: calendário primeiro, valor global como reserva */
+  const g=metaDiaCfg();
+  const c=metaDoDia(hojeKey());
+  const m={ ganho: c.ganho>0?c.ganho:(Number(g.ganho)||0),
+            gasto: c.gasto>0?c.gasto:(Number(g.gasto)||0) };
   if(!(m.ganho>0 || m.gasto>0)) return;      // sem meta definida, nada a dizer
   const t=totaisDeHoje();
   const hoje=todayStr();
@@ -9835,8 +9896,30 @@ function renderPSheet(){
 }
 function updatePSheetCalc(){
   const el=document.getElementById('pSheetCalc'); if(!el)return;
-  const c=rowCalcP(_pSheetDraft);
-  el.innerHTML=`💰 Gasto do dia: <b style="color:var(--expense)">${fmt(c.gastoDia)}</b> · 🅰️ ${fmt(c.totalIda+(_pSheetDraft.pedagioIda||0))} · 🅱️ ${fmt(c.totalVolta+(_pSheetDraft.pedagioVolta||0))}`;
+  const d=_pSheetDraft;
+  const c=rowCalcP(d);
+  const km=(Number(d.kmIda)||0)+(Number(d.kmVolta)||0);
+  const litros=c.litros||0, kwh=c.kwh||0;
+  const kmL = litros>0 ? km/litros : 0;
+  const kmKwh = kwh>0 ? km/kwh : 0;
+  const custoKm = km>0 ? c.gastoDia/km : 0;
+  const tile=(rot,val,sub,cor)=>`<div class="uc-tile">
+    <span class="uc-r">${rot}</span>
+    <b style="${cor?`color:${cor}`:''}">${val}</b>
+    ${sub?`<i>${sub}</i>`:''}</div>`;
+  el.innerHTML=`
+    <div class="uc-hero">
+      <span class="uc-r">Gasto do dia</span>
+      <b style="color:var(--expense)">${fmt(c.gastoDia)}</b>
+      <i>🅰️ ${fmt(c.totalIda+(Number(d.pedagioIda)||0))} · 🅱️ ${fmt(c.totalVolta+(Number(d.pedagioVolta)||0))}</i>
+    </div>
+    <div class="uc-grid">
+      ${tile('KM total', km>0?fmtN(km,1)+' km':'—', km>0?`ida ${fmtN(Number(d.kmIda)||0,0)} · volta ${fmtN(Number(d.kmVolta)||0,0)}`:'', 'var(--neutral)')}
+      ${litros>0?tile('Média', fmtN(kmL,2)+' km/l', fmtN(litros,2)+' L', 'var(--hybrid)'):''}
+      ${kwh>0?tile('Média', fmtN(kmKwh,2)+' km/kWh', fmtN(kwh,2)+' kWh', 'var(--electric)'):''}
+      ${km>0?tile('Custo por km', fmt(custoKm), '', 'var(--expense)'):''}
+      ${c.pedagioTotal>0?tile('Pedágio', fmt(c.pedagioTotal), 'ida + volta', 'var(--roxo)'):''}
+    </div>`;
 }
 function savePSheet(){
   const date=_pSheetDraft.data;
