@@ -494,6 +494,35 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 .uc-tile b{display:block;font-size:14.5px;font-weight:800;margin-top:2px;
   font-variant-numeric:tabular-nums;line-height:1.2}
 .uc-tile i{display:block;font-style:normal;font-size:10.5px;color:var(--txt-faint);margin-top:1px}
+.d-ate{font-size:11px;color:var(--neutral);font-weight:700;margin-left:2px}
+.m-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p-per-chips{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 6px}
+.p-per-chips button{border:1px solid var(--line);background:var(--bg2);color:var(--txt-dim);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:600;font-size:11.5px;
+  padding:6px 11px;border-radius:99px;cursor:pointer}
+.p-per-chips button:active{background:var(--neutral);border-color:var(--neutral);color:#fff}
+.p-per-dica{font-size:11.5px;color:var(--neutral);margin:0 0 8px;line-height:1.45}
+.pw-card{background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;
+  margin-top:10px;overflow:hidden;position:relative}
+.pw-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--hybrid)}
+.pw-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 14px 8px 16px}
+.pw-h b{display:block;font-size:14px;font-weight:700}
+.pw-h i{display:block;font-style:normal;font-size:11px;color:var(--txt-faint);margin-top:1px}
+.pw-v{font-weight:800;font-size:16px;color:var(--expense);font-variant-numeric:tabular-nums;flex:none}
+.pw-stats{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px 16px}
+.pw-stats span{background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:5px 9px}
+.pw-stats i{display:block;font-style:normal;font-size:9.5px;color:var(--txt-faint);
+  text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.pw-stats b{display:block;font-size:13px;font-variant-numeric:tabular-nums}
+.pw-list{border-top:1px solid var(--line)}
+.pw-item{display:flex;align-items:center;gap:8px;padding:9px 14px 9px 16px;cursor:pointer;
+  border-bottom:1px solid var(--line);font-size:12.5px}
+.pw-item:last-child{border-bottom:0}
+.pw-item:active{background:var(--bg2)}
+.pw-d{flex:none;font-weight:700;min-width:96px}
+.pw-d em{font-style:normal;font-weight:500;color:var(--txt-faint);font-size:11px;margin-left:3px}
+.pw-k{flex:1;color:var(--txt-dim);font-size:11.5px;min-width:0}
+.pw-g{flex:none;font-weight:700;color:var(--expense);font-variant-numeric:tabular-nums}
 .mc-cmp{background:var(--bg2);border:1px solid var(--line);border-radius:12px;
   padding:4px 12px;margin-top:8px}
 .mc-cmp-l{display:flex;align-items:center;gap:10px;padding:10px 0;
@@ -2547,13 +2576,13 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   <!-- =================== ABA DESPESA PESSOAL (uso particular do carro) =================== -->
   <section class="view" id="view-pessoal">
 
-    <!-- ===== FINANÇAS PESSOAIS (tela nova) ===== -->
-    <div id="finRoot"></div>
+    <!-- A aba Pessoal voltou a ser o registro de deslocamento (combustível).
+         O módulo de Finanças foi desativado — não removido: state.financas
+         continua no estado e na nuvem, então nada do que foi lançado lá se
+         perdeu caso um dia volte. -->
+    <div id="finRoot" style="display:none"></div>
 
-    <!-- A aba antiga continua no DOM, oculta: a migração lê os dados dela, e o
-         renderPessoal() legado ainda procura estes elementos. Removê-los daria
-         erro de elemento inexistente sem ganho nenhum. -->
-    <div id="pessoalLegacy" style="display:none">
+    <div id="pessoalLegacy">
 
     <!-- ===== MOBILE: navegação Anos → Meses → Dias ===== -->
     <div class="mobile-only">
@@ -5004,7 +5033,9 @@ function mobileDayCard(r,i,mod,ord){
   if(c.pedagioTotal>0)tags.push(`<span class="d-tag ped">🛣️ ${fmt(c.pedagioTotal)}</span>`);
   return `<div class="d-row${fds?' fds':''}">
     <div class="d-row-top" onclick="${openFn}(${i})" style="cursor:pointer">
-      <span class="d-date">${fmtDateBR(r.data)}<span class="d-wd">${diaSemanaCurto(r.data)}</span>${ordBadge}</span>
+      <span class="d-date">${fmtDateBR(r.data)}${
+        (r.ate && r.ate>r.data)?` <span class="d-ate">→ ${fmtDateBR(r.ate).slice(0,5)}</span>`:''
+      }<span class="d-wd">${(r.ate && r.ate>r.data)?diaSemanaCurto(r.data)+'–'+diaSemanaCurto(r.ate):diaSemanaCurto(r.data)}</span>${ordBadge}</span>
       <span class="d-right">
         <span class="d-val">${fmt(gastoDia)}</span>
         <button class="row-add" onclick="event.stopPropagation();${addSameFn}" title="Adicionar outro lançamento nesta mesma data">➕</button>
@@ -9493,9 +9524,6 @@ function salvarContaFin(){
 }
 
 function renderPessoal(){
-  /* a aba agora é Finanças Pessoais; o legado continua sendo renderizado
-     escondido porque a migração e o histórico ainda leem dele */
-  try{ financas(); finMigrarPessoal(true); renderFinancas(); }catch(e){ console.error(e); }
   hydratePessoal(state); // blindagem: garante shape mesmo se o state veio cru da nuvem
   const _kr=document.getElementById('pCfgBateria'); if(_kr)_kr.value=fmtN(state.pessoal.config.bateriaKwh||18.3,1);
   const _kl=document.getElementById('pCfgKmL'); if(_kl)_kl.value=fmtN(state.pessoal.config.kmL||20,0);
@@ -9605,76 +9633,161 @@ function pessoalYearTotal(y){
   }
   return tot;
 }
-function pNavBack(){
-  resetSecoes();
-  _pNavLevel='anos';   /* tela única */
-  renderPessoalMobile();
-}
+function pNavBack(){ resetSecoes(); _pNavLevel='anos'; renderPessoalMobile(); }
 function pNavGoMeses(y){ resetSecoes(); _pNavYear=y; _pNavLevel='meses'; renderPessoalMobile(); }
-function pNavGoDias(key){ resetSecoes(); state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4)); _pNavLevel='dias'; save(); renderPessoalMobile(); }
+/* tela única: escolher um mês recarrega a mesma tela com ele */
+function pNavGoDias(key){ state.pessoal.current=key; state.pessoal.year=Number(key.slice(0,4)); _pNavYear=state.pessoal.year; _pNavLevel='anos'; save(); renderPessoalMobile(); try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){} }
 function pNavSetHeader(title,showBack){
   const t=document.getElementById('pNavTitle'); if(t)t.innerHTML=title;
-  const b=document.getElementById('pBackBtn'); if(b)b.classList.toggle('show',!!showBack);
-  /* O botão flutuante da aba Pessoal foi aposentado: a tela de Finanças tem
-     "+ Receita" e "− Despesa" próprios, e este ＋ ainda abria o formulário
-     ANTIGO de deslocamento (ida/volta) — dois lançamentos diferentes no mesmo
-     gesto. Fica oculto sempre. */
-  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display='none';
+  const b=document.getElementById('pBackBtn'); if(b)b.classList.remove('show');
+  const fab=document.getElementById('pessoalFab'); if(fab)fab.style.display=(abaAtiva()==='pessoal')?'':'none';
 }
 function renderPessoalMobile(){
   const body=document.getElementById('pNavBody');
   if(!body)return; // desktop
   if(_pNavYear==null)_pNavYear=state.pessoal.year||Number(state.pessoal.current.slice(0,4));
-  if(_pNavLevel==='anos')       return pRenderAnos();
-  if(_pNavLevel==='meses')      return pRenderMeses();
-  return pRenderDias();
+  return pRenderAnos();   /* tela única */
 }
+/* ============================================================================
+   PESSOAL — TELA ÚNICA, POR DIA OU POR SEMANA
+   ----------------------------------------------------------------------------
+   Mesma estrutura de Corp e Manutenção: o mês aberto logo de cara, trocado por
+   ‹ › no topo. A diferença é a alternância Por dia / Por semana — quem lança a
+   semana inteira de uma vez (ou o fim de semana num lançamento só) quer ver o
+   consumo da semana, não uma lista de dias.
+   ============================================================================ */
+let _pVisao='semana';
+
+function pTrocarMes(dir){
+  const {y,m}=pMonthKeyParts(state.pessoal.current);
+  const d=new Date(y,m-1+dir,1);
+  state.pessoal.current=d.getFullYear()+'-'+pad(d.getMonth()+1);
+  state.pessoal.year=d.getFullYear(); _pNavYear=d.getFullYear();
+  save(); renderPessoalMobile();
+}
+function pSetVisao(v){ _pVisao=v; renderPessoalMobile(); }
+
+/* totais de um conjunto de lançamentos */
+function pTotais(rows){
+  const t={gasto:0,km:0,litros:0,kwh:0,comb:0,el:0,ped:0,n:rows.length};
+  rows.forEach(r=>{
+    const c=rowCalcP(r);
+    t.gasto+=c.gastoDia; t.km+=(r.kmIda||0)+(r.kmVolta||0);
+    t.litros+=c.litros; t.kwh+=c.kwh; t.comb+=c.combVal; t.el+=c.elVal; t.ped+=c.pedagioTotal;
+  });
+  return t;
+}
+
 function pRenderAnos(){
-  /* mesma tela única do Trabalho — ver comentário em uRenderAnos */
   pNavSetHeader('Pessoal',false);
   const years=pessoalYears();
-  const hoje=new Date(), anoAtual=hoje.getFullYear(), mesAtual=hoje.getMonth()+1;
-  if(_pNavYear==null)_pNavYear=anoAtual;
   const y=_pNavYear;
-  const keyMes=`${y}-${pad(mesAtual)}`;
-  const rowsMes=state.pessoal.months[keyMes]||[];
-  const totMes=monthTotalsP(rowsMes).gastoDia;
+  const key=state.pessoal.current;
+  const {y:cy,m:cm}=pMonthKeyParts(key);
+  const rows=ensurePessoalMonth(key);
+  const t=pTotais(rows);
   const totAno=pessoalYearTotal(y);
-  const ehAnoAtual=(y===anoAtual);
 
   const yearBtns=years.map(yy=>`<button class="yr-btn${yy===y?' active':''}" onclick="pNavSetYear(${yy})">${yy}</button>`).join('')
     +_btnAddAno('pessoal')+_btnRemoveAno(y,'pessoal');
 
-  const topo=`<div class="a-duo">
-    <div class="a-duo-c f-cost" onclick="${ehAnoAtual?`pNavGoDias('${keyMes}')`:''}">
-      <div class="a-duo-k">${MESES[mesAtual-1]}${ehAnoAtual?'':' · '+y}</div>
-      <div class="a-duo-v" style="color:var(--expense)">${fmt(totMes)}</div>
-      <div class="a-duo-s">${rowsMes.length} dia(s)${ehAnoAtual?' · toque para abrir':''}</div>
-    </div>
-    <div class="a-duo-c f-roxo">
-      <div class="a-duo-k">Ano ${y}</div>
-      <div class="a-duo-v" style="color:var(--expense)">${fmt(totAno)}</div>
-      <div class="a-duo-s">acumulado</div>
-    </div>
+  const kmL = t.litros>0 ? t.km/t.litros : 0;
+  const custoKm = t.km>0 ? t.gasto/t.km : 0;
+
+  const topo=`
+  <div class="u-mesbar">
+    <button class="fin-nav" onclick="pTrocarMes(-1)">‹</button>
+    <div class="fin-mes">${MESES[cm-1]} ${cy}</div>
+    <button class="fin-nav" onclick="pTrocarMes(1)">›</button>
+  </div>
+  <div class="a-hero f-cost">
+    <div class="a-hero-k">Gasto com combustível</div>
+    <div class="a-hero-v" style="color:var(--expense)">${fmt(t.gasto)}</div>
+    <div class="a-hero-s">${t.n} lançamento(s) · ${fmtN(t.km,0)} km</div>
+  </div>
+  <div class="a-grid3">
+    <div class="a-tile f-fuel"><div class="t">Média</div><div class="v">${kmL>0?fmtN(kmL,1)+' km/l':'—'}</div><div class="s">${fmtN(t.litros,1)} L</div></div>
+    <div class="a-tile f-cost"><div class="t">Custo por km</div><div class="v">${t.km>0?fmt(custoKm):'—'}</div></div>
+    <div class="a-tile f-roxo"><div class="t">Ano ${y}</div><div class="v">${fmt(totAno)}</div></div>
+  </div>
+  ${(t.el>0||t.ped>0)?`<div class="a-grid3">
+    ${t.el>0?`<div class="a-tile f-ev"><div class="t">Elétrico</div><div class="v">${fmt(t.el)}</div><div class="s">${fmtN(t.kwh,1)} kWh</div></div>`:''}
+    ${t.comb>0&&t.el>0?`<div class="a-tile f-fuel"><div class="t">Combustível</div><div class="v">${fmt(t.comb)}</div></div>`:''}
+    ${t.ped>0?`<div class="a-tile f-roxo"><div class="t">Pedágio</div><div class="v">${fmt(t.ped)}</div></div>`:''}
+  </div>`:''}
+
+  <div class="fin-seg" style="margin-top:14px">
+    <button class="${_pVisao==='semana'?'on':''}" onclick="pSetVisao('semana')">Por semana</button>
+    <button class="${_pVisao==='dia'?'on':''}" onclick="pSetVisao('dia')">Por dia</button>
   </div>`;
+
+  let corpo='';
+  if(!rows.length){
+    corpo=`<div class="m-empty-state">Nenhum lançamento em ${MESES[cm-1].toLowerCase()}.<br>Toque no <b>＋</b> pra adicionar.</div>`;
+  } else if(_pVisao==='dia'){
+    const ords=ordinaisPorData(rows);
+    corpo=`<div class="panel" style="padding:4px 0;margin-top:10px">${rows.map((r,i)=>mobileDayCard(r,i,'pessoal',ords[i])).join('')}</div>`;
+  } else {
+    /* agrupa pela semana do dia inicial do lançamento (segunda a domingo) */
+    const semanas={};
+    rows.forEach((r,i)=>{ const s=_segundaDe(r.data); (semanas[s]=semanas[s]||[]).push({r,i}); });
+    corpo=Object.keys(semanas).sort().reverse().map(seg=>{
+      const itens=semanas[seg];
+      const tw=pTotais(itens.map(x=>x.r));
+      /* a semana é recortada pelo mês em exibição: a primeira começa no dia 1 e
+         a última termina no último dia do mês, não no mês vizinho */
+      const iniM=key+'-01', fimM=_fimMes(key+'-01');
+      const segV = seg<iniM ? iniM : seg;
+      const domBruto=_somaDias(seg,6);
+      const dom = domBruto>fimM ? fimM : domBruto;
+      const parcial = (segV!==seg)||(dom!==domBruto);
+      const kml=tw.litros>0?tw.km/tw.litros:0;
+      return `<div class="pw-card">
+        <div class="pw-h">
+          <div>
+            <b>Semana ${fmtDateBR(segV).slice(0,5)} – ${fmtDateBR(dom).slice(0,5)}</b>
+            <i>${tw.n} lançamento${tw.n>1?'s':''}${parcial?' · semana parcial do mês':''}</i>
+          </div>
+          <span class="pw-v">${fmt(tw.gasto)}</span>
+        </div>
+        <div class="pw-stats">
+          <span><i>KM</i><b>${fmtN(tw.km,0)}</b></span>
+          <span><i>Litros</i><b>${fmtN(tw.litros,1)}</b></span>
+          <span><i>km/l</i><b>${kml>0?fmtN(kml,1):'—'}</b></span>
+          ${tw.kwh>0?`<span><i>kWh</i><b>${fmtN(tw.kwh,1)}</b></span>`:''}
+          ${tw.ped>0?`<span><i>Pedágio</i><b>${fmt(tw.ped)}</b></span>`:''}
+        </div>
+        <div class="pw-list">${itens.map(({r,i})=>{
+          const c=rowCalcP(r);
+          const km=(r.kmIda||0)+(r.kmVolta||0);
+          const per=(r.ate&&r.ate>r.data);
+          return `<div class="pw-item" onclick="openPSheet(${i})">
+            <span class="pw-d">${per
+              ? `${diaSemanaCurto(r.data)}–${diaSemanaCurto(r.ate)} <em>${fmtDateBR(r.data).slice(0,5)}→${fmtDateBR(r.ate).slice(0,5)}</em>`
+              : `${diaSemanaCurto(r.data)} <em>${fmtDateBR(r.data).slice(0,5)}</em>`}</span>
+            <span class="pw-k">${km>0?fmtN(km,0)+' km':''}${c.litros>0?' · '+fmtN(c.litros,1)+' L':''}</span>
+            <span class="pw-g">${fmt(c.gastoDia)}</span>
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+    }).join('');
+  }
 
   let meses='';
   for(let m=1;m<=12;m++){
-    if(ehAnoAtual && m===mesAtual)continue;
-    const key=`${y}-${pad(m)}`;
-    const rows=state.pessoal.months[key]||[];
-    const has=rows.length>0;
-    const tot=monthTotalsP(rows).gastoDia;
-    meses+=`<div class="a-mrow${has?'':' empty'}" onclick="pNavGoDias('${key}')">
-      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${rows.length} dia(s)</small>`:''}</div>
-      <div class="a-mrow-v"${has?' style="color:var(--expense)"':''}>${has?fmt(tot):'—'}</div>
+    const k=`${y}-${pad(m)}`;
+    if(k===key)continue;
+    const rs=state.pessoal.months[k]||[];
+    const has=rs.length>0;
+    meses+=`<div class="a-mrow${has?'':' empty'}" onclick="pNavGoDias('${k}')">
+      <div class="a-mrow-l"><b>${MESES[m-1]}</b>${has?`<small>${rs.length} lançamento(s)</small>`:''}</div>
+      <div class="a-mrow-v"${has?' style="color:var(--expense)"':''}>${has?fmt(monthTotalsP(rs).gastoDia):'—'}</div>
       <span class="a-mrow-ar">›</span>
     </div>`;
   }
 
   document.getElementById('pNavBody').innerHTML=
-    `<div class="yr-bar">${yearBtns}</div>`
-    +topo
+     `<div class="yr-bar">${yearBtns}</div>`+topo+corpo
     +secWrap('p-meses','Outros meses',`<div class="a-mlist">${meses}</div>`)
     +secWrap('p-evolucao','Evolução',`<div id="perPanel-pessoal-m"></div>`);
   renderPeriodPanel('pessoal');
@@ -9756,10 +9869,7 @@ function pMonthPicker(){
 let _pSheetIdx=null; // null = novo
 let _pSheetDraft=null,_pSheetOrig=null;
 function openPSheet(i,focoLado){
-  if(i==null && _pNavLevel!=='dias'){
-    const h=new Date();
-    state.pessoal.current=h.getFullYear()+'-'+pad(h.getMonth()+1);
-  }
+  /* o mês em exibição é o alvo do lançamento (a data padrão já cai nele) */
   const rows=ensurePessoalMonth(state.pessoal.current);
   _pSheetIdx = (i==null?null:i);
   if(i==null){
@@ -9774,10 +9884,64 @@ function openPSheet(i,focoLado){
     _pSheetOrig=JSON.parse(JSON.stringify(rows[i]));
   }
   renderPSheet();
+  pSheetAteSync();
   document.getElementById('pSheetOverlay').classList.add('open');
   focusSheetTrecho('p',focoLado);
   navPush(()=>closePSheet(true), ()=>_draftDirty(_pSheetDraft,_pSheetOrig));
 }
+/* Atalhos de período a partir da data "De".
+   Semana começa na segunda: é como o motorista pensa a semana de trabalho,
+   e o fim de semana (sex–dom) fica inteiro dentro dela. */
+function _segundaDe(iso){
+  const d=new Date(iso+'T00:00:00');
+  const dow=(d.getDay()+6)%7;           // 0=segunda … 6=domingo
+  d.setDate(d.getDate()-dow);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function _somaDias(iso,n){
+  const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function _inicioMes(iso){ return iso.slice(0,7)+'-01'; }
+function _fimMes(iso){
+  const [y,m]=iso.split('-').map(Number);
+  return iso.slice(0,7)+'-'+pad(new Date(y,m,0).getDate());
+}
+
+function pSheetPeriodo(tipo){
+  const base=_pSheetDraft.data||todayStr();
+  const seg=_segundaDe(base);
+  /* Cada gasto fica no seu mês: a semana que atravessa a virada é cortada no
+     último (ou no primeiro) dia do mês da data escolhida. Se 31/10 cai num
+     sábado, "sex a dom" vira sex 30 a sáb 31 — o domingo 01/11 é de novembro. */
+  const ini=_inicioMes(base), fim=_fimMes(base);
+  const clamp=x=> x<ini?ini:(x>fim?fim:x);
+  if(tipo==='dia'){ _pSheetDraft.ate=''; }
+  else if(tipo==='fds'){ _pSheetDraft.data=clamp(_somaDias(seg,4)); _pSheetDraft.ate=clamp(_somaDias(seg,6)); }
+  else { _pSheetDraft.data=clamp(seg); _pSheetDraft.ate=clamp(_somaDias(seg,6)); }
+  if(_pSheetDraft.ate===_pSheetDraft.data) _pSheetDraft.ate='';
+  const a=document.getElementById('pSheetData'), b=document.getElementById('pSheetAte');
+  if(a)a.value=_pSheetDraft.data; if(b)b.value=_pSheetDraft.ate||'';
+  pSheetAteSync();
+}
+function pSheetAteSync(){
+  const el=document.getElementById('pSheetAteDica'); if(!el)return;
+  const d=_pSheetDraft.data, a=_pSheetDraft.ate;
+  if(a && d && a.slice(0,7)!==d.slice(0,7)){
+    el.textContent=`O período passa de ${MESES[Number(d.slice(5,7))-1].toLowerCase()} para o mês seguinte. Lance até ${fmtDateBR(_fimMes(d)).slice(0,5)} aqui e o restante em outro lançamento — cada gasto fica no seu mês.`;
+    el.style.display='';
+    return;
+  }
+  if(a && d && a>d){
+    const n=Math.round((new Date(a+'T00:00:00')-new Date(d+'T00:00:00'))/86400000)+1;
+    el.textContent=`Um lançamento cobrindo ${n} dias (${fmtDateBR(d).slice(0,5)} a ${fmtDateBR(a).slice(0,5)}). Some o km e o combustível do período todo.`;
+    el.style.display='';
+  } else if(a && d && a<d){
+    el.textContent='A data final está antes da inicial — confira.';
+    el.style.display='';
+  } else { el.textContent=''; el.style.display='none'; }
+}
+
 function closePSheet(fromBack){ document.getElementById('pSheetOverlay').classList.remove('open'); _pSheetIdx=null; _pSheetDraft=null; _pSheetOrig=null; if(!fromBack)navPop(); }
 function pSheetSetTipo(lado,tipo){
   _pSheetDraft[lado==='ida'?'tipoIda':'tipoVolta']=tipo;
@@ -9881,7 +10045,18 @@ function renderPSheet(){
   el.innerHTML=`
     <div class="sheet-grip"></div>
     <h3>${_pSheetIdx==null?'➕ Novo lançamento':'✏️ Editar lançamento'}</h3>
-    <div class="m-field"><label>Data</label><input type="date" id="pSheetData" value="${_pSheetDraft.data}" onchange="_pSheetDraft.data=this.value"></div>
+    <!-- PERÍODO: um lançamento pode cobrir vários dias. Quem roda a semana e
+         anota tudo de uma vez no domingo não precisa picar em sete lançamentos. -->
+    <div class="m-field-row">
+      <div class="m-field"><label>De</label><input type="date" id="pSheetData" value="${_pSheetDraft.data}" onchange="_pSheetDraft.data=this.value;pSheetAteSync()"></div>
+      <div class="m-field"><label>Até (opcional)</label><input type="date" id="pSheetAte" value="${_pSheetDraft.ate||''}" onchange="_pSheetDraft.ate=this.value;pSheetAteSync()"></div>
+    </div>
+    <div class="p-per-chips">
+      <button onclick="pSheetPeriodo('dia')">Só este dia</button>
+      <button onclick="pSheetPeriodo('fds')">Sex a dom</button>
+      <button onclick="pSheetPeriodo('semana')">Semana toda</button>
+    </div>
+    <p class="p-per-dica" id="pSheetAteDica"></p>
     ${pSheetTrechoHtml('ida')}
     ${pSheetTrechoHtml('volta')}
     <div class="m-field"><label>📝 OBS</label>
@@ -9924,6 +10099,19 @@ function updatePSheetCalc(){
 function savePSheet(){
   const date=_pSheetDraft.data;
   if(!date){ alert('Escolha a data.'); return; }
+  /* período: "até" só vale se for depois do "de"; igual ou vazio vira dia único */
+  if(_pSheetDraft.ate){
+    if(_pSheetDraft.ate<date){ alert('A data final está antes da inicial.'); return; }
+    if(_pSheetDraft.ate.slice(0,7)!==date.slice(0,7)){
+      const fim=_fimMes(date);
+      if(confirm('O período passa para o mês seguinte.\n\nOK — encerrar em '+fmtDateBR(fim).slice(0,5)+
+                 ' (o restante você lança no outro mês).\nCancelar — voltar e ajustar.')){
+        _pSheetDraft.ate=fim;
+        if(_pSheetDraft.ate===date) delete _pSheetDraft.ate;
+      } else return;
+    }
+    if(_pSheetDraft.ate===date) delete _pSheetDraft.ate;
+  } else delete _pSheetDraft.ate;
   const monthKey=date.slice(0,7);
   if(monthKey!==state.pessoal.current){ state.pessoal.current=monthKey; state.pessoal.year=Number(monthKey.slice(0,4)); }
   const rows=ensurePessoalMonth(monthKey);
@@ -10929,11 +11117,8 @@ const RES_APPS=[['Uber','uber'],['99','g99'],['InDriver','indriver'],['Particula
                 ['Shopee','shopee'],['Mercado Livre','mercadolivre'],['iFood','ifood'],['Lalamove','lalamove']];
 const RES_FONTES_ENT={};
 RES_APPS.forEach(([nome,slug])=>{ RES_FONTES_ENT[slug]={label:nome,cor:'var(--gain)'}; });
-/* Receita pessoal é fonte PRÓPRIA, separada dos apps de corrida.
-   Sem isso, salário e reembolso entrariam no mesmo bolo do faturamento das
-   corridas, e todo indicador de trabalho (R$/km, R$/corrida, lucro da operação)
-   sairia inflado. São dinheiros de naturezas diferentes. */
-RES_FONTES_ENT['pessoal']={label:'👤 Pessoal',cor:'var(--roxo)',sub:'receitas fora do trabalho'};
+/* Sem o módulo de Finanças, a aba Pessoal só registra gasto de deslocamento —
+   não existe mais entrada pessoal para separar aqui. */
 /* fontes de SAÍDA */
 const RES_FONTES_SAI={
   trabalho:     {label:'🏢 Corp',      cor:'var(--expense)', sub:'deslocamento ida/volta'},
@@ -11003,25 +11188,13 @@ function resCollect(){
         km:c.kmTotal||0,corridas:r.corridas||0,horas:r.horas||0});
     });
   }));
-  /* A fonte "pessoal" do Resumo passou a ser o módulo de Finanças.
-     Ler os dois lados contaria em dobro: os lançamentos migrados são exatamente
-     os mesmos gastos que estavam em state.pessoal.months. */
-  financas().lancamentos.forEach(l=>{
-    if(!l.venc && !l.dataLanc) return;
-    const data=l.venc||l.dataLanc;
-    const v=Number(l.valor)||0;
-    if(!(v>0)) return;
-    if(l.tipo==='saida'){
-      out.push({data, lado:'saida', fonte:'pessoal', valor:v,
-        km:(l.comb&&l.comb.km)||0,
-        litros:(l.comb&&l.comb.tipo!=='el')?(l.comb.qtda||0):0,
-        kwh:(l.comb&&l.comb.tipo==='el')?(l.comb.qtda||0):0});
-    } else {
-      /* receitas pessoais entram como entrada da fonte 'pessoal' — os ganhos de
-         corrida continuam vindo da aba APP, sem mistura */
-      out.push({data, lado:'entrada', fonte:'pessoal', valor:v});
-    }
-  });
+  /* A fonte "pessoal" volta a ser o deslocamento da aba Pessoal. */
+  Object.values(state.pessoal.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
+    if(!r.data)return;
+    const c=rowCalcP(r);
+    if(c.gastoDia>0)out.push({data:r.data,lado:'saida',fonte:'pessoal',valor:c.gastoDia,
+      km:(r.kmIda||0)+(r.kmVolta||0),litros:c.litros,kwh:c.kwh});
+  }));
   Object.values(state.abastecimentos.months||{}).forEach(rows=>(rows||[]).forEach(r=>{
     if(!r.data)return;
     out.push({data:r.data,lado:'saida',fonte:'abastecimento',valor:r.valor||0,
@@ -11342,9 +11515,8 @@ function resGeralHtml(itens){
      que a guia Pessoal tinha receita — quando ela só tem despesa. */
   const chipEntrada=
     `<button class="per-chip${onEntApps?' active':''}"
-        onclick="toggleResGeralFonteEnt('apps')">${onEntApps?'✓ ':''}🚗 Ganhos dos apps</button>`+
-    `<button class="per-chip${onEntPess?' active':''}"
-        onclick="toggleResGeralFonteEnt('pessoal')">${onEntPess?'✓ ':''}👤 Receita pessoal</button>`;
+        onclick="toggleResGeralFonteEnt('apps')">${onEntApps?'✓ ':''}🚗 Ganhos dos apps</button>`;
+  /* o chip de receita pessoal saiu junto com o módulo de Finanças */
 
   if(!_resGeral.aberto){
     /* fechado, o card já mostra o saldo dos períodos escolhidos — antes era só um
@@ -11418,7 +11590,7 @@ function resGeralHtml(itens){
       </div>
       <div class="res-cfg-t" style="margin-top:14px">Entradas consideradas</div>
       <div class="per-grid">${chipEntrada}</div>
-      <p class="sub" style="margin:2px 0 0;font-size:11px">A receita pessoal (salário, reembolso) fica fora por padrão, para não se misturar com o faturamento das corridas. Desmarque os apps para ver só o lado pessoal.</p>
+      <p class="sub" style="margin:2px 0 0;font-size:11px">Desmarque para ver só os gastos, sem o faturamento das corridas.</p>
       <div class="res-cfg-t" style="margin-top:14px">Gastos considerados</div>
       <div class="per-grid">${chipsFonte}</div>
       <p class="sub" style="margin:2px 0 0;font-size:11px">Abastecimento e Manutenção já estão dentro de Trabalho/Corp/Pessoal — marcar junto conta em dobro.</p>
