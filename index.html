@@ -9526,7 +9526,81 @@ function salvarContaFin(){
   save(); fecharContaModal(); toast('Conta salva');
 }
 
+/* ============================================================================
+   RECUPERAÇÃO: FINANÇAS → PESSOAL
+   ----------------------------------------------------------------------------
+   Enquanto a aba Pessoal foi o módulo de Finanças, os lançamentos novos foram
+   gravados em state.financas. Ao reverter a aba, eles ficaram invisíveis — não
+   apagados. Isto traz de volta os que são deslocamento: combustível, pedágio e
+   estacionamento.
+
+   Seguro por construção:
+   - só ADICIONA; nunca remove nada de state.financas nem de state.pessoal
+   - ignora o que veio da migração original (migrado:true) — esses já existem
+     na aba Pessoal, porque a migração copiou em vez de mover
+   - marca cada lançamento trazido (revertido:true), então rodar de novo não
+     duplica
+   - pula se já existir na aba Pessoal um dia com a mesma data e o mesmo valor
+   ============================================================================ */
+function recuperarDasFinancas(){
+  const f=state.financas;
+  if(!f || !Array.isArray(f.lancamentos) || !f.lancamentos.length) return 0;
+  const cats={}; (f.categorias||[]).forEach(c=>cats[c.id]=c);
+  const nomeSub=(l)=>{ const c=cats[l.catId]; if(!c||!l.subId)return ''; const s=(c.subs||[]).find(x=>x.id===l.subId); return s?s.nome:''; };
+  let n=0;
+
+  f.lancamentos.forEach(l=>{
+    if(l.migrado || l.revertido || l.tipo!=='saida') return;
+    const cat=cats[l.catId]||{};
+    const sub=nomeSub(l);
+    const ehComb = !!l.comb || cat.form==='combustivel';
+    const ehPed  = cat.nome==='Pedágio';
+    const ehEst  = /estacionamento/i.test(sub) || /estacionamento/i.test(l.desc||'');
+    if(!ehComb && !ehPed && !ehEst) return;     // mercado, luz etc. ficam nas Finanças
+
+    const data=l.venc||l.dataLanc; if(!data) return;
+    const valor=Number(l.valor)||0; if(!(valor>0)) return;
+    const mk=data.slice(0,7);
+    const rows=ensurePessoalMonth(mk);
+
+    /* já existe algo igual? não duplica */
+    const igual=rows.some(r=>r.data===data && Math.abs(rowCalcP(r).gastoDia-valor)<0.02);
+    if(igual){ l.revertido=true; return; }
+
+    const r=emptyRowP(data);
+    if(ehComb){
+      const c=l.comb||{};
+      const tipo=(c.tipo==='el'||c.tipo==='misto')?c.tipo:'comb';
+      r.tipoIda=tipo;
+      r.kmIda=Number(c.km)||0;
+      r.qtdaIda=Number(c.qtda)||0;
+      r.valorIda=Number(c.valorUnit)||0;
+      if(tipo==='misto'){ r.qtdaIdaEl=Number(c.qtdaEl)||0; r.valorIdaEl=Number(c.valorUnitEl)||0; }
+      if(tipo!=='el' && r.kmIda>0 && r.qtdaIda>0) r.rendIda=Math.round(r.kmIda/r.qtdaIda*100)/100;
+      /* sem km e litros (lançado só pelo valor): guarda como 1 unidade × valor,
+         para o gasto do dia bater com o que foi lançado */
+      if(!(r.qtdaIda>0 && r.valorIda>0) && tipo!=='misto'){ r.qtdaIda=1; r.valorIda=valor; }
+    } else if(ehPed){
+      r.pedagioIda=valor;
+    } else {
+      r.estacionamento=valor;
+    }
+    const obs=[l.desc,l.obs].filter(Boolean).join(' · ');
+    if(obs) r.obs=obs;
+    rows.push(r);
+    rows.sort((a,b)=>a.data.localeCompare(b.data));
+    l.revertido=true;
+    n++;
+  });
+  return n;
+}
+
 function renderPessoal(){
+  /* roda sozinho na abertura da aba, uma vez por lançamento (ver marcas acima) */
+  try{
+    const n=recuperarDasFinancas();
+    if(n>0){ save(); setTimeout(()=>toast(n+' lançamento'+(n>1?'s':'')+' recuperado'+(n>1?'s':'')+' das Finanças'),600); }
+  }catch(e){ console.error('recuperação', e); }
   hydratePessoal(state); // blindagem: garante shape mesmo se o state veio cru da nuvem
   const _kr=document.getElementById('pCfgBateria'); if(_kr)_kr.value=fmtN(state.pessoal.config.bateriaKwh||18.3,1);
   const _kl=document.getElementById('pCfgKmL'); if(_kl)_kl.value=fmtN(state.pessoal.config.kmL||20,0);
