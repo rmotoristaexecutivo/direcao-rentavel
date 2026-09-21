@@ -5031,6 +5031,7 @@ function mobileDayCard(r,i,mod,ord){
   if(kwh>0)tags.push(`<span class="d-tag el">⚡ ${fmtN(kwh,2)} kWh</span>`);
   if(km>0&&litros>0)tags.push(`<span class="d-tag med">📊 ${fmtN(km/litros,2)} km/l</span>`);
   if(c.pedagioTotal>0)tags.push(`<span class="d-tag ped">🛣️ ${fmt(c.pedagioTotal)}</span>`);
+  if(c.estac>0)tags.push(`<span class="d-tag ped">🅿️ ${fmt(c.estac)}</span>`);
   return `<div class="d-row${fds?' fds':''}">
     <div class="d-row-top" onclick="${openFn}(${i})" style="cursor:pointer">
       <span class="d-date">${fmtDateBR(r.data)}${
@@ -7978,21 +7979,23 @@ function rowCalcP(r){
   const qIda=r.qtdaIda||0, qVolta=r.qtdaVolta||0;
   const totalIda=ci.custo, totalVolta=cv.custo;
   const pedagioTotal=(r.pedagioIda||0)+(r.pedagioVolta||0);
-  const gastoDia=totalIda+totalVolta+pedagioTotal;
+  /* estacionamento é do lançamento, não do trecho: você para uma vez no destino */
+  const estac=Number(r.estacionamento)||0;
+  const gastoDia=totalIda+totalVolta+pedagioTotal+estac;
   const kwh=ci.kwh+cv.kwh;
   const litros=ci.litros+cv.litros;
   const elIda=(r.tipoIda==='el')?ci.custo:(r.tipoIda==='misto'?(Number(r.qtdaIdaEl)||0)*(Number(r.valorIdaEl)||0):0);
   const elVolta=(r.tipoVolta==='el')?cv.custo:(r.tipoVolta==='misto'?(Number(r.qtdaVoltaEl)||0)*(Number(r.valorVoltaEl)||0):0);
   const elVal=elIda+elVolta;
   const combVal=(totalIda+totalVolta)-elVal;
-  return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,gastoDia,kwh,litros,elVal,combVal};
+  return{qIda,qVolta,totalIda,totalVolta,pedagioTotal,estac,gastoDia,kwh,litros,elVal,combVal};
 }
 function monthTotalsP(rows){
-  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioIda:0,pedagioVolta:0,pedagioTotal:0,kwh:0,litros:0,elVal:0,combVal:0,gastoDia:0};
+  const tot={kmIda:0,kmVolta:0,totalIda:0,totalVolta:0,pedagioIda:0,pedagioVolta:0,pedagioTotal:0,estac:0,kwh:0,litros:0,elVal:0,combVal:0,gastoDia:0};
   (rows||[]).forEach(r=>{const c=rowCalcP(r);
     tot.kmIda+=r.kmIda||0;tot.kmVolta+=r.kmVolta||0;tot.totalIda+=c.totalIda;tot.totalVolta+=c.totalVolta;
     tot.pedagioIda+=r.pedagioIda||0;tot.pedagioVolta+=r.pedagioVolta||0;
-    tot.pedagioTotal+=c.pedagioTotal;tot.kwh+=c.kwh;tot.litros+=c.litros;tot.elVal+=c.elVal;tot.combVal+=c.combVal;tot.gastoDia+=c.gastoDia;});
+    tot.pedagioTotal+=c.pedagioTotal;tot.estac+=c.estac;tot.kwh+=c.kwh;tot.litros+=c.litros;tot.elVal+=c.elVal;tot.combVal+=c.combVal;tot.gastoDia+=c.gastoDia;});
   return tot;
 }
 const _optP=(val)=>`<option value="comb"${val!=='el'&&val!=='misto'?' selected':''}>⛽ comb</option><option value="el"${val==='el'?' selected':''}>⚡ elét</option><option value="misto"${val==='misto'?' selected':''}>🔀 misto</option>`;
@@ -9669,11 +9672,11 @@ function pSetVisao(v){ _pVisao=v; renderPessoalMobile(); }
 
 /* totais de um conjunto de lançamentos */
 function pTotais(rows){
-  const t={gasto:0,km:0,litros:0,kwh:0,comb:0,el:0,ped:0,n:rows.length};
+  const t={gasto:0,km:0,litros:0,kwh:0,comb:0,el:0,ped:0,est:0,n:rows.length};
   rows.forEach(r=>{
     const c=rowCalcP(r);
     t.gasto+=c.gastoDia; t.km+=(r.kmIda||0)+(r.kmVolta||0);
-    t.litros+=c.litros; t.kwh+=c.kwh; t.comb+=c.combVal; t.el+=c.elVal; t.ped+=c.pedagioTotal;
+    t.litros+=c.litros; t.kwh+=c.kwh; t.comb+=c.combVal; t.el+=c.elVal; t.ped+=c.pedagioTotal; t.est+=c.estac;
   });
   return t;
 }
@@ -9710,10 +9713,11 @@ function pRenderAnos(){
     <div class="a-tile f-cost"><div class="t">Custo por km</div><div class="v">${t.km>0?fmt(custoKm):'—'}</div></div>
     <div class="a-tile f-roxo"><div class="t">Ano ${y}</div><div class="v">${fmt(totAno)}</div></div>
   </div>
-  ${(t.el>0||t.ped>0)?`<div class="a-grid3">
+  ${(t.el>0||t.ped>0||t.est>0)?`<div class="a-grid3">
     ${t.el>0?`<div class="a-tile f-ev"><div class="t">Elétrico</div><div class="v">${fmt(t.el)}</div><div class="s">${fmtN(t.kwh,1)} kWh</div></div>`:''}
     ${t.comb>0&&t.el>0?`<div class="a-tile f-fuel"><div class="t">Combustível</div><div class="v">${fmt(t.comb)}</div></div>`:''}
     ${t.ped>0?`<div class="a-tile f-roxo"><div class="t">Pedágio</div><div class="v">${fmt(t.ped)}</div></div>`:''}
+    ${t.est>0?`<div class="a-tile f-cost"><div class="t">Estacionamento</div><div class="v">${fmt(t.est)}</div></div>`:''}
   </div>`:''}
 
   <div class="fin-seg" style="margin-top:14px">
@@ -9756,6 +9760,7 @@ function pRenderAnos(){
           <span><i>km/l</i><b>${kml>0?fmtN(kml,1):'—'}</b></span>
           ${tw.kwh>0?`<span><i>kWh</i><b>${fmtN(tw.kwh,1)}</b></span>`:''}
           ${tw.ped>0?`<span><i>Pedágio</i><b>${fmt(tw.ped)}</b></span>`:''}
+          ${tw.est>0?`<span><i>Estac.</i><b>${fmt(tw.est)}</b></span>`:''}
         </div>
         <div class="pw-list">${itens.map(({r,i})=>{
           const c=rowCalcP(r);
@@ -10059,6 +10064,9 @@ function renderPSheet(){
     <p class="p-per-dica" id="pSheetAteDica"></p>
     ${pSheetTrechoHtml('ida')}
     ${pSheetTrechoHtml('volta')}
+    <div class="m-field"><label>🅿️ Estacionamento (R$)</label>
+      <input id="pSheetEstac" inputmode="decimal" value="${_pSheetDraft.estacionamento||''}" placeholder="-"
+             onfocus="this.select()" oninput="_pSheetDraft.estacionamento=parseNum(this.value);updatePSheetCalc()"></div>
     <div class="m-field"><label>📝 OBS</label>
       <textarea id="pSheetObs" class="m-obs" rows="2" placeholder="anotação sobre esse trajeto…" oninput="_pSheetDraft.obs=this.value">${escHtml(_pSheetDraft.obs||'')}</textarea>
     </div>
@@ -10094,6 +10102,7 @@ function updatePSheetCalc(){
       ${kwh>0?tile('Média', fmtN(kmKwh,2)+' km/kWh', fmtN(kwh,2)+' kWh', 'var(--electric)'):''}
       ${km>0?tile('Custo por km', fmt(custoKm), '', 'var(--expense)'):''}
       ${c.pedagioTotal>0?tile('Pedágio', fmt(c.pedagioTotal), 'ida + volta', 'var(--roxo)'):''}
+      ${c.estac>0?tile('Estacionamento', fmt(c.estac), '', 'var(--expense)'):''}
     </div>`;
 }
 function savePSheet(){
